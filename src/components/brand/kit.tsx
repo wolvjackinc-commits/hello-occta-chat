@@ -51,13 +51,42 @@ export const HeroKicker = ({ children }: { children: ReactNode }) => (
   </p>
 );
 
+const heroTitleSize = {
+  lg: "text-[3rem] sm:text-[4.25rem] xl:text-[5.5rem]",
+  md: "text-[2.75rem] sm:text-[3.75rem] xl:text-[4.75rem]",
+  sm: "text-[2.25rem] sm:text-5xl xl:text-6xl",
+};
+
 /** Poster headline. Renders without a fade so it paints immediately as the LCP element. */
-export const HeroTitle = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
-  <h1
-    className={`mt-5 font-display uppercase leading-[0.86] tracking-[-0.01em] text-white text-[3rem] sm:text-[4.25rem] xl:text-[5.5rem] ${className}`}
-  >
+export const HeroTitle = ({
+  children,
+  className = "",
+  size = "lg",
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Use a smaller size for long, sentence-length headlines. */
+  size?: keyof typeof heroTitleSize;
+}) => (
+  <h1 className={`mt-5 font-display uppercase leading-[0.88] tracking-[-0.01em] text-white ${heroTitleSize[size]} ${className}`}>
     {children}
   </h1>
+);
+
+/** Breadcrumb trail styled for the dark poster stage. */
+export const PosterBreadcrumb = ({ items }: { items: { label: string; to?: string }[] }) => (
+  <nav aria-label="Breadcrumb" className="mb-5 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
+    {items.map((item, i) => (
+      <span key={item.label}>
+        {i > 0 && <span className="mx-2 text-primary" aria-hidden>/</span>}
+        {item.to ? (
+          <Link to={item.to} className="transition-colors hover:text-primary">{item.label}</Link>
+        ) : (
+          <span className="text-white/80" aria-current="page">{item.label}</span>
+        )}
+      </span>
+    ))}
+  </nav>
 );
 
 /** Offset yellow slab that a card sits on like a printed ticket. */
@@ -183,4 +212,35 @@ export const SectionTitle = ({ children, className = "" }: { children: ReactNode
   >
     {children}
   </h2>
+);
+
+/** Editorial card for guides, help articles and posts: label strip, display title, summary, read link. */
+export const ArticleCard = ({
+  to,
+  label,
+  title,
+  desc,
+  cta = "Read",
+}: {
+  to: string;
+  label: ReactNode;
+  title: string;
+  desc?: string | null;
+  cta?: string;
+}) => (
+  <Link
+    to={to}
+    className="group flex h-full flex-col border-[3px] border-foreground bg-card text-foreground transition-shadow duration-300 hover:shadow-[8px_8px_0_0_hsl(var(--foreground))]"
+  >
+    <span className="border-b-[3px] border-foreground bg-secondary px-5 py-2 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/70 transition-colors group-hover:bg-primary group-hover:text-black">
+      {label}
+    </span>
+    <span className="flex flex-1 flex-col p-5">
+      <h3 className="font-display text-2xl uppercase leading-[0.95]">{title}</h3>
+      {desc && <span className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted-foreground">{desc}</span>}
+      <span className="mt-auto inline-flex items-center gap-1.5 pt-5 font-display text-base uppercase">
+        {cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden />
+      </span>
+    </span>
+  </Link>
 );

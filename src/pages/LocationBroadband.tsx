@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, Check, ChevronRight, Wifi, Shield, Clock, Zap } from "lucide-react";
+import { ArrowRight, Check, Wifi, Shield, Clock } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -12,7 +12,10 @@ import { citySeoTitle, getLocationLocal } from "@/data/locationLocal";
 import { getFromPrices } from "@/lib/pricing/engine";
 import NotFound from "@/pages/NotFound";
 
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
+import { BrandSection, HeroKicker, HeroTitle, NumberedLinkList, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { AddressPinArt } from "@/components/brand/illustrations";
 
 const LocationBroadbandPage = () => {
   const { pathname } = useLocation();
@@ -64,16 +67,6 @@ const LocationBroadbandPage = () => {
     { icon: Clock, text: "Installation Date Confirmed" },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] } },
-  };
-
   return (
     <Layout>
       <SEO
@@ -86,125 +79,123 @@ const LocationBroadbandPage = () => {
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 
-      {/* Breadcrumb */}
-      <div className="bg-secondary border-b-4 border-foreground/10">
-        <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <ChevronRight className="w-3 h-3" />
-            <Link to="/broadband" className="hover:text-foreground transition-colors">Broadband</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium truncate">Broadband in {location.city}</span>
-          </nav>
-        </div>
-      </div>
 
-      {/* Hero */}
-      <section className="py-12 md:py-16 grid-pattern">
-        <div className="container mx-auto px-4">
+      <MotionConfig reducedMotion="user">
+        {/* Hero */}
+        <PosterStage ghost={location.city.length <= 6 ? location.city : undefined}>
+          <PosterBreadcrumb
+            items={[
+              { label: "Home", to: "/" },
+              { label: "Broadband", to: "/broadband" },
+              { label: `Broadband in ${location.city}` },
+            ]}
+          />
           <div className="max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
-                <Zap className="w-4 h-4 inline mr-2" />
-                {location.region}
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                BROADBAND IN
-                <br />
-                <span className="text-gradient">{location.city.toUpperCase()}</span>
-              </h1>
-              <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
-                {local?.intro || location.intro}
-              </p>
-              <div className="flex flex-wrap gap-2 mb-6">
-                {features.map((feature) => (
-                  <div
-                    key={feature.text}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border-2 border-foreground/20 bg-background"
-                  >
-                    <feature.icon className="w-3.5 h-3.5" />
-                    <span>{feature.text}</span>
+            <HeroKicker>{location.region}</HeroKicker>
+            <HeroTitle>
+              Broadband in
+              {" "}<span className="block text-primary">{location.city}</span>
+            </HeroTitle>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">
+              {local?.intro || location.intro}
+            </p>
+            <ul className="mt-6 mb-7 flex flex-wrap gap-2">
+              {features.map((feature) => (
+                <li
+                  key={feature.text}
+                  className="flex items-center gap-1.5 border border-white/20 bg-white/[0.04] px-3 py-1.5 text-sm font-medium text-white/85"
+                >
+                  <feature.icon className="w-3.5 h-3.5 text-primary" />
+                  <span>{feature.text}</span>
+                </li>
+              ))}
+            </ul>
+            <PostcodeChecker variant="hero" />
+          </div>
+        </PosterStage>
+
+        {local && (
+          <BrandSection tone="paper">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-20">
+              <Reveal>
+                <SectionEyebrow index="01" label="Local guide" />
+                <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">
+                  {location.city} areas and postcodes
+                </h2>
+                <p className="mt-5 max-w-2xl text-lg leading-relaxed text-foreground/70">{local.guidance}</p>
+                <dl className="mt-8 border-t-[3px] border-foreground">
+                  <div className="grid gap-2 border-b-2 border-foreground/15 py-4 sm:grid-cols-[180px_1fr]">
+                    <dt className="font-display text-lg uppercase leading-none">Local areas</dt>
+                    <dd className="text-sm leading-relaxed text-foreground/75">{local.areas.join(", ")}.</dd>
                   </div>
-                ))}
-              </div>
-              <PostcodeChecker />
-            </motion.div>
-          </div>
-        </div>
-      </section>
+                  <div className="grid gap-2 border-b-2 border-foreground/15 py-4 sm:grid-cols-[180px_1fr]">
+                    <dt className="font-display text-lg uppercase leading-none">Postcode districts</dt>
+                    <dd className="text-sm leading-relaxed text-foreground/75">
+                      {local.postcodes.join(", ")}. These are Royal Mail districts, not a coverage guarantee.
+                    </dd>
+                  </div>
+                  <div className="grid gap-2 py-4 sm:grid-cols-[180px_1fr]">
+                    <dt className="font-display text-lg uppercase leading-none">Nearby towns</dt>
+                    <dd className="text-sm leading-relaxed text-foreground/75">
+                      {local.nearby.join(", ")}. Use the checker on the full address if you live just outside {location.city}.
+                    </dd>
+                  </div>
+                </dl>
+              </Reveal>
+              <Reveal className="lg:sticky lg:top-28 lg:self-start">
+                <div className="border-[3px] border-foreground bg-white p-3">
+                  <AddressPinArt />
+                </div>
+                <p className="mt-3 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/55">
+                  Availability is checked per address, not per postcode
+                </p>
+              </Reveal>
+            </div>
+          </BrandSection>
+        )}
 
-      {local && (
-        <section className="py-12 bg-background border-y-4 border-foreground/10">
-          <div className="container mx-auto px-4 max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">
-              {location.city} areas and postcodes
-            </h2>
-            <p className="text-muted-foreground leading-relaxed mb-4">{local.guidance}</p>
-            <p className="text-sm leading-relaxed mb-3">
-              <span className="font-display uppercase">Local areas: </span>
-              {local.areas.join(", ")}.
-            </p>
-            <p className="text-sm leading-relaxed mb-3">
-              <span className="font-display uppercase">Postcode districts: </span>
-              {local.postcodes.join(", ")}. These are Royal Mail districts, not a coverage guarantee.
-            </p>
-            <p className="text-sm leading-relaxed">
-              <span className="font-display uppercase">Nearby towns: </span>
-              {local.nearby.join(", ")}. Use the checker on the full address if you live just outside {location.city}.
-            </p>
-          </div>
-        </section>
-      )}
+        {/* Plans */}
+        <BrandSection tone="dark">
+          <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-end">
+            <div>
+              <SectionEyebrow index={local ? "02" : "01"} label="Speed bands" tone="dark" />
+              <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">
+                Broadband plans in {location.city}
+              </h2>
+            </div>
+            <p className="text-lg leading-relaxed text-white/70">Unlimited data where shown. Price Lock 24 or Flex 30 where offered in {location.city}; exact address-specific terms are confirmed before acceptance.</p>
+          </Reveal>
 
-      {/* Plans */}
-      <section className="py-16 bg-secondary stripes">
-        <div className="container mx-auto px-4">
-          <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-display-md mb-2">BROADBAND PLANS IN {location.city.toUpperCase()}</h2>
-            <p className="text-muted-foreground">Unlimited data where shown. Price Lock 24 or Flex 30 where offered in {location.city}; exact address-specific terms are confirmed before acceptance.</p>
-          </motion.div>
-
-          <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-4"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={containerVariants}
-          >
+          <Reveal stagger className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {broadbandPlans.map((plan) => (
-              <motion.div
+              <motion.article
                 key={plan.id}
-                className={`relative card-brutal bg-card p-5 flex flex-col ${plan.popular ? "border-primary" : ""}`}
-                variants={cardVariants}
-                whileHover={{ y: -6, x: -3, boxShadow: "10px 10px 0px 0px hsl(var(--foreground))" }}
+                variants={revealItem}
+                className={`relative flex flex-col border-[3px] bg-white/[0.03] ${plan.popular ? "border-primary" : "border-white/25"}`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-3 left-3 bg-primary text-primary-foreground px-3 py-0.5 font-display uppercase tracking-wider text-xs border-2 border-foreground">
+                  <div className="absolute -top-3 left-3 z-10 border-2 border-black bg-primary px-3 py-0.5 font-display text-xs uppercase tracking-wider text-black">
                     Most Popular
                   </div>
                 )}
-                <div className={plan.popular ? "pt-2" : ""}>
-                  <h3 className="font-display text-2xl mb-1">{plan.name}</h3>
-                  <div className="flex items-baseline gap-1 mb-2">
-                    <span className="font-display text-4xl">£{plan.price}</span>
-                    <span className="text-foreground/70 text-sm font-medium">/mo</span>
+                <div className={`border-b-[3px] px-5 pt-6 pb-4 ${plan.popular ? "border-primary" : "border-white/25"}`}>
+                  <h3 className="font-display text-3xl uppercase leading-none text-white">{plan.name}</h3>
+                  <div className="mt-3 flex items-center gap-2 text-white/80">
+                    <Wifi className="w-4 h-4 text-primary" />
+                    <span className="font-display text-lg leading-none">Up to {plan.speed}Mbps</span>
                   </div>
-                  <div className="flex items-center gap-2 mb-3 px-2 py-1 bg-accent border-2 border-foreground inline-block">
-                    <Wifi className="w-3 h-3 text-accent-foreground" />
-                    <span className="font-display text-accent-foreground text-sm">Up to {plan.speed}Mbps</span>
+                  <div className="mt-3 h-1 bg-white/10" aria-hidden>
+                    <div className="h-full bg-primary" style={{ width: `${Math.min(Math.max(Number(plan.speed) / 10, 6), 100)}%` }} />
                   </div>
-                  <ul className="space-y-1.5 mb-4 flex-grow">
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <div className="flex items-baseline gap-1">
+                    <span className="font-display text-5xl leading-none text-primary">£{plan.price}</span>
+                    <span className="text-white/70 text-sm font-medium">/mo</span>
+                  </div>
+                  <ul className="mt-4 mb-5 flex-grow space-y-1.5 border-t border-white/10 pt-4">
                     {plan.features.slice(0, 6).map((feature) => (
-                      <li key={feature} className="flex items-center gap-2 text-xs">
+                      <li key={feature} className="flex items-center gap-2 text-xs text-white/80">
                         <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                         <span>{feature}</span>
                       </li>
@@ -217,73 +208,74 @@ const LocationBroadbandPage = () => {
                     </Button>
                   </Link>
                 </div>
-              </motion.div>
+              </motion.article>
             ))}
-          </motion.div>
-        </div>
-      </section>
+          </Reveal>
+        </BrandSection>
 
-      {/* FAQs */}
-      {pageFaqs.length > 0 && (
-        <section className="py-12 bg-background">
-          <div className="container mx-auto px-4 max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">
-              Broadband in {location.city} — FAQs
-            </h2>
-            <Accordion type="single" collapsible className="space-y-2">
-              {pageFaqs.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground/10 bg-card px-4">
-                  <AccordionTrigger className="font-display text-left text-base hover:no-underline">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+        {/* FAQs */}
+        {pageFaqs.length > 0 && (
+          <BrandSection tone="light">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+              <Reveal className="lg:sticky lg:top-28 lg:self-start">
+                <SectionEyebrow index={local ? "03" : "02"} label="Questions" />
+                <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">
+                  Broadband in {location.city} — FAQs
+                </h2>
+              </Reveal>
+              <Accordion type="single" collapsible className="border-t-[3px] border-foreground">
+                {pageFaqs.map((faq, i) => (
+                  <AccordionItem key={i} value={`faq-${i}`} className="border-b-[3px] border-foreground">
+                    <AccordionTrigger className="py-5 text-left font-display text-xl uppercase leading-tight hover:no-underline sm:text-2xl">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-6 text-base leading-relaxed text-muted-foreground">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </BrandSection>
+        )}
+
+        {/* Related Guides */}
+        <BrandSection tone="paper">
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+            <Reveal>
+              <SectionEyebrow index={local ? (pageFaqs.length > 0 ? "04" : "03") : pageFaqs.length > 0 ? "03" : "02"} label="Keep reading" />
+              <SectionTitle className="mt-5">Broadband Guides</SectionTitle>
+            </Reveal>
+            <NumberedLinkList
+              items={[
+                { title: "Flex 30 Broadband UK", desc: "How 30-day rolling broadband works, including notice and applicable charges.", path: "/guides/no-contract-broadband-uk" },
+                { title: "Cheap Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
+                { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
+              ]}
+            />
           </div>
-        </section>
-      )}
+        </BrandSection>
 
-      {/* Related Guides */}
-      <section className="py-12 bg-secondary">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-xl font-display uppercase mb-4">Broadband Guides</h2>
-          <div className="grid sm:grid-cols-3 gap-4">
-            {[
-              { title: "Flex 30 Broadband UK", desc: "How 30-day rolling broadband works, including notice and applicable charges.", path: "/guides/no-contract-broadband-uk" },
-              { title: "Cheap Broadband UK", desc: "How to find affordable internet and avoid hidden costs.", path: "/guides/cheap-broadband-uk" },
-              { title: "How to Switch Broadband", desc: "Step-by-step guide to switching provider.", path: "/guides/how-to-switch-broadband" },
-            ].map((g) => (
-              <Link key={g.path} to={g.path} className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">
-                <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">{g.title}</h3>
-                <p className="text-sm text-muted-foreground">{g.desc}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="card-brutal bg-card p-6 md:p-8 text-center">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">
-              Ready for Better Broadband in {location.city}?
-            </h2>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-              Price Lock 24 or Flex 30 where eligible. No confusing mid-contract rises on Price Lock. Check what's available at your address.
-            </p>
+        {/* CTA */}
+        <BrandSection tone="yellow" className="border-t-[3px] border-black">
+          <Reveal className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div>
+              <h2 className="font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">
+                Ready for Better Broadband in {location.city}?
+              </h2>
+              <p className="mt-4 max-w-xl text-lg text-black/75">
+                Price Lock 24 or Flex 30 where eligible. No confusing mid-contract rises on Price Lock. Check what's available at your address.
+              </p>
+            </div>
             <Link to="/broadband">
-              <Button variant="hero" size="lg">
+              <Button size="lg" className="h-14 border-[3px] border-black bg-black px-8 font-display text-lg uppercase text-primary hover:bg-white hover:text-black">
                 View All Plans
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-          </div>
-        </div>
-      </section>
+          </Reveal>
+        </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

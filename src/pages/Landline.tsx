@@ -165,7 +165,7 @@ const Landline = () => {
               <HeroKicker>Digital Voice / Home Phone — runs over broadband</HeroKicker>
               <HeroTitle>
                 Digital Voice
-                <span className="block text-primary">/ Home Phone</span>
+                {" "}<span className="block text-primary">/ Home Phone</span>
               </HeroTitle>
               <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
                 Home Phone that runs over your OCCTA broadband. Crystal-clear calls through your

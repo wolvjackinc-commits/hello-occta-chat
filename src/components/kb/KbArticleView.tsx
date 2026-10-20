@@ -8,6 +8,18 @@ import Layout from "@/components/layout/Layout";
 import FeedbackWidget from "@/components/kb/FeedbackWidget";
 import { companyConfig } from "@/lib/companyConfig";
 import { breadcrumbLabel } from "@/lib/seo/breadcrumbLabel";
+import {
+  BrandSection,
+  HeroKicker,
+  HeroTitle,
+  NumberedLinkList,
+  PosterBreadcrumb,
+  PosterStage,
+  Reveal,
+  SectionEyebrow,
+  SectionTitle,
+  TicketSlab,
+} from "@/components/brand/kit";
 
 export type KbFaq = { question: string; answer: string };
 export type KbRelated = { slug: string; title: string; kind: string };
@@ -73,10 +85,11 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
   const canonical = routeForKind(article.kind, article.slug);
   const kindLabel = breadcrumbLabel(labelForKind(article.kind));
   const articleLabel = breadcrumbLabel(article.title);
+  const kindHub = article.kind === "blog" ? "/blog" : article.kind === "guide" ? "/guides" : "/help";
 
   const breadcrumb = createBreadcrumbSchema([
     { name: "Home", url: "/" },
-    { name: kindLabel, url: article.kind === "blog" ? "/blog" : article.kind === "guide" ? "/guides" : "/help" },
+    { name: kindLabel, url: kindHub },
     { name: articleLabel, url: canonical },
   ]);
   const faqSchema = article.faqs && article.faqs.length > 0 ? createFAQSchema(article.faqs) : null;
@@ -98,128 +111,151 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
       {faqSchema && <JsonLd data={faqSchema} />}
       {article.structured_data && <JsonLd data={article.structured_data as object} />}
 
-      <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12 md:py-16">
-        <nav aria-label="Breadcrumb" className="text-xs font-display uppercase tracking-[0.18em] text-muted-foreground mb-4">
-          <Link to="/" className="hover:text-foreground">Home</Link>
-          <span className="mx-2">/</span>
-          <Link to={article.kind === "blog" ? "/blog" : article.kind === "guide" ? "/guides" : "/help"} className="hover:text-foreground">
-            {kindLabel}
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="text-foreground">{articleLabel}</span>
-        </nav>
+      <article>
+        <PosterStage>
+          <PosterBreadcrumb
+            items={[
+              { label: "Home", to: "/" },
+              { label: kindLabel, to: kindHub },
+              { label: articleLabel },
+            ]}
+          />
+          <div className={`grid items-end gap-10 ${article.summary ? "lg:grid-cols-[minmax(0,1fr)_400px] xl:gap-16" : ""}`}>
+            <div className="max-w-4xl">
+              <HeroKicker>
+                {kindLabel}
+                {article.read_minutes ? <> · <Clock className="w-3 h-3 inline" /> {article.read_minutes} min</> : null}
+                {reviewedText ? <> · Last reviewed {reviewedText}</> : null}
+              </HeroKicker>
+              <HeroTitle size="sm">{article.title}</HeroTitle>
+            </div>
+            {article.summary && (
+              <TicketSlab className="mr-3 mb-3">
+                <div className="border-[3px] border-white bg-white text-black">
+                  <p className="border-b-[3px] border-black bg-primary px-5 py-2.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em]">In short</p>
+                  <p className="p-5 text-base leading-relaxed">{article.summary}</p>
+                </div>
+              </TicketSlab>
+            )}
+          </div>
+        </PosterStage>
 
-        <span className="inline-block text-xs font-display uppercase tracking-[0.18em] text-primary mb-2">
-          {kindLabel}
-          {article.read_minutes ? <> · <Clock className="w-3 h-3 inline" /> {article.read_minutes} min</> : null}
-          {reviewedText ? <> · Last reviewed {reviewedText}</> : null}
-        </span>
+        <BrandSection tone="paper">
+          <div className={`grid gap-12 lg:gap-20 ${toc.length > 2 ? "lg:grid-cols-[260px_minmax(0,1fr)]" : ""}`}>
+            {toc.length > 2 && (
+              <aside>
+                <nav aria-label="On this page" className="border-[3px] border-foreground bg-card p-4 lg:sticky lg:top-28 lg:border-0 lg:bg-transparent lg:p-0">
+                  <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">On this page</p>
+                  <ol className="mt-3 lg:mt-4 lg:border-t-[3px] lg:border-foreground">
+                    {toc.map((t, i) => (
+                      <li key={t.id} className="lg:border-b-2 lg:border-foreground/15">
+                        <a href={`#${t.id}`} className="group flex gap-3 py-1.5 text-sm font-medium leading-snug lg:py-2.5">
+                          <span className="font-display text-base leading-none text-foreground/30 group-hover:text-foreground">{String(i + 1).padStart(2, "0")}</span>
+                          <span className="text-foreground/75 group-hover:text-foreground">{t.text}</span>
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                </nav>
+              </aside>
+            )}
 
-        <h1 className="font-display uppercase text-3xl md:text-5xl leading-[0.95] mb-4 text-foreground">
-          {article.title}
-        </h1>
+            <div className="min-w-0 max-w-3xl">
+              <div className="prose prose-neutral max-w-none text-foreground prose-p:text-foreground/80 prose-li:text-foreground/80 dark:prose-invert">
+                <ReactMarkdown
+                  components={{
+                    h2: ({ children }) => (
+                      <h2 id={slugifyHeading(children)} className="mt-12 mb-3 scroll-mt-28 border-t-[3px] border-foreground pt-6 font-display text-3xl uppercase leading-[0.95] md:text-4xl">
+                        {children}
+                      </h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="font-display uppercase text-xl mt-6 mb-2">{children}</h3>
+                    ),
+                    a: ({ href, children }) => (
+                      <a href={href} className="font-medium text-foreground underline decoration-primary decoration-2 underline-offset-4">{children}</a>
+                    ),
+                  }}
+                >
+                  {article.content}
+                </ReactMarkdown>
+              </div>
 
-        {article.summary && (
-          <p className="text-lg md:text-xl text-foreground border-l-4 border-primary pl-4 mb-8">
-            {article.summary}
-          </p>
-        )}
-
-        {toc.length > 2 && (
-          <nav aria-label="On this page" className="border-2 border-foreground p-4 mb-8 bg-secondary/40">
-            <p className="font-display uppercase text-xs mb-2 text-muted-foreground">On this page</p>
-            <ul className="text-sm space-y-1">
-              {toc.map((t) => (
-                <li key={t.id}>
-                  <a href={`#${t.id}`} className="hover:text-primary">{t.text}</a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        )}
-
-        <div className="prose prose-neutral dark:prose-invert max-w-none text-foreground">
-          <ReactMarkdown
-            components={{
-              h2: ({ children }) => (
-                <h2 id={slugifyHeading(children)} className="font-display uppercase text-2xl md:text-3xl mt-10 mb-3 scroll-mt-24">
-                  {children}
-                </h2>
-              ),
-              h3: ({ children }) => (
-                <h3 className="font-display uppercase text-lg mt-6 mb-2">{children}</h3>
-              ),
-              a: ({ href, children }) => (
-                <a href={href} className="text-primary underline underline-offset-2">{children}</a>
-              ),
-            }}
-          >
-            {article.content}
-          </ReactMarkdown>
-        </div>
+              <div className="mt-12">
+                <FeedbackWidget articleId={article.id} />
+              </div>
+            </div>
+          </div>
+        </BrandSection>
 
         {article.faqs && article.faqs.length > 0 && (
-          <section className="mt-10">
-            <h2 className="font-display uppercase text-2xl md:text-3xl mb-4">FAQs</h2>
-            <Accordion type="single" collapsible className="border-4 border-foreground">
-              {article.faqs.map((f, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border-b-4 border-foreground last:border-b-0">
-                  <AccordionTrigger className="px-4 py-3 font-display uppercase text-sm text-left hover:no-underline">
-                    {f.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4 text-base leading-relaxed">
-                    {f.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </section>
+          <BrandSection tone="dark">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+              <Reveal className="lg:sticky lg:top-28 lg:self-start">
+                <SectionEyebrow index="01" label="Questions" tone="dark" />
+                <SectionTitle className="mt-5">FAQs</SectionTitle>
+              </Reveal>
+              <Accordion type="single" collapsible className="border-t-[3px] border-white/25">
+                {article.faqs.map((f, i) => (
+                  <AccordionItem key={i} value={`faq-${i}`} className="border-b-[3px] border-white/25">
+                    <AccordionTrigger className="py-5 text-left font-display text-xl uppercase leading-tight text-white hover:text-primary hover:no-underline sm:text-2xl">
+                      {f.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-6 text-base leading-relaxed text-white/75">
+                      {f.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </BrandSection>
         )}
 
-        <FeedbackWidget articleId={article.id} />
-
-        <section className="mt-12 border-4 border-foreground p-6">
-          <h2 className="font-display uppercase text-xl md:text-2xl mb-3">Still need help?</h2>
-          <p className="text-base mb-5">Check availability at your address, or talk to a human.</p>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild className="font-display uppercase">
-              <Link to="/order">Check availability <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-            <Button asChild variant="outline" className="font-display uppercase">
-              <Link to="/support">Contact support</Link>
-            </Button>
-            <Button type="button" variant="ghost" className="font-display uppercase" onClick={openChat}>
-              <MessageCircle className="mr-2 h-4 w-4" /> Ask Ira
-            </Button>
-          </div>
-          <div className="mt-5 text-sm text-muted-foreground flex flex-wrap gap-x-6 gap-y-2">
-            <a href={companyConfig.phone.href} className="inline-flex items-center gap-2 hover:text-foreground">
-              <PhoneCall className="h-4 w-4" /> {companyConfig.phone.display}
-            </a>
-            <a href={`mailto:${companyConfig.email.general}`} className="inline-flex items-center gap-2 hover:text-foreground">
-              <Mail className="h-4 w-4" /> {companyConfig.email.general}
-            </a>
-          </div>
-        </section>
+        <BrandSection tone="yellow" className="border-y-[3px] border-black">
+          <Reveal className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div>
+              <h2 className="font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Still need help?</h2>
+              <p className="mt-4 max-w-xl text-lg text-black/75">Check availability at your address, or talk to a human.</p>
+              <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-black/80">
+                <a href={companyConfig.phone.href} className="inline-flex items-center gap-2 underline-offset-4 hover:underline">
+                  <PhoneCall className="h-4 w-4" /> {companyConfig.phone.display}
+                </a>
+                <a href={`mailto:${companyConfig.email.general}`} className="inline-flex items-center gap-2 underline-offset-4 hover:underline">
+                  <Mail className="h-4 w-4" /> {companyConfig.email.general}
+                </a>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg" className="border-[3px] border-black bg-black font-display uppercase text-primary hover:bg-white hover:text-black">
+                <Link to="/order">Check availability <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="bg-white font-display uppercase text-black">
+                <Link to="/support">Contact support</Link>
+              </Button>
+              <Button type="button" variant="ghost" size="lg" className="font-display uppercase text-black hover:bg-black/10" onClick={openChat}>
+                <MessageCircle className="mr-2 h-4 w-4" /> Ask Ira
+              </Button>
+            </div>
+          </Reveal>
+        </BrandSection>
 
         {article.related && article.related.length > 0 && (
-          <section className="mt-10">
-            <h2 className="font-display uppercase text-xl md:text-2xl mb-4">Related</h2>
-            <ul className="grid sm:grid-cols-2 gap-3">
-              {article.related.map((r) => (
-                <li key={r.slug} className="border-2 border-foreground p-4 hover:bg-accent/10 transition-colors">
-                  <Link to={routeForKind(r.kind, r.slug)} className="font-display uppercase text-sm">
-                    {r.title} <ArrowRight className="inline h-4 w-4" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <BrandSection tone="light">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+              <Reveal>
+                <SectionEyebrow index={article.faqs && article.faqs.length > 0 ? "02" : "01"} label="Keep reading" />
+                <SectionTitle className="mt-5">Related</SectionTitle>
+              </Reveal>
+              <NumberedLinkList items={article.related.map((r) => ({ title: r.title, desc: labelForKind(r.kind), path: routeForKind(r.kind, r.slug) }))} />
+            </div>
+          </BrandSection>
         )}
 
-        <p className="mt-10 pt-6 border-t-2 border-foreground/30 text-xs text-muted-foreground leading-relaxed">
-          This guide is for general information only. Your accepted Contract Summary, Contract Information and OCCTA terms apply to your service.
-        </p>
+        <section className="border-t-[3px] border-foreground bg-secondary">
+          <p className="mx-auto w-full max-w-[1440px] px-4 py-8 text-xs leading-relaxed text-muted-foreground sm:px-6 md:px-12">
+            This guide is for general information only. Your accepted Contract Summary, Contract Information and OCCTA terms apply to your service.
+          </p>
+        </section>
       </article>
     </Layout>
   );

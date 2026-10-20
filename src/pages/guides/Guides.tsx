@@ -1,9 +1,9 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { BookOpen, ArrowRight } from "lucide-react";
+import { MotionConfig, motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { SEO, StructuredData, createBreadcrumbSchema } from "@/components/seo";
 import { guides } from "@/data/guides";
+import { ArticleCard, BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
 
 const categories = [
   { key: "broadband" as const, label: "Broadband" },
@@ -17,6 +17,10 @@ const Guides = () => {
     { name: "Guides", url: "/guides" },
   ]);
 
+  const groups = categories
+    .map((cat) => ({ ...cat, items: guides.filter((g) => g.category === cat.key) }))
+    .filter((c) => c.items.length > 0);
+
   return (
     <Layout>
       <SEO
@@ -27,64 +31,54 @@ const Guides = () => {
       />
       <StructuredData customOnly customSchema={breadcrumbSchema} />
 
-      {/* Hero */}
-      <section className="py-12 md:py-16 grid-pattern">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            <div className="inline-block stamp text-primary border-primary mb-4">
-              <BookOpen className="w-4 h-4 inline mr-2" />
-              Resource Centre
-            </div>
-            <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-              GUIDES &<br />
-              <span className="text-gradient">RESOURCES</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-xl">
+      <MotionConfig reducedMotion="user">
+        {/* Hero */}
+        <PosterStage>
+          <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Guides" }]} />
+          <div className="max-w-3xl">
+            <HeroKicker>Resource Centre</HeroKicker>
+            <HeroTitle>
+              Guides &amp;
+              {" "}<span className="block text-primary">resources</span>
+            </HeroTitle>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
               Practical advice on broadband, home phone, and mobile. No jargon, no sales pitch — just useful information.
             </p>
-          </motion.div>
-        </div>
-      </section>
+            {groups.length > 1 && (
+              <nav aria-label="Guide topics" className="mt-8 flex flex-wrap gap-2">
+                {groups.map((g) => (
+                  <a
+                    key={g.key}
+                    href={`#${g.key}`}
+                    className="border-[3px] border-white/30 px-4 py-2 font-display text-lg uppercase leading-none text-white transition-colors hover:border-primary hover:text-primary"
+                  >
+                    {g.label}
+                  </a>
+                ))}
+              </nav>
+            )}
+          </div>
+        </PosterStage>
 
-      {/* Guides by Category */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4">
-          {categories.map((cat) => {
-            const catGuides = guides.filter((g) => g.category === cat.key);
-            if (catGuides.length === 0) return null;
-            return (
-              <div key={cat.key} className="mb-12 last:mb-0">
-                <h2 className="text-2xl font-display uppercase mb-4 text-foreground">{cat.label}</h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {catGuides.map((guide) => (
-                    <motion.div
-                      key={guide.slug}
-                      whileHover={{ y: -4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }}
-                      transition={{ duration: 0.12 }}
-                    >
-                      <Link
-                        to={`/guides/${guide.slug}`}
-                        className="block card-brutal bg-card p-5 h-full group"
-                      >
-                        <span className="text-xs font-display uppercase text-primary mb-2 block">{guide.categoryLabel}</span>
-                        <h3 className="font-display text-xl mb-2 group-hover:text-primary transition-colors">{guide.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{guide.description}</p>
-                        <span className="inline-flex items-center gap-1 text-sm font-display text-primary">
-                          Read guide <ArrowRight className="w-3 h-3" />
-                        </span>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+        {/* Guides by Category */}
+        <BrandSection tone="paper">
+          {groups.map((cat, i) => (
+            <div key={cat.key} id={cat.key} className="mb-16 scroll-mt-28 last:mb-0">
+              <Reveal>
+                <SectionEyebrow index={String(i + 1).padStart(2, "0")} label={`${cat.items.length} ${cat.items.length === 1 ? "guide" : "guides"}`} />
+                <h2 className="mt-5 font-display text-4xl uppercase leading-none sm:text-5xl">{cat.label}</h2>
+              </Reveal>
+              <Reveal stagger className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {cat.items.map((guide) => (
+                  <motion.div key={guide.slug} variants={revealItem}>
+                    <ArticleCard to={`/guides/${guide.slug}`} label={guide.categoryLabel} title={guide.title} desc={guide.description} cta="Read guide" />
+                  </motion.div>
+                ))}
+              </Reveal>
+            </div>
+          ))}
+        </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

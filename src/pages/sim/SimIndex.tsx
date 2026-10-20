@@ -89,7 +89,7 @@ const SimIndex = () => {
               <HeroTitle>
                 <span className="sm:block">SIM plans.</span>{" "}
                 <span className="sm:block">Simple telecom.</span>{" "}
-                <span className="block text-primary">Clear terms.</span>
+                {" "}<span className="block text-primary">Clear terms.</span>
               </HeroTitle>
               <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
                 eSIM or physical SIM. Keep your number or start fresh. Card or Direct Debit.

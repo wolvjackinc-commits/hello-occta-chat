@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { MotionConfig, motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import KbSearchBar from "@/components/kb/KbSearchBar";
 import { supabase } from "@/integrations/supabase/client";
 import { seoGrowthArticles } from "@/data/seoGrowthArticles";
 import { Clock, ArrowRight } from "lucide-react";
+import { ArticleCard, BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
 
 type Row = { id: string; slug: string; title: string; summary: string | null; read_minutes: number | null; updated_at: string };
 
@@ -29,68 +32,64 @@ export default function BlogIndex() {
         canonical="/blog"
         keywords="broadband deals UK, landline switch off 2027, broadband for pensioners, digital landline, fibre broadband deals, broadband comparison, broadband speed test"
       />
-      <section className="py-12 md:py-16 border-b-4 border-foreground">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <span className="inline-block text-xs font-display uppercase tracking-[0.18em] text-primary mb-3">Blog & guides</span>
-          <h1 className="font-display uppercase text-4xl md:text-6xl leading-[0.9] mb-4">Useful answers before you buy, switch or call support.</h1>
-          <p className="text-muted-foreground text-lg max-w-3xl mb-6">
-            Plain-English broadband, switching and Digital Voice guidance — including the January 2027 landline change and practical help for older customers and families.
-          </p>
-          <div className="max-w-xl"><KbSearchBar kind="blog" placeholder="Search blog…" /></div>
-        </div>
-      </section>
+      <MotionConfig reducedMotion="user">
+        <PosterStage>
+          <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Blog" }]} />
+          <div className="max-w-4xl">
+            <HeroKicker>Blog &amp; guides</HeroKicker>
+            <HeroTitle size="sm">Useful answers before you buy, switch or call support.</HeroTitle>
+            <p className="mt-6 max-w-3xl text-lg leading-relaxed text-white/70">
+              Plain-English broadband, switching and Digital Voice guidance — including the January 2027 landline change and practical help for older customers and families.
+            </p>
+            <div className="mt-8 max-w-xl"><KbSearchBar kind="blog" placeholder="Search blog…" /></div>
+          </div>
+        </PosterStage>
 
-      <section className="py-10 border-b-4 border-foreground">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex items-end justify-between gap-4 mb-5">
+        <BrandSection tone="paper">
+          <Reveal className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <span className="text-xs font-display uppercase tracking-[0.16em] text-primary">Latest OCCTA guides</span>
-              <h2 className="font-display uppercase text-2xl md:text-3xl mt-1">2027 landline switch & broadband buying guides</h2>
+              <SectionEyebrow index="01" label="Latest OCCTA guides" />
+              <h2 className="mt-5 font-display text-4xl uppercase leading-none sm:text-5xl">2027 landline switch &amp; broadband buying guides</h2>
             </div>
-            <Link to="/learn" className="hidden sm:inline-flex items-center gap-1 text-sm font-display uppercase text-primary">
-              All guides <ArrowRight className="h-3 w-3" />
+            <Link to="/learn" className="group inline-flex items-center gap-1.5 font-display text-lg uppercase">
+              All guides <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          </Reveal>
+          <Reveal stagger className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {seoGrowthArticles.map((article) => (
-              <Link
-                key={article.slug}
-                to={`/learn/${article.slug}`}
-                className="border-4 border-foreground p-5 bg-card hover:bg-secondary/40 transition-colors group flex flex-col"
-              >
-                <span className="text-xs font-display uppercase text-primary">{article.category}</span>
-                <h3 className="font-display text-xl mt-2 group-hover:text-primary leading-tight">{article.h1}</h3>
-                <p className="text-sm text-muted-foreground mt-2 line-clamp-4 flex-1">{article.shortAnswer}</p>
-                <span className="mt-3 inline-flex items-center gap-1 text-sm font-display uppercase text-primary">Read guide <ArrowRight className="h-3 w-3" /></span>
-              </Link>
+              <motion.div key={article.slug} variants={revealItem}>
+                <ArticleCard to={`/learn/${article.slug}`} label={article.category} title={article.h1} desc={article.shortAnswer} cta="Read guide" />
+              </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
+          </Reveal>
+        </BrandSection>
 
-      <section className="py-10">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h2 className="font-display uppercase text-2xl md:text-3xl mb-5">More from OCCTA</h2>
-          {loading ? (
-            <p className="text-muted-foreground">Loading…</p>
-          ) : rows.length === 0 ? (
-            <p className="text-muted-foreground">More posts are being prepared. Browse the latest guides above or visit the Learn hub.</p>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {rows.map((r) => (
-                <Link key={r.id} to={`/blog/${r.slug}`} className="border-4 border-foreground p-5 bg-card hover:bg-secondary/40 transition-colors group">
-                  <span className="text-xs font-display uppercase text-primary inline-flex items-center gap-1">
-                    {r.read_minutes ? <><Clock className="h-3 w-3" /> {r.read_minutes} min</> : "Article"}
-                  </span>
-                  <h3 className="font-display text-xl mt-2 group-hover:text-primary">{r.title}</h3>
-                  {r.summary && <p className="text-sm text-muted-foreground mt-2 line-clamp-3">{r.summary}</p>}
-                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-display uppercase text-primary">Read <ArrowRight className="h-3 w-3" /></span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+        <BrandSection tone="light">
+          <Reveal>
+            <SectionEyebrow index="02" label="Posts" />
+            <h2 className="mt-5 font-display text-4xl uppercase leading-none sm:text-5xl">More from OCCTA</h2>
+          </Reveal>
+          <div className="mt-8">
+            {loading ? (
+              <p className="text-muted-foreground">Loading…</p>
+            ) : rows.length === 0 ? (
+              <p className="max-w-2xl border-[3px] border-dashed border-foreground/30 bg-card p-6 text-muted-foreground">More posts are being prepared. Browse the latest guides above or visit the Learn hub.</p>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {rows.map((r) => (
+                  <ArticleCard
+                    key={r.id}
+                    to={`/blog/${r.slug}`}
+                    label={r.read_minutes ? <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> {r.read_minutes} min</span> : "Article"}
+                    title={r.title}
+                    desc={r.summary}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 }

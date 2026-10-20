@@ -33,7 +33,7 @@ const BusinessHub = () => (
         <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_460px] xl:gap-20">
           <div className="lg:pt-6">
             <HeroKicker>For business</HeroKicker>
-            <HeroTitle className="xl:text-[5rem]">
+            <HeroTitle size="md">
               Telecom built around the <span className="text-primary">actual site</span>, not a placeholder price.
             </HeroTitle>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">

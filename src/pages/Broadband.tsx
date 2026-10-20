@@ -238,7 +238,7 @@ const BroadbandInner = () => {
             <HeroKicker>Setup from £0 where available for a limited time</HeroKicker>
             <HeroTitle>
               Broadband
-              <span className="block text-primary">that works</span>
+              {" "}<span className="block text-primary">that works</span>
             </HeroTitle>
             <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
               Fast, reliable internet without the corporate nonsense. From £{getFromPrices().broadband}/month,

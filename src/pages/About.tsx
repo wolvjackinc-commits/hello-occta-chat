@@ -38,7 +38,7 @@ const About = () => {
             <div>
               <HeroTitle>
                 About OCCTA —
-                <span className="block text-primary">UK broadband &amp; telecom</span>
+                {" "}<span className="block text-primary">UK broadband &amp; telecom</span>
               </HeroTitle>
               <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
                 We built OCCTA to be the cheaper, simpler alternative to the big brands.

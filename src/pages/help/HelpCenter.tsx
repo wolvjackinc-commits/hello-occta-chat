@@ -1,14 +1,19 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { LifeBuoy, ArrowRight, MessageCircle, BookOpen } from "lucide-react";
+import { MotionConfig, motion } from "framer-motion";
+import { MessageCircle, BookOpen } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { SEO, StructuredData, createBreadcrumbSchema } from "@/components/seo";
 import { helpArticles, helpCategories } from "@/data/helpArticles";
 import KbSearchBar from "@/components/kb/KbSearchBar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { ArticleCard, BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { SupportChatArt } from "@/components/brand/illustrations";
 
 type DbArticle = { id: string; slug: string; title: string; summary: string | null; kind: string; read_minutes: number | null };
+
+const pad = (n: number) => String(n).padStart(2, "0");
 
 const HelpCenter = () => {
   const [extra, setExtra] = useState<DbArticle[]>([]);
@@ -24,6 +29,11 @@ const HelpCenter = () => {
     { name: "Help Centre", url: "/help" },
   ]);
 
+  const categories = helpCategories
+    .map((cat) => ({ cat, items: helpArticles.filter((a) => a.category === cat) }))
+    .filter((c) => c.items.length > 0);
+  const offset = extra.length > 0 ? 1 : 0;
+
   return (
     <Layout>
       <SEO
@@ -34,80 +44,76 @@ const HelpCenter = () => {
       />
       <StructuredData customOnly customSchema={breadcrumb} />
 
-      <section className="py-12 md:py-16 grid-pattern">
-        <div className="container mx-auto px-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <div className="inline-block stamp text-primary border-primary mb-4">
-              <LifeBuoy className="w-4 h-4 inline mr-2" /> Help Centre
-            </div>
-            <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-              GET HELP<br />
-              <span className="text-gradient">FAST.</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-xl">
+      <MotionConfig reducedMotion="user">
+        <PosterStage ghost="HELP">
+          <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Help Centre" }]} />
+          <div className="max-w-3xl">
+            <HeroKicker>Help Centre</HeroKicker>
+            <HeroTitle>
+              Get help
+              {" "}<span className="text-primary">fast.</span>
+            </HeroTitle>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
               Most issues are fixed in under five minutes. Find your topic, follow the steps, and you're sorted.
             </p>
-            <div className="mt-6 max-w-xl">
+            <div className="mt-8 max-w-xl">
               <KbSearchBar />
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </PosterStage>
 
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4">
+        <BrandSection tone="paper">
           {extra.length > 0 && (
-            <div className="mb-12">
-              <h2 className="text-2xl font-display uppercase mb-4 text-foreground">Latest help articles</h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="mb-16">
+              <Reveal>
+                <SectionEyebrow index="01" label="New" />
+                <h2 className="mt-5 font-display text-4xl uppercase leading-none sm:text-5xl">Latest help articles</h2>
+              </Reveal>
+              <Reveal stagger className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {extra.slice(0, 9).map((a) => (
-                  <Link key={a.id} to={`/help/${a.slug}`} className="block card-brutal bg-card p-5 group">
-                    <span className="text-xs font-display uppercase text-primary mb-2 block">
-                      {a.read_minutes ? `${a.read_minutes} min read` : "Help"}
-                    </span>
-                    <h3 className="font-display text-xl mb-2 group-hover:text-primary transition-colors">{a.title}</h3>
-                    {a.summary && <p className="text-sm text-muted-foreground line-clamp-3">{a.summary}</p>}
-                  </Link>
+                  <motion.div key={a.id} variants={revealItem}>
+                    <ArticleCard to={`/help/${a.slug}`} label={a.read_minutes ? `${a.read_minutes} min read` : "Help"} title={a.title} desc={a.summary} />
+                  </motion.div>
                 ))}
-              </div>
+              </Reveal>
             </div>
           )}
-          {helpCategories.map((cat) => {
-            const items = helpArticles.filter((a) => a.category === cat);
-            if (!items.length) return null;
-            return (
-              <div key={cat} className="mb-12 last:mb-0">
-                <h2 className="text-2xl font-display uppercase mb-4 text-foreground">{cat}</h2>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {items.map((a) => (
-                    <motion.div key={a.slug} whileHover={{ y: -4, boxShadow: "6px 6px 0px 0px hsl(var(--foreground))" }} transition={{ duration: 0.12 }}>
-                      <Link to={`/help/${a.slug}`} className="block card-brutal bg-card p-5 h-full group">
-                        <span className="text-xs font-display uppercase text-primary mb-2 block">{a.readMinutes} min read</span>
-                        <h3 className="font-display text-xl mb-2 group-hover:text-primary transition-colors">{a.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">{a.description}</p>
-                        <span className="inline-flex items-center gap-1 text-sm font-display text-primary">
-                          Read article <ArrowRight className="w-3 h-3" />
-                        </span>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-
-          <div className="mt-12 card-brutal bg-secondary p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <MessageCircle className="w-8 h-8 text-primary flex-shrink-0" />
-            <div className="flex-1">
-              <h3 className="font-display text-xl uppercase">Still stuck?</h3>
-              <p className="text-sm text-muted-foreground">Chat with Ira (bottom-right) or email hello@occta.co.uk — we reply within a few hours, no scripts.</p>
+          {categories.map(({ cat, items }, i) => (
+            <div key={cat} className="mb-16 last:mb-0">
+              <Reveal>
+                <SectionEyebrow index={pad(i + 1 + offset)} label="Topic" />
+                <h2 className="mt-5 font-display text-4xl uppercase leading-none sm:text-5xl">{cat}</h2>
+              </Reveal>
+              <Reveal stagger className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((a) => (
+                  <motion.div key={a.slug} variants={revealItem}>
+                    <ArticleCard to={`/help/${a.slug}`} label={`${a.readMinutes} min read`} title={a.title} desc={a.description} cta="Read article" />
+                  </motion.div>
+                ))}
+              </Reveal>
             </div>
-            <Link to="/guides" className="inline-flex items-center gap-2 px-4 py-2 border-2 border-foreground font-display uppercase text-sm hover:bg-primary hover:text-primary-foreground transition-colors">
-              <BookOpen className="w-4 h-4" /> Browse guides
-            </Link>
-          </div>
-        </div>
-      </section>
+          ))}
+        </BrandSection>
+
+        <BrandSection tone="dark">
+          <Reveal className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-20">
+            <div>
+              <SectionEyebrow index={pad(categories.length + 1 + offset)} label="Talk to us" tone="dark" />
+              <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Still stuck?</h2>
+              <p className="mt-4 max-w-xl text-lg text-white/70">Chat with Ira (bottom-right) or email hello@occta.co.uk — we reply within a few hours, no scripts.</p>
+              <Link to="/guides" className="mt-7 inline-flex items-center gap-2 border-[3px] border-white px-5 py-3 font-display text-lg uppercase text-white transition-colors hover:border-primary hover:bg-primary hover:text-black">
+                <BookOpen className="w-5 h-5" /> Browse guides
+              </Link>
+            </div>
+            <div className="border-[3px] border-white/25 bg-[hsl(0_0%_10%)] p-6">
+              <div className="mb-4 flex items-center gap-2 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">
+                <MessageCircle className="h-4 w-4 text-primary" aria-hidden /> Support chat
+              </div>
+              <SupportChatArt />
+            </div>
+          </Reveal>
+        </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

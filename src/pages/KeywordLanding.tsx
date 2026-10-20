@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ArrowRight, Check, ChevronRight, Zap } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -8,7 +8,8 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { getKeywordPageBySlug } from "@/data/keywordPages";
 import NotFound from "@/pages/NotFound";
-import { motion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
 
 const KeywordLandingPage = () => {
   const { pathname } = useLocation();
@@ -55,102 +56,100 @@ const KeywordLandingPage = () => {
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 
-      {/* Breadcrumb */}
-      <div className="bg-secondary border-b-4 border-foreground/10">
-        <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <ChevronRight className="w-3 h-3" />
-            <Link to="/broadband" className="hover:text-foreground transition-colors">Broadband</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium truncate">{page.metaTitle.split(" — ")[0]}</span>
-          </nav>
-        </div>
-      </div>
-
-      {/* Hero */}
-      <section className="py-12 md:py-16 grid-pattern">
-        <div className="container mx-auto px-4">
+      <MotionConfig reducedMotion="user">
+        {/* Hero */}
+        <PosterStage>
+          <PosterBreadcrumb
+            items={[
+              { label: "Home", to: "/" },
+              { label: "Broadband", to: "/broadband" },
+              { label: page.metaTitle.split(" — ")[0] },
+            ]}
+          />
           <div className="max-w-3xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
-                <Zap className="w-4 h-4 inline mr-2" />
-                From £{page.price || "34.99"}/mo
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                {page.heroTitle}
-                <br />
-                <span className="text-gradient">{page.heroHighlight}</span>
-              </h1>
-              <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
-                {page.heroSubtitle}
-              </p>
-              <PostcodeChecker />
-            </motion.div>
+            <HeroKicker>From £{page.price || "34.99"}/mo</HeroKicker>
+            <HeroTitle size="md">
+              {page.heroTitle}
+              {" "}<span className="block text-primary">{page.heroHighlight}</span>
+            </HeroTitle>
+            <p className="mt-6 mb-8 max-w-2xl text-lg leading-relaxed text-white/70">
+              {page.heroSubtitle}
+            </p>
+            <PostcodeChecker variant="hero" />
           </div>
-        </div>
-      </section>
+        </PosterStage>
 
-      {/* Content Sections */}
-      {page.sections.map((section, i) => (
-        <section key={i} className={`py-12 ${i % 2 === 0 ? "bg-secondary" : "bg-background"}`}>
-          <div className="container mx-auto px-4 max-w-3xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">{section.heading}</h2>
-              {section.paragraphs.map((p, j) => (
-                <p key={j} className="text-muted-foreground mb-4 leading-relaxed">{p}</p>
+        {/* Content Sections */}
+        {page.sections.length > 0 && (
+          <BrandSection tone="paper">
+            <div className="mx-auto max-w-4xl">
+              {page.sections.map((section, i) => (
+                <Reveal key={i} className="grid gap-4 border-t-[3px] border-foreground py-10 first:border-t-0 first:pt-0 sm:grid-cols-[5.5rem_1fr]">
+                  <span aria-hidden className="font-display text-5xl leading-[0.8] text-foreground/25 sm:text-7xl">{String(i + 1).padStart(2, "0")}</span>
+                  <div>
+                    <h2 className="font-display text-3xl uppercase leading-[0.95] md:text-4xl">{section.heading}</h2>
+                    {section.paragraphs.map((p, j) => (
+                      <p key={j} className="mt-4 text-base leading-relaxed text-foreground/75">{p}</p>
+                    ))}
+                    {section.bullets && (
+                      <ul className="mt-5 space-y-2">
+                        {section.bullets.map((bullet, j) => (
+                          <li key={j} className="flex items-start gap-3">
+                            <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center bg-black text-primary" aria-hidden>
+                              <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                            </span>
+                            <span className="text-foreground/80">{bullet}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </Reveal>
               ))}
-              {section.bullets && (
-                <ul className="space-y-2 mt-4">
-                  {section.bullets.map((bullet, j) => (
-                    <li key={j} className="flex items-start gap-3">
-                      <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-muted-foreground">{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </motion.div>
-          </div>
-        </section>
-      ))}
+            </div>
+          </BrandSection>
+        )}
 
-      {/* FAQs */}
-      {page.faqs.length > 0 && (
-        <section className="py-12 bg-secondary">
-          <div className="container mx-auto px-4 max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">Frequently Asked Questions</h2>
-            <Accordion type="single" collapsible className="space-y-2">
-              {page.faqs.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground/10 bg-card px-4">
-                  <AccordionTrigger className="font-display text-left text-base hover:no-underline">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-        </section>
-      )}
+        {/* FAQs */}
+        {page.faqs.length > 0 && (
+          <BrandSection tone="dark">
+            <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+              <Reveal className="lg:sticky lg:top-28 lg:self-start">
+                <SectionEyebrow index="01" label="Questions" tone="dark" />
+                <SectionTitle className="mt-5">Frequently Asked Questions</SectionTitle>
+              </Reveal>
+              <Accordion type="single" collapsible className="border-t-[3px] border-white/25">
+                {page.faqs.map((faq, i) => (
+                  <AccordionItem key={i} value={`faq-${i}`} className="border-b-[3px] border-white/25">
+                    <AccordionTrigger className="py-5 text-left font-display text-xl uppercase leading-tight text-white hover:text-primary hover:no-underline sm:text-2xl">
+                      {faq.question}
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-6 text-base leading-relaxed text-white/75">
+                      {faq.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </BrandSection>
+        )}
 
-      {/* CTA */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="card-brutal bg-card p-6 md:p-8 text-center">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">{page.ctaTitle}</h2>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">{page.ctaText}</p>
+        {/* CTA */}
+        <BrandSection tone="yellow" className="border-t-[3px] border-black">
+          <Reveal className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div>
+              <h2 className="font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">{page.ctaTitle}</h2>
+              <p className="mt-4 max-w-xl text-lg text-black/75">{page.ctaText}</p>
+            </div>
             <Link to={page.ctaLink}>
-              <Button variant="hero" size="lg">
+              <Button size="lg" className="h-14 border-[3px] border-black bg-black px-8 font-display text-lg uppercase text-primary hover:bg-white hover:text-black">
                 {page.ctaButton}
                 <ArrowRight className="w-5 h-5" />
               </Button>
             </Link>
-          </div>
-        </div>
-      </section>
+          </Reveal>
+        </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

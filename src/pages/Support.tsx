@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import { z } from "zod";
+import { ArrowRight } from "lucide-react";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, TicketSlab } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { SupportChatArt } from "@/components/brand/illustrations";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { logError } from "@/lib/logger";
@@ -245,47 +249,55 @@ const Support = () => {
       />
       <StructuredData customSchema={faqSchema} />
       
+      <MotionConfig reducedMotion="user">
       {/* Hero - Help Yourself First Philosophy */}
-      <section className="py-12 grid-pattern">
-        <div className="container mx-auto px-4">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-3xl mx-auto mb-12"
-          >
-            <h1 className="text-5xl sm:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-              HELP &
-              <br />
-              <span className="text-gradient">SUPPORT HUB</span>
-            </h1>
-            <p className="text-lg text-muted-foreground mb-6">
+      <PosterStage ghost="HELP">
+        <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Support" }]} />
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_440px] xl:gap-20">
+          <div>
+            <HeroKicker>UK-based support</HeroKicker>
+            <HeroTitle>
+              Help &amp;
+              {" "}<span className="block text-primary">support hub</span>
+            </HeroTitle>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
               Most issues can be resolved instantly through your account, FAQs, or our AI assistant.
-              <br />
-              <span className="text-foreground font-medium">Get answers in seconds — no waiting required.</span>
+              {" "}<span className="font-medium text-white">Get answers in seconds — no waiting required.</span>
             </p>
-          </motion.div>
+            <nav aria-label="Support options" className="mt-8 flex flex-wrap gap-2">
+              {[
+                { href: "#account", label: "Your account" },
+                { href: "#faqs", label: "FAQs" },
+                { href: "#tickets", label: "Tickets" },
+                { href: "#phone", label: "Phone" },
+              ].map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  className="border-[3px] border-white/30 px-4 py-2 font-display text-lg uppercase leading-none text-white transition-colors hover:border-primary hover:text-primary"
+                >
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+          </div>
 
           {/* Section A: AI HELP ASSISTANT - Top Priority */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="max-w-4xl mx-auto mb-12"
-          >
-            <div className="bg-card border-4 border-foreground p-6 sm:p-8">
-              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-foreground flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-background" />
-                  </div>
-                  <div>
-                    <h2 className="font-display text-2xl uppercase">Instant Help (IRA)</h2>
-                    <p className="text-sm text-muted-foreground">Self-service help is available online; advisor availability is shown on our contact channels</p>
-                  </div>
-                </div>
+          <TicketSlab className="mr-3 mb-3">
+            <div className="border-[3px] border-white bg-[hsl(0_0%_8%)]">
+              <div className="flex items-center gap-3 border-b-[3px] border-white bg-primary px-5 py-4 text-black">
+                <span className="flex h-10 w-10 items-center justify-center bg-black">
+                  <Bot className="h-5 w-5 text-primary" />
+                </span>
+                <h2 className="font-display text-2xl uppercase leading-none">Instant Help (IRA)</h2>
+              </div>
+              <div className="p-5 sm:p-6">
+                <SupportChatArt />
+                <p className="mt-5 text-sm text-white/65">Self-service help is available online; advisor availability is shown on our contact channels</p>
                 <Button
                   variant="hero"
                   size="lg"
+                  className="mt-5 w-full"
                   onClick={() => {
                     // Trigger the floating chat widget to open
                     window.dispatchEvent(new CustomEvent('open-ai-chat'));
@@ -295,88 +307,92 @@ const Support = () => {
                 </Button>
               </div>
             </div>
-          </motion.div>
+          </TicketSlab>
+        </div>
+      </PosterStage>
 
-          {/* Section B: SELF-SERVICE DASHBOARD PROMOTION */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="max-w-4xl mx-auto mb-12"
-          >
-            <div className="bg-secondary/50 border-4 border-foreground p-6 sm:p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-accent flex items-center justify-center">
-                  <LayoutDashboard className="w-6 h-6 text-accent-foreground" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl uppercase">Manage Everything From Your Account</h2>
-                  <p className="text-sm text-muted-foreground">Full control at your fingertips</p>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                Your account dashboard gives you full control. Most issues can be resolved without waiting or contacting support.
-              </p>
-              
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                {[
-                  { icon: FileText, label: "View bills & payment history" },
-                  { icon: CreditCard, label: "Download invoices" },
-                  { icon: Wifi, label: "Check service status" },
-                  { icon: Ticket, label: "Raise support tickets" },
-                  { icon: Clock, label: "Track open issues" },
-                  { icon: Settings, label: "Update personal details" },
-                  { icon: Zap, label: "Change or upgrade services" },
-                  { icon: Shield, label: "Manage security settings" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 p-3 bg-background border-2 border-foreground/20">
-                    <item.icon className="w-4 h-4 text-accent shrink-0" />
-                    <span className="text-xs font-medium">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex flex-wrap gap-3">
-                {user ? (
-                  <Link to="/dashboard">
-                    <Button variant="hero" size="lg">
-                      <LayoutDashboard className="w-4 h-4 mr-2" />
-                      Go to Dashboard
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link to="/auth">
-                    <Button variant="hero" size="lg">
-                      <LayoutDashboard className="w-4 h-4 mr-2" />
-                      Sign In to Dashboard
-                    </Button>
-                  </Link>
-                )}
-              </div>
+      {/* Section B: SELF-SERVICE DASHBOARD PROMOTION */}
+      <BrandSection id="account" tone="paper" className="scroll-mt-20">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal>
+            <SectionEyebrow index="01" label="Full control at your fingertips" />
+            <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">Manage Everything From Your Account</h2>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-foreground/70">
+              Your account dashboard gives you full control. Most issues can be resolved without waiting or contacting support.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              {user ? (
+                <Link to="/dashboard">
+                  <Button variant="hero" size="lg">
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <Link to="/auth">
+                  <Button variant="hero" size="lg">
+                    <LayoutDashboard className="w-4 h-4 mr-2" />
+                    Sign In to Dashboard
+                  </Button>
+                </Link>
+              )}
             </div>
-          </motion.div>
+          </Reveal>
 
-          {/* Section C: SMART FAQ SECTION */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="max-w-4xl mx-auto mb-12"
-          >
-            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-              <h2 className="font-display text-2xl uppercase mb-2">Frequently Asked Questions</h2>
-              <p className="text-muted-foreground">Browse the most requested answers below.</p>
-              <Link to="/faq" className="text-sm font-semibold text-primary hover:underline">
-                View all FAQs
-              </Link>
+          <Reveal stagger as="ul" className="grid grid-cols-2 gap-[3px] border-[3px] border-foreground bg-foreground sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+            {[
+              { icon: FileText, label: "View bills & payment history" },
+              { icon: CreditCard, label: "Download invoices" },
+              { icon: Wifi, label: "Check service status" },
+              { icon: Ticket, label: "Raise support tickets" },
+              { icon: Clock, label: "Track open issues" },
+              { icon: Settings, label: "Update personal details" },
+              { icon: Zap, label: "Change or upgrade services" },
+              { icon: Shield, label: "Manage security settings" },
+            ].map((item, i) => (
+              <motion.li key={i} variants={revealItem} className="flex flex-col gap-3 bg-card p-4">
+                <span className="inline-flex h-9 w-9 items-center justify-center bg-primary text-black">
+                  <item.icon className="h-4 w-4" />
+                </span>
+                <span className="text-sm font-semibold leading-snug">{item.label}</span>
+              </motion.li>
+            ))}
+          </Reveal>
+        </div>
+      </BrandSection>
+
+      {/* Section C: SMART FAQ SECTION */}
+      <BrandSection id="faqs" tone="light" className="scroll-mt-20">
+        <Reveal className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <SectionEyebrow index="02" label="Browse the most requested answers below." />
+            <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">Frequently Asked Questions</h2>
+          </div>
+          <Link to="/faq" className="group inline-flex items-center gap-1.5 font-display text-lg uppercase">
+            View all FAQs <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          </Link>
+        </Reveal>
+
+        <div className="mt-10 grid gap-10 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-16">
+          {/* Category Pills */}
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <div className="relative mb-4">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                aria-label="Search FAQs"
+                placeholder="Search FAQs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 h-12 border-[3px] border-foreground"
+              />
             </div>
-
-            {/* Category Pills */}
-            <div className="flex flex-wrap gap-2 mb-6">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
               <button
                 onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 border-2 text-sm md:text-base leading-tight transition-colors whitespace-normal ${
-                  !selectedCategory ? "border-primary bg-primary text-primary-foreground" : "border-foreground/30 hover:bg-secondary"
+                aria-pressed={!selectedCategory}
+                className={`flex w-full items-center gap-2 border-[3px] px-4 py-2.5 text-left text-sm font-semibold leading-tight transition-colors ${
+                  !selectedCategory ? "border-foreground bg-foreground text-background" : "border-foreground/20 bg-card hover:border-foreground"
                 }`}
               >
                 All Topics
@@ -385,221 +401,186 @@ const Support = () => {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 border-2 text-sm md:text-base leading-tight transition-colors flex items-center gap-2 whitespace-normal ${
-                    selectedCategory === cat.id ? "border-primary bg-primary text-primary-foreground" : "border-foreground/30 hover:bg-secondary"
+                  aria-pressed={selectedCategory === cat.id}
+                  className={`flex w-full items-center gap-2 border-[3px] px-4 py-2.5 text-left text-sm font-semibold leading-tight transition-colors ${
+                    selectedCategory === cat.id ? "border-foreground bg-foreground text-background" : "border-foreground/20 bg-card hover:border-foreground"
                   }`}
                 >
-                  <cat.icon className="w-4 h-4" />
+                  <cat.icon className="w-4 h-4 flex-shrink-0" />
                   {cat.title}
                 </button>
               ))}
             </div>
-            
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search FAQs..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 border-4 border-foreground"
-              />
-            </div>
+          </div>
 
+          <div className="min-w-0">
             {/* FAQs */}
-            <Accordion type="single" collapsible className="space-y-2">
+            <Accordion type="single" collapsible className="border-t-[3px] border-foreground">
               {filteredFaqs.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground bg-card px-4">
-                  <AccordionTrigger className="text-left whitespace-normal font-semibold text-base md:text-lg leading-relaxed tracking-normal py-4 hover:no-underline">
+                <AccordionItem key={i} value={`faq-${i}`} className="border-b-[3px] border-foreground">
+                  <AccordionTrigger className="py-5 text-left whitespace-normal font-display text-xl uppercase leading-tight tracking-normal hover:no-underline sm:text-2xl">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-sm md:text-base leading-relaxed text-muted-foreground pb-3 max-w-prose">
+                  <AccordionContent className="pb-6 text-base leading-relaxed text-foreground/75 max-w-prose">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
-            
+
             {filteredFaqs.length === 0 && (
-              <div className="text-center py-8 border-2 border-dashed border-foreground/30">
+              <div className="mt-6 border-[3px] border-dashed border-foreground/30 bg-card py-10 text-center">
                 <Search className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-muted-foreground">No matching FAQs found. Try our AI assistant above for help.</p>
               </div>
             )}
-          </motion.div>
+          </div>
+        </div>
+      </BrandSection>
 
-          {/* Section D: SUPPORT TICKET SYSTEM */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="max-w-4xl mx-auto mb-12"
-          >
-            <div className="bg-card border-4 border-foreground p-6 sm:p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-foreground flex items-center justify-center">
-                  <Ticket className="w-6 h-6 text-background" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl uppercase">Support Tickets</h2>
-                  <p className="text-sm text-muted-foreground">When you need personalised assistance</p>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-6">
-                If your issue cannot be resolved instantly through our AI assistant or FAQs, raise a support ticket and our team will assist you.
-              </p>
+      {/* Section D: SUPPORT TICKET SYSTEM */}
+      <BrandSection id="tickets" tone="dark" className="scroll-mt-20">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal>
+            <SectionEyebrow index="03" label="When you need personalised assistance" tone="dark" />
+            <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">Support Tickets</h2>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-white/70">
+              If your issue cannot be resolved instantly through our AI assistant or FAQs, raise a support ticket and our team will assist you.
+            </p>
+          </Reveal>
 
-              {user ? (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-display text-lg uppercase">Your Tickets</h3>
-                    <Button size="sm" variant={showTicketForm ? "outline" : "hero"} onClick={() => setShowTicketForm(!showTicketForm)}>
-                      <Plus className="w-4 h-4" /> {showTicketForm ? "Cancel" : "New Ticket"}
+          <div className="border-[3px] border-white/25 bg-white/[0.03] p-5 sm:p-6">
+            {user ? (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-2xl uppercase">Your Tickets</h3>
+                  <Button size="sm" variant={showTicketForm ? "outline" : "hero"} onClick={() => setShowTicketForm(!showTicketForm)}>
+                    <Plus className="w-4 h-4" /> {showTicketForm ? "Cancel" : "New Ticket"}
+                  </Button>
+                </div>
+
+                {showTicketForm && (
+                  <div className="border-[3px] border-white/25 bg-background p-4 mb-4 space-y-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.value}
+                          type="button"
+                          onClick={() => { setFormData({ ...formData, category: cat.value }); if (errors.category) setErrors({ ...errors, category: "" }); }}
+                          className={`p-3 border-2 text-center transition-colors ${formData.category === cat.value ? "border-primary bg-primary/10" : "border-white/20 hover:border-white/50"}`}
+                        >
+                          <cat.icon className="w-4 h-4 mx-auto mb-1" />
+                          <span className="font-display text-xs">{cat.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {errors.category && <p className="text-destructive text-xs">{errors.category}</p>}
+
+                    <div>
+                      <Label className="font-display text-xs uppercase">Subject</Label>
+                      <Input value={formData.subject} onChange={(e) => { setFormData({ ...formData, subject: e.target.value }); if (errors.subject) setErrors({ ...errors, subject: "" }); }} className="border-2 border-foreground" />
+                      {errors.subject && <p className="text-destructive text-xs">{errors.subject}</p>}
+                    </div>
+
+                    <div>
+                      <Label className="font-display text-xs uppercase">Description</Label>
+                      <Textarea value={formData.description} onChange={(e) => { setFormData({ ...formData, description: e.target.value }); if (errors.description) setErrors({ ...errors, description: "" }); }} className="border-2 border-foreground min-h-[80px]" />
+                      {errors.description && <p className="text-destructive text-xs">{errors.description}</p>}
+                    </div>
+
+                    <Button className="w-full" variant="hero" size="sm" onClick={handleSubmitTicket} disabled={isSubmitting}>
+                      {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Submit Ticket</>}
                     </Button>
                   </div>
+                )}
 
-                  {showTicketForm && (
-                    <div className="bg-secondary border-4 border-foreground p-4 mb-4 space-y-4">
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                        {categories.map((cat) => (
-                          <button
-                            key={cat.value}
-                            type="button"
-                            onClick={() => { setFormData({ ...formData, category: cat.value }); if (errors.category) setErrors({ ...errors, category: "" }); }}
-                            className={`p-3 border-2 text-center transition-colors ${formData.category === cat.value ? "border-primary bg-primary/10" : "border-foreground/30 hover:bg-background"}`}
-                          >
-                            <cat.icon className="w-4 h-4 mx-auto mb-1" />
-                            <span className="font-display text-xs">{cat.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                      {errors.category && <p className="text-destructive text-xs">{errors.category}</p>}
-                      
-                      <div>
-                        <Label className="font-display text-xs uppercase">Subject</Label>
-                        <Input value={formData.subject} onChange={(e) => { setFormData({ ...formData, subject: e.target.value }); if (errors.subject) setErrors({ ...errors, subject: "" }); }} className="border-2 border-foreground" />
-                        {errors.subject && <p className="text-destructive text-xs">{errors.subject}</p>}
-                      </div>
-                      
-                      <div>
-                        <Label className="font-display text-xs uppercase">Description</Label>
-                        <Textarea value={formData.description} onChange={(e) => { setFormData({ ...formData, description: e.target.value }); if (errors.description) setErrors({ ...errors, description: "" }); }} className="border-2 border-foreground min-h-[80px]" />
-                        {errors.description && <p className="text-destructive text-xs">{errors.description}</p>}
-                      </div>
-                      
-                      <Button className="w-full" variant="hero" size="sm" onClick={handleSubmitTicket} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Submit Ticket</>}
-                      </Button>
-                    </div>
-                  )}
-
-                  {isLoadingTickets ? (
-                    <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
-                  ) : tickets.length > 0 ? (
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                      {tickets.map((ticket) => {
-                        const status = statusConfig[ticket.status];
-                        return (
-                          <div 
-                            key={ticket.id} 
-                            className="bg-background border-2 border-foreground p-3 cursor-pointer hover:bg-accent/10 transition-colors"
-                            onClick={() => setSelectedTicket(ticket)}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <div className={`w-6 h-6 ${status.color} flex items-center justify-center`}>
-                                <status.icon className="w-3 h-3" />
-                              </div>
-                              <span className={`font-display text-xs uppercase ${status.textColor}`}>{status.label}</span>
-                              <span className="text-xs text-muted-foreground ml-auto">{formatDate(ticket.created_at)}</span>
+                {isLoadingTickets ? (
+                  <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                ) : tickets.length > 0 ? (
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {tickets.map((ticket) => {
+                      const status = statusConfig[ticket.status];
+                      return (
+                        <div
+                          key={ticket.id}
+                          className="bg-background border-2 border-white/20 p-3 cursor-pointer hover:border-primary transition-colors"
+                          onClick={() => setSelectedTicket(ticket)}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={`w-6 h-6 ${status.color} flex items-center justify-center`}>
+                              <status.icon className="w-3 h-3" />
                             </div>
-                            <h4 className="font-display text-sm">{ticket.subject}</h4>
+                            <span className={`font-display text-xs uppercase ${status.textColor}`}>{status.label}</span>
+                            <span className="text-xs text-muted-foreground ml-auto">{formatDate(ticket.created_at)}</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 border-2 border-dashed border-foreground/30">
-                      <MessageSquare className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">No tickets yet. Most issues can be resolved instantly with our AI assistant above.</p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8 border-2 border-dashed border-foreground/30">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="font-display text-xl mb-2">Need Personalised Help?</h3>
-                  <p className="text-muted-foreground mb-4">Sign in to create support tickets and track your requests.</p>
-                  <Link to="/auth">
-                    <Button variant="hero">Sign In</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </motion.div>
+                          <h4 className="font-display text-sm">{ticket.subject}</h4>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border-2 border-dashed border-white/25">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No tickets yet. Most issues can be resolved instantly with our AI assistant above.</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="py-8 text-center">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-display text-3xl uppercase mb-2">Need Personalised Help?</h3>
+                <p className="text-white/65 mb-5">Sign in to create support tickets and track your requests.</p>
+                <Link to="/auth">
+                  <Button variant="hero">Sign In</Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </BrandSection>
 
-          {/* Section E: TELEPHONE CONTACT - Last Resort */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="max-w-4xl mx-auto mb-12"
-          >
-            <div className="bg-muted/30 border-2 border-foreground/30 p-6 sm:p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-muted flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <h2 className="font-display text-lg uppercase text-muted-foreground">Telephone Support</h2>
-                  <p className="text-xs text-muted-foreground">For unresolved or complex issues only</p>
-                </div>
+      {/* Section E: TELEPHONE CONTACT - Last Resort */}
+      <BrandSection id="phone" tone="paper" className="scroll-mt-20">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal>
+            <SectionEyebrow index="04" label="For unresolved or complex issues only" />
+            <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl lg:text-6xl">Telephone Support</h2>
+          </Reveal>
+          <Reveal>
+            <p className="border-l-[3px] border-primary pl-4 text-base leading-relaxed text-foreground/75">
+              <strong className="text-foreground">Please note:</strong> Telephone support is intended for unresolved or complex issues only.
+              For faster resolution, please use our AI assistant, FAQs, or support ticket system first.
+            </p>
+            <dl className="mt-8 border-t-[3px] border-foreground">
+              <div className="flex items-center gap-4 border-b-2 border-foreground/15 py-4">
+                <dt><Phone className="w-5 h-5" aria-label="Phone" /></dt>
+                <dd className="font-display text-2xl leading-none">{CONTACT_PHONE_DISPLAY}</dd>
               </div>
-              
-              <div className="bg-background/50 border border-foreground/20 p-4 mb-4">
-                <p className="text-sm text-muted-foreground">
-                  <strong className="text-foreground">Please note:</strong> Telephone support is intended for unresolved or complex issues only. 
-                  For faster resolution, please use our AI assistant, FAQs, or support ticket system first.
-                </p>
+              <div className="flex items-center gap-4 border-b-2 border-foreground/15 py-4">
+                <dt><Clock className="w-5 h-5" aria-label="Opening hours" /></dt>
+                <dd className="text-base">Mon-Fri 9am-6pm, Sat 10am-4pm</dd>
               </div>
-              
-              <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  <span className="font-display">{CONTACT_PHONE_DISPLAY}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Mon-Fri 9am-6pm, Sat 10am-4pm</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  <span>hello@occta.co.uk</span>
-                </div>
+              <div className="flex items-center gap-4 py-4">
+                <dt><Mail className="w-5 h-5" aria-label="Email" /></dt>
+                <dd className="text-base">hello@occta.co.uk</dd>
               </div>
-            </div>
-          </motion.div>
+            </dl>
 
-          {/* Trust & Compliance Statement */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="max-w-4xl mx-auto"
-          >
-            <div className="bg-primary/5 border-2 border-primary/30 p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Shield className="w-4 h-4 text-primary" />
-                <span className="font-display text-sm uppercase text-primary">Trusted & Compliant</span>
+            {/* Trust & Compliance Statement */}
+            <div className="mt-8 border-[3px] border-foreground bg-card p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="w-4 h-4" />
+                <span className="font-display text-lg uppercase leading-none">Trusted & Compliant</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                This support model ensures faster resolution, full audit trails, and consistent service quality while protecting customer data. 
+                This support model ensures faster resolution, full audit trails, and consistent service quality while protecting customer data.
                 OCCTA complies with UK telecom regulations and GDPR requirements.
               </p>
             </div>
-          </motion.div>
+          </Reveal>
         </div>
-      </section>
+      </BrandSection>
+      </MotionConfig>
 
       {/* Ticket Detail Dialog */}
       {selectedTicket && (

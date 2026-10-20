@@ -9,6 +9,7 @@
 // these helpers never invent a charge.
 
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
+import { drawInvoice, type BillLine, type PdfDoc } from "./billingDocument.ts";
 
 export type VatMode = "inclusive" | "exclusive";
 
@@ -144,9 +145,63 @@ export function itemiseInvoice(
   };
 }
 
+/** Extra context for the invoice PDF; every field is optional. */
+export interface InvoicePdfExtras {
+  customerEmail?: string | null;
+  customerAddressLines?: (string | null | undefined)[];
+  companyName?: string | null;
+  customerVatNumber?: string | null;
+  planName?: string | null;
+  serviceAddress?: string | null;
+  status?: string | null;
+  amountPaidMinor?: number;
+  paymentMethod?: string | null;
+  ddActive?: boolean;
+  bankLast4?: string | null;
+  mandateReference?: string | null;
+  notes?: string | null;
+}
+
+/** profiles columns the invoice PDF uses for the bill-to block. */
+export const PROFILE_PDF_COLUMNS =
+  "full_name, email, account_number, address_line1, address_line2, city, postcode, business_company_name, business_vat_number";
+/** dd_mandates columns shown on Direct Debit invoices (masked only). */
+export const DD_MANDATE_PDF_COLUMNS = "id, status, mandate_reference, masked_account_last4, bank_last4";
+
+// deno-lint-ignore no-explicit-any
+export function customerPdfExtras(profile: any): InvoicePdfExtras {
+  return {
+    customerEmail: profile?.email ?? null,
+    customerAddressLines: [profile?.address_line1, profile?.address_line2, profile?.city, profile?.postcode],
+    companyName: profile?.business_company_name ?? null,
+    customerVatNumber: profile?.business_vat_number ?? null,
+  };
+}
+
+// deno-lint-ignore no-explicit-any
+export function mandatePdfExtras(mandate: any, ddActive: boolean): InvoicePdfExtras {
+  return {
+    ddActive,
+    bankLast4: mandate?.masked_account_last4 ?? mandate?.bank_last4 ?? null,
+    mandateReference: mandate?.mandate_reference ?? null,
+  };
+}
+
+/** Itemised totals → lines for the shared invoice layout. */
+export function billLinesFromTotals(totals: ComputedTotals): BillLine[] {
+  return totals.lines.map((l) => ({
+    description: l.description,
+    period: l.period_label,
+    netMinor: l.net_minor,
+    vatMinor: l.vat_minor,
+    grossMinor: l.gross_minor,
+    vatRate: l.vat_rate,
+  }));
+}
+
 /**
- * Build a branded, VAT-itemised invoice PDF.
- * Returns raw bytes; the caller uploads them.
+ * Build the branded, VAT-itemised invoice PDF (shared layout in
+ * billingDocument.ts). Returns raw bytes; the caller uploads them.
  */
 export function buildInvoicePdfBytes(args: {
   invoiceNumber: string;
@@ -158,109 +213,38 @@ export function buildInvoicePdfBytes(args: {
   periodEndExclusive: string;
   totals: ComputedTotals;
   isFirstInvoice: boolean;
-}): Uint8Array {
+} & InvoicePdfExtras): Uint8Array {
   const doc = new jsPDF();
-  const w = doc.internal.pageSize.getWidth();
-  const displayEnd = toDisplayPeriodEndIso(args.periodEndExclusive);
-
-  // Header
-  doc.setFillColor(13, 13, 13);
-  doc.rect(0, 0, w, 32, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text("OCCTA", 14, 20);
-  doc.setFillColor(250, 204, 21);
-  doc.rect(44, 11, 38, 13, "F");
-  doc.setTextColor(13, 13, 13);
-  doc.setFontSize(11);
-  doc.text("TELECOM", 47, 20);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
-  doc.text("INVOICE", w - 14, 20, { align: "right" });
-
-  // Meta
-  let y = 46;
-  doc.setTextColor(13, 13, 13);
-  doc.setFontSize(9);
-  doc.text(`Invoice #: ${args.invoiceNumber}`, 14, y);
-  doc.text(`Account: ${args.accountNumber || ""}`, 14, y + 6);
-  doc.text(`Issue date: ${fmtDate(args.issueDate)}`, w - 14, y, { align: "right" });
-  doc.text(`Due date: ${fmtDate(args.dueDate)}`, w - 14, y + 6, { align: "right" });
-
-  y += 22;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Bill to", 14, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(args.customerName || "Customer", 14, y + 6);
-  doc.text(`Billing period: ${fmtDate(args.periodStart)} – ${fmtDate(displayEnd)}`, 14, y + 12);
-
-  // Table header
-  y += 22;
-  doc.setFillColor(245, 245, 240);
-  doc.rect(14, y, w - 28, 8, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text("Description", 18, y + 5);
-  doc.text("Net", w - 82, y + 5, { align: "right" });
-  doc.text("VAT", w - 50, y + 5, { align: "right" });
-  doc.text("Total", w - 18, y + 5, { align: "right" });
-
-  // Lines
-  y += 12;
-  doc.setFont("helvetica", "normal");
-  for (const line of args.totals.lines) {
-    doc.text(line.description, 18, y);
-    if (line.period_label) {
-      doc.setFontSize(8);
-      doc.setTextColor(102, 102, 102);
-      doc.text(line.period_label, 18, y + 4);
-      doc.setFontSize(9);
-      doc.setTextColor(13, 13, 13);
-    }
-    doc.text(fmtPounds(line.net_minor), w - 82, y, { align: "right" });
-    doc.text(fmtPounds(line.vat_minor), w - 50, y, { align: "right" });
-    doc.text(fmtPounds(line.gross_minor), w - 18, y, { align: "right" });
-    y += line.period_label ? 10 : 6;
-  }
-
-  // Totals block
-  y += 6;
-  doc.setDrawColor(13, 13, 13);
-  doc.setLineWidth(0.3);
-  doc.line(w - 90, y, w - 14, y);
-  y += 5;
-  doc.text("Subtotal (net)", w - 82, y, { align: "left" });
-  doc.text(fmtPounds(args.totals.subtotal_net_minor), w - 18, y, { align: "right" });
-  y += 6;
-  doc.text(`VAT (${args.totals.vat_rate}%)`, w - 82, y, { align: "left" });
-  doc.text(fmtPounds(args.totals.vat_total_minor), w - 18, y, { align: "right" });
-  y += 4;
-
-  y += 4;
-  doc.setFillColor(13, 13, 13);
-  doc.rect(14, y, w - 28, 10, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.text("TOTAL DUE (inc. VAT)", 18, y + 7);
-  doc.text(fmtPounds(args.totals.total_gross_minor), w - 18, y + 7, { align: "right" });
-
-  // Footer note
-  doc.setTextColor(102, 102, 102);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  const note = args.isFirstInvoice
-    ? "Billing starts only once your service is confirmed live. Your first invoice may include your activation fee and a pro-rata charge from your live date to your chosen billing date. After that, your monthly service is billed in advance on your selected billing date."
-    : "Monthly service is billed in advance on your selected billing date.";
-  doc.text(doc.splitTextToSize(note, w - 28), 14, 270);
-  doc.text(
-    "OCCTA Limited · Company No. 13828933 · VAT No. 520 6072 30 · 22 Pavilion View, Huddersfield, HD3 3WU",
-    w / 2,
-    288,
-    { align: "center" },
-  );
-
+  drawInvoice(doc as unknown as PdfDoc, {
+    invoiceNumber: args.invoiceNumber,
+    accountNumber: args.accountNumber,
+    issueDate: args.issueDate,
+    dueDate: args.dueDate,
+    periodStart: args.periodStart,
+    periodEndExclusive: args.periodEndExclusive,
+    status: args.status ?? null,
+    customer: {
+      name: args.customerName,
+      email: args.customerEmail,
+      companyName: args.companyName,
+      vatNumber: args.customerVatNumber,
+      addressLines: args.customerAddressLines,
+    },
+    service: { planName: args.planName, serviceAddress: args.serviceAddress },
+    lines: billLinesFromTotals(args.totals),
+    subtotalMinor: args.totals.subtotal_net_minor,
+    vatMinor: args.totals.vat_total_minor,
+    totalMinor: args.totals.total_gross_minor,
+    vatRate: args.totals.vat_rate,
+    amountPaidMinor: args.amountPaidMinor,
+    payment: {
+      method: args.paymentMethod,
+      ddActive: args.ddActive,
+      bankLast4: args.bankLast4,
+      mandateReference: args.mandateReference,
+    },
+    notes: args.notes,
+  });
   return doc.output("arraybuffer") as unknown as Uint8Array;
 }
 

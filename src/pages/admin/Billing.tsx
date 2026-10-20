@@ -37,7 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import { formatAccountNumber } from "@/lib/account";
-import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
+import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
 import { hashToken } from "@/lib/tokenHash";
 import { format } from "date-fns";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
@@ -841,29 +841,20 @@ export const AdminBilling = () => {
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    const profile = profileMap.get(viewInvoice.user_id);
-                    generateInvoicePdf({
-                      invoiceNumber: viewInvoice.invoice_number,
-                      customerName: profile?.full_name || "Customer",
-                      customerEmail: profile?.email || "",
-                      accountNumber: profile?.account_number || "",
-                      issueDate: viewInvoice.issue_date,
-                      dueDate: viewInvoice.due_date || undefined,
-                      status: viewInvoice.status,
-                      lines: invoiceLines.map(l => ({
-                        description: l.description,
-                        qty: l.qty,
-                        unit_price: l.unit_price,
-                        line_total: l.line_total,
-                      })),
-                      subtotal: viewInvoice.subtotal,
-                      vatTotal: viewInvoice.vat_total,
-                      total: viewInvoice.total,
-                      notes: viewInvoice.notes || undefined,
-                      vatEnabled: viewInvoice.vat_enabled,
-                      vatRate: viewInvoice.vat_rate,
-                    });
+                  onClick={async () => {
+                    try {
+                      // Fresh rows so the PDF carries the address, period and payments.
+                      const [invRes, profRes, rcptRes] = await Promise.all([
+                        supabase.from("invoices").select("*").eq("id", viewInvoice.id).maybeSingle(),
+                        supabase.from("profiles").select("*").eq("id", viewInvoice.user_id).maybeSingle(),
+                        supabase.from("receipts").select("amount").eq("invoice_id", viewInvoice.id),
+                      ]);
+                      const data = invoiceDataFromRows(invRes.data ?? viewInvoice, invoiceLines, profRes.data ?? profileMap.get(viewInvoice.user_id));
+                      data.amountPaid = (rcptRes.data ?? []).reduce((sum, r) => sum + Number(r.amount ?? 0), 0);
+                      await generateInvoicePdf(data);
+                    } catch (err) {
+                      toast({ title: "Couldn't build the PDF", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+                    }
                   }}
                   className="gap-2 border-2 border-foreground"
                 >

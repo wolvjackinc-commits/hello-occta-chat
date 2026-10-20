@@ -10,6 +10,7 @@ on:
       - 'supabase/functions/_shared/billingGate.ts'
       - 'supabase/functions/_shared/contractMonthlyLines.ts'
       - 'supabase/functions/_shared/billingCycle.ts'
+      - 'supabase/functions/_shared/billingDocument.ts'
       - '.github/workflows/deploy-billing-functions.yml'
   workflow_dispatch:
 

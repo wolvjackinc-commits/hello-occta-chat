@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
       }
 
       let payNowUrl: string | null = null;
+      let ddActive = false;
 
       if (dueMinor === 0) {
         // Fully credit-covered. Mark paid + emit zero-balance receipt entry.
@@ -200,6 +201,7 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle();
         if (mandate) {
+          ddActive = true;
           await supabase
             .from("invoices")
             .update({ status: "awaiting_dd_collection" })
@@ -243,6 +245,9 @@ Deno.serve(async (req) => {
               total: totalMajor,
               pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${inv.id}`,
               dashboard_url: `${appOrigin}/dashboard`,
+              payment_method: o.payment_method,
+              dd_active: ddActive,
+              plan_name: o.plan_name_snapshot,
             },
           },
           headers: { "idempotency-key": `sim-monthly:${inv.id}` } as any,

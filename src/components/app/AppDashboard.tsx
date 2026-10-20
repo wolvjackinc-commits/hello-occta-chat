@@ -45,7 +45,7 @@ import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsT
 import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
 import { DirectDebitOverview } from "@/components/dashboard/DirectDebitOverview";
 import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
-import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
+import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
 import { formatGbp, formatUkDate } from "@/lib/dashboard/format";
 import type { QuoteCounts } from "@/lib/dashboard/quoteCounts";
 import { EMPTY_QUOTE_COUNTS } from "@/lib/dashboard/quoteCounts";
@@ -259,29 +259,7 @@ const AppDashboard = ({
       const inv: any = invRes.data;
       const p: any = profileRes.data ?? {};
       const lines = (linesRes.data as any[]) ?? [];
-      generateInvoicePdf({
-        invoiceNumber: inv.invoice_number,
-        customerName: p.full_name || "Customer",
-        customerEmail: p.email || "",
-        accountNumber: p.account_number || "",
-        postcode: p.postcode || "",
-        issueDate: inv.issue_date,
-        dueDate: inv.due_date ?? undefined,
-        status: inv.status,
-        lines: lines.map((l) => ({
-          description: l.description ?? "",
-          qty: Number(l.qty ?? 1),
-          unit_price: Number(l.unit_price ?? 0),
-          line_total: Number(l.line_total ?? 0),
-          vat_rate: l.vat_rate != null ? Number(l.vat_rate) : undefined,
-        })),
-        subtotal: Number(inv.subtotal ?? 0),
-        vatTotal: Number(inv.vat_total ?? 0),
-        total: Number(inv.total ?? 0),
-        notes: inv.notes ?? undefined,
-        vatEnabled: inv.vat_enabled !== false,
-        vatRate: inv.vat_rate != null ? Number(inv.vat_rate) : 20,
-      });
+      await generateInvoicePdf(invoiceDataFromRows(inv, lines, p));
       toast({ title: "Invoice downloaded" });
     } catch (e) {
       logError("AppDashboard.handleDownloadInvoice", e);

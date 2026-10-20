@@ -3,6 +3,10 @@ import { perfServe } from "../_shared/perfLog.ts";
 import {
   itemiseInvoice,
   buildInvoicePdfBytes,
+  customerPdfExtras,
+  DD_MANDATE_PDF_COLUMNS,
+  mandatePdfExtras,
+  PROFILE_PDF_COLUMNS,
   sha256Hex,
   nextAnchorBillingDate,
   poundsToMinor,
@@ -63,7 +67,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
   // Pull due active services. Limit per run to keep the function bounded.
   const { data: services, error } = await supabase
     .from("services")
-    .select("id, user_id, order_id, service_type, plan_name, price_monthly, billing_anchor_day, next_billing_date, contract_summary_id, status, billing_enabled")
+    .select("id, user_id, order_id, service_type, plan_name, price_monthly, billing_anchor_day, next_billing_date, contract_summary_id, status, billing_enabled, service_address")
     .eq("status", "active")
     .eq("billing_enabled", true)
     .lte("next_billing_date", today)
@@ -139,7 +143,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       // Load customer + payment method context.
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email, account_number")
+        .select(PROFILE_PDF_COLUMNS)
         .eq("id", svc.user_id).maybeSingle();
       const recipientEmail = profile?.email ?? "";
       const customerName = profile?.full_name ?? "Customer";
@@ -159,6 +163,11 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           ddStatus = pm?.dd_setup_status ?? null;
         }
       }
+      const { data: activeMandate } = pmMethod === "direct_debit"
+        ? await supabase.from("dd_mandates").select(DD_MANDATE_PDF_COLUMNS)
+          .eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle()
+        : { data: null };
+      const ddActive = !!activeMandate && ddStatus === "active";
 
       const periodLabel = `${fmtInclusivePeriod(periodStart, periodEnd)} (billed in advance)`;
       // Contract-selected monthly add-ons are itemised out of the contracted
@@ -239,6 +248,11 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           dueDate: dueDateIso,
           periodStart, periodEndExclusive: periodEnd, totals,
           isFirstInvoice: false,
+          ...customerPdfExtras(profile),
+          planName: svc.plan_name ?? null,
+          serviceAddress: svc.service_address ?? null,
+          paymentMethod: pmMethod,
+          ...mandatePdfExtras(activeMandate, ddActive),
         });
         const buf = pdfBytes instanceof Uint8Array ? pdfBytes : new Uint8Array(pdfBytes as any);
         const pdfHash = await sha256Hex(buf);
@@ -285,9 +299,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           payNowUrl = (pr as any)?.provider_checkout_url ?? `${appOrigin}/pay?token=${token}`;
         }
       } else if (pmMethod === "direct_debit") {
-        const { data: activeMandate } = await supabase.from("dd_mandates")
-          .select("id, status").eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle();
-        if (activeMandate && ddStatus === "active") {
+        if (ddActive) {
           await supabase.from("invoices").update({
             status: "awaiting_dd_collection",
           }).eq("id", invoiceId);
@@ -346,6 +358,10 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
               pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
               invoice_pdf_url: pdfSignedUrl,
               dashboard_url: dashboardUrl,
+              payment_method: pmMethod,
+              dd_active: ddActive,
+              vat_rate: totals.vat_rate,
+              plan_name: svc.plan_name ?? null,
             },
           },
           headers: { "idempotency-key": `invoice-monthly:${invoiceId}` } as any,

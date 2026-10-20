@@ -4,6 +4,10 @@ import {
   itemiseInvoice,
   buildInvoicePdfBytes,
   computeProRataMinor,
+  customerPdfExtras,
+  DD_MANDATE_PDF_COLUMNS,
+  mandatePdfExtras,
+  PROFILE_PDF_COLUMNS,
   sha256Hex,
   type RawLine,
   type VatMode,
@@ -105,7 +109,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       }
 
       const { data: svc } = await supabase.from("services")
-        .select("id, status, plan_name, service_type, price_monthly, user_id")
+        .select("id, status, plan_name, service_type, price_monthly, user_id, service_address")
         .eq("id", job.service_id).maybeSingle();
       if (!svc || svc.status !== "active") throw new Error("service_not_active");
 
@@ -125,9 +129,17 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         .eq("id", ord.payment_method_id!).maybeSingle();
       if (!pm) throw new Error("payment_method_missing");
 
+      // Only an active mandate with DD set up means we collect. Never call the
+      // DD provider from this worker.
+      const { data: activeMandate } = pm.method === "direct_debit"
+        ? await supabase.from("dd_mandates").select(DD_MANDATE_PDF_COLUMNS)
+          .eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle()
+        : { data: null };
+      const ddActive = !!activeMandate && pm.dd_setup_status === "active";
+
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email, account_number")
+        .select(PROFILE_PDF_COLUMNS)
         .eq("id", ord.customer_id!).maybeSingle();
       const recipientEmail = profile?.email ?? "";
       const customerName = profile?.full_name ?? "Customer";
@@ -319,6 +331,11 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           periodEndExclusive: job.period_end,
           totals,
           isFirstInvoice: true,
+          ...customerPdfExtras(profile),
+          planName: svc.plan_name ?? null,
+          serviceAddress: svc.service_address ?? null,
+          paymentMethod: pm.method,
+          ...mandatePdfExtras(activeMandate, ddActive),
         });
         const buf = pdfBytes instanceof Uint8Array ? pdfBytes : new Uint8Array(pdfBytes as any);
         pdfHash = await sha256Hex(buf);
@@ -373,10 +390,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         }
       } else if (pm.method === "direct_debit") {
         // Only mark as awaiting_dd_collection if a confirmed active mandate exists.
-        // Never call the DD provider from this worker.
-        const { data: activeMandate } = await supabase.from("dd_mandates")
-          .select("id, status").eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle();
-        if (activeMandate && pm.dd_setup_status === "active") {
+        if (ddActive) {
           await supabase.from("invoices").update({
             status: "awaiting_dd_collection",
           }).eq("id", invoiceId);
@@ -434,6 +448,10 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
               pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
               invoice_pdf_url: pdfSignedUrl,
               dashboard_url: dashboardUrl,
+              payment_method: pm.method,
+              dd_active: ddActive,
+              vat_rate: totals.vat_rate,
+              plan_name: svc.plan_name ?? null,
             },
           },
           headers: { "idempotency-key": `invoice-first:${invoiceId}` } as any,

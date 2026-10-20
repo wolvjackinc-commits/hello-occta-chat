@@ -29,6 +29,13 @@
       "when": 1791371543299,
       "tag": "0003_admin_customer_recent_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792501327108,
+      "tag": "0004_first_invoice_prorata_current_cycle",
+      "breakpoints": true
     }
   ]
 }

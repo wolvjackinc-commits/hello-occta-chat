@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -792,9 +793,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Rate limit: 20 admin-notify requests per IP per hour. Internal callers
     // (other edge functions / cron jobs) may bypass by supplying CRON_JOB_SECRET.
     const internalSecret = req.headers.get("x-internal-secret");
-    const expectedSecret = Deno.env.get("CRON_JOB_SECRET");
     const isInternal =
-      (expectedSecret && internalSecret === expectedSecret) ||
+      (await isCronSecret(internalSecret)) ||
       req.headers.get("x-internal-trigger") === "db";
 
     if (!isInternal) {

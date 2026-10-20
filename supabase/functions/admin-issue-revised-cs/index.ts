@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { consumerContractReleaseBlockForDb } from "../_shared/consumerContractRelease.ts";
 /**
  * Admin: issue a revised (superseding) Contract Summary.
@@ -74,10 +75,10 @@ Deno.serve(async (req) => {
   // Internal server-to-server callers: either the service-role key, or the
   // project's standard shared internal secret (same mechanism send-email and
   // the outbox workers already use). Both are server-only values.
-  const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
+  const internalSecretOk = await isCronSecret(req.headers.get("x-internal-secret"));
   const internal = (req.headers.get("x-internal-service") === "1" &&
     (req.headers.get("Authorization") ?? "").includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "\u0000")) ||
-    (cronSecret.length >= 16 && req.headers.get("x-internal-secret") === cronSecret);
+    internalSecretOk;
   let actorId: string | null = null;
   if (!internal) {
     const auth = await requireStaff(req, ["admin", "super_admin"]);

@@ -72,8 +72,8 @@ export const companyConfig = {
   
   // Support Hours
   supportHours: {
-    weekday: "Mon-Fri 9am-6pm",
-    saturday: "Sat 9am-1pm",
+    weekday: "Mon–Fri, 8am–6pm",
+    saturday: "Closed Saturday and Sunday",
     phone: "Mon–Fri, 8am–6pm",
   },
   

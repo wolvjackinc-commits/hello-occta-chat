@@ -58,9 +58,10 @@ describe("Ollie V3 transcript-driven intelligence", () => {
     expect(reply).toContain("/auth");
   });
 
-  it("does not invent support opening hours", () => {
+  it("gives the confirmed support opening hours", () => {
     const reply = resolveIntelligentPublicReply(convo(["user", "What are your support hours?"]));
-    expect(reply).toMatch(/don't want to invent opening hours/i);
+    expect(reply).toContain("Mon–Fri, 8am–6pm");
+    expect(reply).toContain("0800 260 6626");
     expect(reply).toContain("/support");
   });
 

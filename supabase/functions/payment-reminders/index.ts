@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
@@ -6,7 +7,6 @@ import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const resend = new Resend(resendApiKey);
 
-const CRON_SECRET = Deno.env.get("CRON_JOB_SECRET");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,7 +60,7 @@ const getStandardFooter = (accentColor: string = '#facc15') => {
             Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
           </p>
           <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
-            Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
+            Lines open Monday–Friday, 8am–6pm
           </p>
         </div>
         
@@ -234,7 +234,7 @@ serve(async (req) => {
 
   // Verify cron job secret for protection
   const cronSecret = req.headers.get("x-cron-secret");
-  if (!CRON_SECRET || cronSecret !== CRON_SECRET) {
+  if (!(await isCronSecret(cronSecret))) {
     console.log("SECURITY: Unauthorized cron job request - invalid or missing secret");
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),

@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
@@ -294,12 +295,11 @@ serve(async (req) => {
   // admin edge functions with the service role) may invoke this. Without
   // this check, anyone who can guess a mandate UUID could spam a real
   // customer with DD status emails containing their masked bank details.
-  const cronSecret = Deno.env.get("CRON_JOB_SECRET");
   const providedSecret =
     req.headers.get("x-cron-secret") ||
     req.headers.get("X-Cron-Secret") ||
     req.headers.get("x-internal-secret");
-  if (!cronSecret || !providedSecret || providedSecret !== cronSecret) {
+  if (!(await isCronSecret(providedSecret))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

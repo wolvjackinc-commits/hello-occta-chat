@@ -570,7 +570,7 @@ const Support = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  <span>Mon-Fri 9am-6pm, Sat 10am-4pm</span>
+                  <span>Mon–Fri, 8am–6pm</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />

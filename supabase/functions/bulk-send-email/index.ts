@@ -135,7 +135,7 @@ const getEmailWrapper = (content: string, trackingPixel: string) => `
         </div>
         <div class="footer-contact">
           <p>Need help? Call <strong style="color: #fff;">${COMPANY_CONFIG.supportPhone}</strong> or email <a href="mailto:${COMPANY_CONFIG.generalEmail}">${COMPANY_CONFIG.generalEmail}</a></p>
-          <p style="color: #666; font-size: 11px;">Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm</p>
+          <p style="color: #666; font-size: 11px;">Lines open Monday–Friday, 8am–6pm</p>
         </div>
         <div class="footer-legal">
           <p>© ${new Date().getFullYear()} ${COMPANY_CONFIG.name}. All rights reserved.</p>

@@ -35,7 +35,7 @@ const BusinessContactSales = () => (
         <div className="border-4 border-foreground bg-secondary p-6 shadow-brutal">
           <Clock className="w-6 h-6 text-primary mb-2" />
           <div className="font-display text-lg">Hours</div>
-          <div className="text-sm text-muted-foreground">Mon–Fri, 9am–6pm UK</div>
+          <div className="text-sm text-muted-foreground">Mon–Fri, 8am–6pm UK</div>
         </div>
       </aside>
     </section>

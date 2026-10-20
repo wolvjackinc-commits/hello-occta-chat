@@ -363,7 +363,7 @@ export function brutalistEmailShell(title: string, body: string, cta?: { label: 
                     <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Talk to us</strong><br/>
                     <a href="mailto:hello@occta.co.uk" style="color:#444;text-decoration:none;">hello@occta.co.uk</a><br/>
                     <a href="tel:08002606626" style="color:#444;text-decoration:none;">0800 260 6626</a><br/>
-                    Mon–Fri · 9am–6pm UK
+                    Mon–Fri · 8am–6pm UK
                   </td>
                   <td style="padding-right:18px;vertical-align:top;">
                     <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Self-serve</strong><br/>

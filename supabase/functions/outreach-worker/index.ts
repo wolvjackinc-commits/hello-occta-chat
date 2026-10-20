@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 // Scheduled sender for outreach campaigns (pg_cron every 5 minutes).
 // Only the project cron secret may trigger it; the function is deployed
 // without gateway JWT verification, so no bearer token is trusted here.
@@ -11,9 +12,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "method_not_allowed" }), { status: 405, headers });
   }
 
-  const expected = Deno.env.get("CRON_JOB_SECRET");
   const provided = req.headers.get("x-cron-secret");
-  if (!expected || !provided || provided !== expected) {
+  if (!(await isCronSecret(provided))) {
     return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers });
   }
 

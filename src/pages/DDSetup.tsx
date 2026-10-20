@@ -391,7 +391,7 @@ export default function DDSetup() {
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
             <p>Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
-            <p>Lines open Mon–Fri 9am–6pm, Sat 9am–1pm</p>
+            <p>Lines open Mon–Fri, 8am–6pm</p>
           </div>
         </CardContent>
       </Card>

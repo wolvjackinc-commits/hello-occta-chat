@@ -661,7 +661,7 @@ function buildEmailHtml(opts: {
     </ol>
     <p style="font-size:12px;color:#555;">Nothing will be charged until the agreement is accepted, the Direct Debit mandate is active, and advance notice requirements have been met.</p>
 
-    <p style="font-size:11px;color:#777;margin-top:16px;">This secure link is unique to this account and expires in 30 days. If you have any questions before signing, reply to this email or call 0800 260 6626 (Mon–Fri, 9am–6pm).</p>
+    <p style="font-size:11px;color:#777;margin-top:16px;">This secure link is unique to this account and expires in 30 days. If you have any questions before signing, reply to this email or call 0800 260 6626 (Mon–Fri, 8am–6pm).</p>
 
     <p style="font-size:11px;color:#777;margin-top:16px;">OCCTA Limited · VAT No. 520 6072 30</p>
   `;

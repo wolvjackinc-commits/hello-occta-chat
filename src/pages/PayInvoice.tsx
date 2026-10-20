@@ -400,7 +400,7 @@ export default function PayInvoice() {
 
         <div className="text-center text-sm text-muted-foreground space-y-1">
           <p>Need help? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
-          <p>Lines open Mon–Fri 9am–6pm, Sat 9am–1pm</p>
+          <p>Lines open Mon–Fri, 8am–6pm</p>
         </div>
       </div>
     </Layout>

@@ -23,6 +23,7 @@ import type { CustomerSegment, ServiceComponent } from "../_shared/twoDocValidat
 import { isTwoDocEnabledFor, logPilotEvent, callerUserIdFromRequest } from "../_shared/twoDocFlowGate.ts";
 import { PRODUCTION_CONTRACT_SECTIONS, PRODUCTION_CONTRACT_VERSION } from "../_shared/productionConsumerContract.ts";
 import { buildContractSpeedMatrix, speedMatrixStatement, type VerifiedContractSpeedMatrix } from "../_shared/networkEvidence.ts";
+import { pdfSha256 } from "../_shared/pdfHash.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -150,9 +151,9 @@ Deno.serve(async (req) => {
 
   // ── Render PDF ────────────────────────────────────────────────────────────
   const pdfBytes = renderPackPdf({ components, segment, quote: q as any });
-  // sha256Hex takes a string, so this hashes the comma-joined byte list, not
-  // the raw PDF bytes. Kept as-is: stored pdf_sha256 values depend on it.
-  const pdfSha = await sha256Hex(String(new Uint8Array(pdfBytes)));
+  // Hash of the actual PDF bytes. Packs issued before this fix keep their
+  // legacy byte-list hash; _shared/pdfHash.ts verifies either form.
+  const pdfSha = await pdfSha256(pdfBytes);
   const storagePath = `contract-information-packs/${quoteId}/v${nextVersion}-${pdfSha.slice(0, 12)}.pdf`;
 
   const up = await supabase.storage.from("contract-documents").upload(storagePath, new Uint8Array(pdfBytes), {

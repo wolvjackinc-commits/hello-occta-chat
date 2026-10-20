@@ -36,6 +36,13 @@
       "when": 1792501327108,
       "tag": "0004_first_invoice_prorata_current_cycle",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792520082046,
+      "tag": "0005_reschedule_invoice_and_reminder_cron_from_template",
+      "breakpoints": true
     }
   ]
 }

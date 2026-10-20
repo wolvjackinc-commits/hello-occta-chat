@@ -23,7 +23,7 @@ const DEFAULTS: FP = {
   },
   router: { standardOneOff: 94.99, standardMonthly: 4.99, premiumOneOff: 129.99, premiumMonthly: 7.99 },
   setup:  { remote: 0, standard: 49.99, engineer: 134.99 },
-  addons: { priorityMonthly: 6.99, staticIpMonthly: 5.00, digitalVoiceMonthly: 5.99, paperBillingMonthly: 2.50 },
+  addons: { priorityMonthly: 6.99, staticIpMonthly: 5.00, digitalVoiceMonthly: 4.95, paperBillingMonthly: 2.50 },
   buffers: { support: 1.00, paymentFailure: 0.50, lockRisk: 1.00, flexRisk: 2.00, rewards: 0.00 },
   floors:  { essentialLockByo: 1.50, essentialFlex: 3.50, superfast: 3.50, ultrafast: 4.50, gigabit: 4.50 },
   fallback: "auto_bump",

@@ -56,7 +56,9 @@ export const FAIR_PRICING_DEFAULTS = {
   addons: {
     priorityMonthly: 6.99,
     staticIpMonthly: 5.00,
-    digitalVoiceMonthly: 5.99,
+    // Must equal voiceProducts 'home-phone-payg' retailMonthly (catalogue.ts),
+    // the Digital Voice price shown on marketing pages.
+    digitalVoiceMonthly: 4.95,
     paperBillingMonthly: 2.50,
   },
 } as const;

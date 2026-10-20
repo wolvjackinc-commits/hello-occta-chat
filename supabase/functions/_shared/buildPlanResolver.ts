@@ -168,7 +168,7 @@ export function readFairPricing(fp: any) {
     },
     router: fp?.router ?? { standardOneOff: 94.99, standardMonthly: 4.99, premiumOneOff: 129.99, premiumMonthly: 7.99 },
     setup:  fp?.setup ?? { remote: 0, standard: 49.99, engineer: 134.99 },
-    addons: fp?.addons ?? { priorityMonthly: 6.99, staticIpMonthly: 5.00, digitalVoiceMonthly: 5.99, paperBillingMonthly: 2.50 },
+    addons: fp?.addons ?? { priorityMonthly: 6.99, staticIpMonthly: 5.00, digitalVoiceMonthly: 4.95, paperBillingMonthly: 2.50 },
     buffers: fp?.buffers ?? { support: 1.00, paymentFailure: 0.50, lockRisk: 1.00, flexRisk: 2.00, rewards: 0.00 },
     floors: fp?.floors ?? {},
     fallback: fp?.fallback ?? "auto_bump",

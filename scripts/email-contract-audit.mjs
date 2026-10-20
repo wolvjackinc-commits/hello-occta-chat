@@ -91,13 +91,24 @@ for (const file of files) {
   }
 }
 
+// submit-support-ticket delegates ticket creation and both emails to the shared
+// helper (also used by Ollie), so the contract is checked there.
+const supportTicketHelper = "supabase/functions/_shared/supportTickets.ts";
+function supportTicketHelperSendsBoth() {
+  if (!fs.existsSync(path.join(root, supportTicketHelper))) return false;
+  const s = read(supportTicketHelper);
+  return count(s, "sendTrackedCommunication(") >= 2
+    && s.includes('template_name: "support_ticket_customer_acknowledgement"')
+    && s.includes('template_name: "support_ticket_admin_notification"');
+}
+
 const critical = [
   ["supabase/functions/submit-quote-request/index.ts", (s) => count(s, "sendTrackedCommunication(") >= 2, "customer + admin quote emails"],
   ["supabase/functions/submit-build-plan/index.ts", (s) => count(s, "sendTrackedCommunication(") >= 2, "customer + admin build-plan emails"],
   ["supabase/functions/submit-business-quote/index.ts", (s) => count(s, 'functions.invoke("send-email"') >= 2 && s.includes("to: quote.email"), "customer + admin business quote emails"],
   ["supabase/functions/submit-business-lead/index.ts", (s) => count(s, 'functions.invoke("send-email"') >= 2 && s.includes("to: lead.email"), "customer + admin business lead emails"],
   ["supabase/functions/submit-marketing-lead/index.ts", (s) => count(s, 'functions.invoke("send-email"') >= 2 && s.includes("to: email"), "customer + admin marketing lead emails"],
-  ["supabase/functions/submit-support-ticket/index.ts", (s) => count(s, "sendTrackedCommunication(") >= 2, "customer + admin support-ticket emails"],
+  ["supabase/functions/submit-support-ticket/index.ts", (s) => s.includes('from "../_shared/supportTickets.ts"') && s.includes("createSupportTicket(") && supportTicketHelperSendsBoth(), "customer + admin support-ticket emails (via _shared/supportTickets.ts)"],
   ["supabase/functions/submit-vulnerable-support/index.ts", (s) => count(s, "sendTrackedCommunication(") >= 2 && !s.includes("emailBody: need"), "privacy-safe customer + admin vulnerable-support emails"],
   ["supabase/functions/submit-complaint/index.ts", (s) => s.includes("sendResendEmail(") && s.includes("sendTrackedCommunication("), "customer + admin complaint emails"],
   ["supabase/functions/journey-submit-order/index.ts", (s) => s.includes("sendResendEmail("), "order receipt/onboarding email"],

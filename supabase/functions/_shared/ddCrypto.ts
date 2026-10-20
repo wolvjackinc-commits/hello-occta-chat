@@ -36,7 +36,9 @@ async function keyBytes(): Promise<Uint8Array<ArrayBuffer>> {
       if (bytes.length === 32) return bytes;
     } catch { /* fall through */ }
   }
-  if (noWs.length === 32) return new TextEncoder().encode(noWs);
+  // Copy so the result is typed Uint8Array<ArrayBuffer> under every Deno/TS
+  // version (some type encode() as Uint8Array<ArrayBufferLike>). Same bytes.
+  if (noWs.length === 32) return new Uint8Array(new TextEncoder().encode(noWs));
   return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawKey)));
 }
 

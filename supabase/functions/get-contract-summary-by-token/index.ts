@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     .from("contract_summaries")
     .select(CS_PUBLIC_COLUMNS_FULL)
     .eq("public_token_hash", hash)
-    .maybeSingle();
+    .maybeSingle<Record<string, any>>();
 
   if (error || !cs) return jsonResponse({ error: "not_found" }, 404);
 

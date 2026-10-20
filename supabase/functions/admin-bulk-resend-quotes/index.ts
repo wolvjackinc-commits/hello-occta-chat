@@ -139,13 +139,14 @@ Deno.serve(async (req) => {
       push("failed", `${(res as any).status}: ${raw.slice(0, 200)}`);
     }
 
+    // Best-effort audit row: a log_event failure must not fail the resend.
     await supabase.rpc("log_event", {
       _actor_type: "admin", _event_type: "quote_bulk_resend",
       _title: `Bulk quote resend ${q.quote_number} → ${(res as any).ok ? "sent" : "failed"}`,
       _details: { quote_id: q.id, email, expired_extended: expired, margin_overridden: needsOverride },
       _quote_id: q.id, _source_module: "quote",
       _severity: (res as any).ok ? "info" : "warn",
-    }).catch?.(() => {});
+    }).then(() => {}, () => {});
   }
 
   console.log(`[bulk-resend] sent=${sent} failed=${failed} skipped=${skipped} overridden=${overridden}`);

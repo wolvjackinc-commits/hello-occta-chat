@@ -27,7 +27,7 @@ async function getUser(req: Request) {
   return data.user ?? null;
 }
 
-async function isAdmin(admin: ReturnType<typeof createClient>, uid: string) {
+async function isAdmin(admin: ReturnType<typeof createClient<any>>, uid: string) {
   const { data } = await admin.rpc("has_role", { _user_id: uid, _role: "admin" });
   return !!data;
 }
@@ -301,6 +301,6 @@ Deno.serve(async (req) => {
 
     return json({ error: "unknown_action" }, 400);
   } catch (e) {
-    return json({ error: "exception", detail: String(e?.message ?? e) }, 500);
+    return json({ error: "exception", detail: String((e as Error)?.message ?? e) }, 500);
   }
 });

@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       _details: { test_run_id: runId, failures },
       _source_module: "journey2",
       _severity: ok && failures.length === 0 ? "info" : "warning",
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
     return jsonResponse({ ok: ok && failures.length === 0, test_run_id: runId, failures, gates, ...extra });
   };
 

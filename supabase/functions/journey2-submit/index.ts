@@ -157,7 +157,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${svcKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
 
   await fire("journey2-provision-account", { order_id: result.order_id });
   if (packReady) await fire("journey2-welcome-send", { order_id: result.order_id });
@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
       snapshot_sha256: storedHash, documents: docCount ?? 0,
     },
     _source_module: "journey2",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return jsonResponse({
     ok: true,

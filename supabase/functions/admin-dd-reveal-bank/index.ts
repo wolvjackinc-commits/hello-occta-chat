@@ -9,7 +9,7 @@ const corsHeaders = {
 const j = (s: number, b: unknown) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-function hexToBytes(hex: string): Uint8Array {
+function hexToBytes(hex: string): Uint8Array<ArrayBuffer> {
   const clean = hex.replace(/^\\x/i, "").replace(/^0x/i, "").replace(/[^0-9a-f]/gi, "");
   const out = new Uint8Array(clean.length / 2);
   for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.substr(i * 2, 2), 16);
@@ -17,9 +17,9 @@ function hexToBytes(hex: string): Uint8Array {
 }
 
 /** Parse bytea coming back from PostgREST — normally "\\xDEADBEEF" hex. */
-function parseBytea(v: unknown): Uint8Array {
+function parseBytea(v: unknown): Uint8Array<ArrayBuffer> {
   if (v == null) return new Uint8Array();
-  if (v instanceof Uint8Array) return v;
+  if (v instanceof Uint8Array) return v as Uint8Array<ArrayBuffer>;
   const s = String(v);
   if (s.startsWith("\\x") || /^[0-9a-f]+$/i.test(s)) return hexToBytes(s);
   // fallback base64
@@ -40,7 +40,7 @@ async function loadKey(): Promise<CryptoKey> {
     rawKey = rawKey.slice(1, -1);
   }
   const noWs = rawKey.replace(/\s+/g, "");
-  let keyBytes: Uint8Array | null = null;
+  let keyBytes: Uint8Array<ArrayBuffer> | null = null;
 
   if (/^[0-9a-f]{64}$/i.test(noWs)) keyBytes = hexToBytes(noWs);
   if (!keyBytes) {

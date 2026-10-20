@@ -41,7 +41,14 @@ export async function sha256Hex(input: string): Promise<string> {
 }
 
 /** Verify caller has a valid JWT and (optionally) belongs to allowed roles. */
-export async function requireStaff(req: Request, allowed: string[] = ["admin", "super_admin", "sales_agent"]) {
+export type StaffAuth =
+  | { readonly userId: string }
+  | { readonly error: "missing_jwt" | "invalid_jwt" | "forbidden"; readonly status: 401 | 403 };
+
+export async function requireStaff(
+  req: Request,
+  allowed: string[] = ["admin", "super_admin", "sales_agent"],
+): Promise<StaffAuth> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return { error: "missing_jwt", status: 401 } as const;
   const supabase = getServiceClient();

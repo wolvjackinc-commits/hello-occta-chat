@@ -63,7 +63,7 @@ Deno.serve(perfServe("journey-cs-detail", async (req) => {
     await supabase.from("quote_events").insert({
       quote_id: cs.quote_id, quote_request_id: cs.quote_request_id, contract_summary_id: cs.id,
       event_type: "contract_summary_viewed", title: "Contract Summary viewed (journey)", actor_type: "public",
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
   }
 
   let signed_pdf_url: string | null = null;

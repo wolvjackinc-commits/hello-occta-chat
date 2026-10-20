@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
         table_name: "journey2_email_outbox",
         record_id: row.id,
         new_values: { order_id: row.order_id, ok, resend: !!body.resend },
-      }).then(() => {}).catch(() => {});
+      }).then(() => {}, () => {});
     }
 
     results.push({ order_id: row.order_id, ok, detail: ok ? undefined : "send_failed" });

@@ -33,6 +33,7 @@ Deno.test("verified generic evidence produces min/normal/max/advertised matrix c
   const r = buildContractSpeedMatrix(evidence, "superfast", now);
   assert(r.ok);
   if (r.ok) {
+    assert(r.matrix.basis === "verified_address_network");
     assertEquals(r.matrix.technology, "FTTP");
     assertEquals(r.matrix.minimum_download_mbps, 200);
     assertEquals(r.matrix.normally_available_download_mbps, 330);

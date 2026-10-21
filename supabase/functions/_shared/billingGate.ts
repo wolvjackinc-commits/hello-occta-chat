@@ -7,7 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 export interface BillingGateInput {
-  orderId: string;
+  orderId: string | null;
   // Optional service id. When provided the gate also checks the service-level
   // activation_blocked_pending_review flag and (when the two-doc flow is on)
   // delegates to the DB assert_service_live() function.
@@ -42,6 +42,26 @@ export async function assertServiceLive(
   if (!flagOn) {
     // Legacy flow — this helper is not authoritative, defer to caller.
     return { allowed: true, reason: "legacy-flow-flag-off" };
+  }
+
+  // Customers who pre-date the order flow have a service but no order or
+  // Contract Summary. They are billed only when an admin has explicitly
+  // approved that service for legacy billing (services.legacy_billing_approved_at).
+  if (!input.orderId && input.serviceId) {
+    const { data: legacy } = await supabase
+      .from("services")
+      .select("status, billing_enabled, activation_blocked_pending_review, legacy_billing_approved_at")
+      .eq("id", input.serviceId)
+      .maybeSingle();
+    if (
+      legacy?.legacy_billing_approved_at &&
+      legacy.status === "active" &&
+      legacy.billing_enabled === true &&
+      legacy.activation_blocked_pending_review !== true
+    ) {
+      return { allowed: true, reason: "legacy-billing-approved" };
+    }
+    return { allowed: false, reason: "order-not-found" };
   }
 
   const { data: order, error } = await supabase

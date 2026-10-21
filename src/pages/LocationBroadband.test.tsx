@@ -27,9 +27,9 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-vi.mock("framer-motion", () => ({
-  motion: {
-    div: ({
+vi.mock("framer-motion", () => {
+  const strip = (tag: string) =>
+    ({
       children,
       initial: _initial,
       animate: _animate,
@@ -39,11 +39,15 @@ vi.mock("framer-motion", () => ({
       viewport: _viewport,
       whileHover: _whileHover,
       ...props
-    }: React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>) => (
-      <div {...props}>{children}</div>
-    ),
-  },
-}));
+    }: React.HTMLAttributes<HTMLElement> & Record<string, unknown>) => {
+      const Tag = tag as "div";
+      return <Tag {...props}>{children}</Tag>;
+    };
+  return {
+    MotionConfig: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    motion: new Proxy({}, { get: (_t, tag: string) => strip(tag) }),
+  };
+});
 
 vi.mock("@/lib/plans", () => ({
   broadbandPlans: [
@@ -78,17 +82,15 @@ describe("LocationBroadband", () => {
   it("renders the London page with the availability checker", () => {
     expect(() => renderCity("/broadband-london")).not.toThrow();
 
-    expect(screen.getByText("BROADBAND IN")).toBeInTheDocument();
-    expect(screen.getByText("LONDON")).toBeInTheDocument();
-    expect(screen.getByText("Check Availability")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /Broadband in London/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Check availability/i })).toBeInTheDocument();
   });
 
   it("renders the Manchester page with the availability checker", () => {
     expect(() => renderCity("/broadband-manchester")).not.toThrow();
 
-    expect(screen.getByText("BROADBAND IN")).toBeInTheDocument();
-    expect(screen.getByText("MANCHESTER")).toBeInTheDocument();
-    expect(screen.getByText("Check Availability")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: /Broadband in Manchester/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Check availability/i })).toBeInTheDocument();
   });
 
   it("renders the not-found state for an unknown city", () => {

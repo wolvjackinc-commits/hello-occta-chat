@@ -10,6 +10,7 @@
 
 import { jsPDF } from "https://esm.sh/jspdf@2.5.1";
 import { drawInvoice, type BillLine, type PdfDoc } from "./billingDocument.ts";
+import { getCronSecret } from "./cronSecret.ts";
 
 export type VatMode = "inclusive" | "exclusive";
 
@@ -337,4 +338,32 @@ export function poundsToMinor(x: number | string | null | undefined): number {
   const n = typeof x === "string" ? Number(x) : x;
   if (!Number.isFinite(n)) return 0;
   return Math.round(n * 100);
+}
+
+/**
+ * Headers for a billing run's internal send-email call: the idempotency key
+ * plus the shared internal secret. send-email accepts the secret whatever the
+ * gateway has done to the service-role Authorization header.
+ */
+export async function internalEmailHeaders(idempotencyKey: string): Promise<Record<string, string>> {
+  const secret = await getCronSecret();
+  return { "idempotency-key": idempotencyKey, ...(secret ? { "x-internal-secret": secret } : {}) };
+}
+
+/**
+ * Describe a failed functions.invoke() call. Its error message is only
+ * "Edge Function returned a non-2xx status code"; the real HTTP status and
+ * response body (e.g. send-email's {"error": ...}) are on error.context.
+ */
+export async function invokeErrorDetail(err: unknown): Promise<string> {
+  const base = String((err as { message?: string } | null)?.message || "send_failed");
+  const ctx = (err as { context?: unknown } | null)?.context;
+  if (ctx instanceof Response) {
+    let body = "";
+    try {
+      body = (await ctx.text()).trim().slice(0, 600);
+    } catch { /* body already consumed */ }
+    return `${base} (HTTP ${ctx.status})${body ? `: ${body}` : ""}`.slice(0, 1000);
+  }
+  return base.slice(0, 1000);
 }

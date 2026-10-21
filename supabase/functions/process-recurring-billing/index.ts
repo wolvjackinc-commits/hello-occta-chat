@@ -6,6 +6,8 @@ import {
   buildInvoicePdfBytes,
   customerPdfExtras,
   DD_MANDATE_PDF_COLUMNS,
+  internalEmailHeaders,
+  invokeErrorDetail,
   mandatePdfExtras,
   PROFILE_PDF_COLUMNS,
   sha256Hex,
@@ -139,6 +141,15 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
         .eq("invoice_type", invoiceType)
         .neq("status", "cancelled")
         .maybeSingle();
+
+      // Already settled outside this run (e.g. a Direct Debit collection
+      // reconciled by an admin before a retry): never re-email it or move its
+      // status back to sent/awaiting collection — just move the cursor on.
+      if (existingInv && (existingInv.status === "paid" || existingInv.status === "void")) {
+        await supabase.from("services").update({ next_billing_date: periodEnd }).eq("id", svc.id);
+        results.push({ service_id: svc.id, invoice_id: existingInv.id, skipped: `invoice_${existingInv.status}` });
+        continue;
+      }
 
       // Load customer + payment method context.
       const { data: profile } = await supabase
@@ -364,11 +375,11 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
               plan_name: svc.plan_name ?? null,
             },
           },
-          headers: { "idempotency-key": `invoice-monthly:${invoiceId}` } as any,
+          headers: await internalEmailHeaders(`invoice-monthly:${invoiceId}`),
         });
         if (sendResp.error) {
           await supabase.from("invoices").update({
-            email_error: String(sendResp.error.message || "send_failed").slice(0, 1000),
+            email_error: await invokeErrorDetail(sendResp.error),
           }).eq("id", invoiceId);
           throw new Error("invoice_email_failed");
         }

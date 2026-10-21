@@ -7,6 +7,8 @@ import {
   computeProRataMinor,
   customerPdfExtras,
   DD_MANDATE_PDF_COLUMNS,
+  internalEmailHeaders,
+  invokeErrorDetail,
   mandatePdfExtras,
   PROFILE_PDF_COLUMNS,
   sha256Hex,
@@ -235,6 +237,19 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           .from("invoices").select(existingCols).eq("id", job.invoice_id).maybeSingle());
       }
 
+      // Already settled outside this job (e.g. paid by phone before a retry):
+      // never re-email it or move its status back — close the job.
+      if (existingInv && (existingInv.status === "paid" || existingInv.status === "void")) {
+        await supabase.from("first_billing_jobs").update({
+          status: "done",
+          invoice_id: existingInv.id,
+          processed_at: new Date().toISOString(),
+          last_error: null,
+        }).eq("id", job.id);
+        results.push({ id: job.id, invoice_id: existingInv.id, skipped: `invoice_${existingInv.status}` });
+        continue;
+      }
+
       // An invoice already issued for this period keeps its own amounts; never
       // email totals that differ from what was stored on it.
       if (existingInv && !existingInv.email_sent_at &&
@@ -454,11 +469,11 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
               plan_name: svc.plan_name ?? null,
             },
           },
-          headers: { "idempotency-key": `invoice-first:${invoiceId}` } as any,
+          headers: await internalEmailHeaders(`invoice-first:${invoiceId}`),
         });
         if (sendResp.error) {
           await supabase.from("invoices").update({
-            email_error: String(sendResp.error.message || "send_failed").slice(0, 1000),
+            email_error: await invokeErrorDetail(sendResp.error),
             email_attempts: (existingInv as any)?.email_attempts != null
               ? (existingInv as any).email_attempts + 1 : 1,
           }).eq("id", invoiceId);

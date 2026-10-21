@@ -1,1 +1,2 @@
 - Broadband availability is supplier-neutral: `_shared/networkEvidence.ts` is the only gate for binding contract speeds — why: no live supplier feed, so documents must never be issued from guessed speeds.
+- Never mark an invoice, DD collection or retry as paid unless the money is fully confirmed received (verified webhook, bank-received date, or an admin confirming it) — why: "Unpaid"/returned/re-presented DDs were read as paid (INV-2610-0005, Oct 2026), hiding real arrears; when unsure, leave it unpaid.

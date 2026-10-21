@@ -10,6 +10,7 @@ import {
   emptyState,
   itemsInCategory,
   linkSubject,
+  mapStatus,
   markDraftDue,
   matchAccountToProfile,
   summarise,
@@ -317,5 +318,19 @@ describe("payment reconciliation imports", () => {
     const reeseSlice = customerReconSlice(state, { accountNumber: "OCC10000032", fullName: "Reese Example" }, []);
     expect(quinnSlice.bankLines.map((item) => item.lineKey)).toContain(line.lineKey);
     expect(reeseSlice.bankLines.map((item) => item.lineKey)).toContain(line.lineKey);
+  });
+});
+
+describe("payment status mapping", () => {
+  it("never reads an unpaid, returned or re-presented collection as paid", () => {
+    for (const raw of ["Unpaid", "UNPAID", "Not paid", "Returned", "Represented", "Re-presented", "Unsuccessful", "Rejected", "Bounced", "Unpaid - ARUDD 0 (Refer to Payer)"]) {
+      expect(mapStatus(raw)).toBe("failed");
+    }
+  });
+
+  it("keeps clear success wording as paid", () => {
+    for (const raw of ["Paid", "paid", "Paid in full", "Collected"]) {
+      expect(mapStatus(raw)).toBe("paid");
+    }
   });
 });

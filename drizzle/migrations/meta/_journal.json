@@ -64,6 +64,13 @@
       "when": 1792616648133,
       "tag": "0008_legacy_dd_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792618306806,
+      "tag": "0009_cron_one_time_tokens",
+      "breakpoints": true
     }
   ]
 }

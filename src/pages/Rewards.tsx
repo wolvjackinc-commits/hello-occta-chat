@@ -3,16 +3,26 @@ import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Gift, Lock } from "lucide-react";
+import { MotionConfig, motion } from "framer-motion";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { logClientEvent } from "@/lib/activityLog";
 import { supabase } from "@/integrations/supabase/client";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, TicketSlab } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { GiftLockArt } from "@/components/brand/illustrations";
 
 type PublicBenefit = {
   id: string; benefit_name: string; description: string | null; value_label: string | null;
   terms_text: string | null; plan_type: string; customer_type: string;
   starts_at: string | null; ends_at: string | null;
 };
+
+const facts = [
+  "Rewards will be tied to cleared payments, not sign-ups.",
+  "Eligibility rules and fraud checks will be transparent and published.",
+  "Contract Saver customers will have stronger rewards eligibility than Flex customers.",
+  "You'll see your reward status inside your customer dashboard once the programme is live.",
+];
 
 export default function RewardsPage() {
   const { rewardsEnabled } = usePlatformSettings();
@@ -21,6 +31,7 @@ export default function RewardsPage() {
   useEffect(() => {
     logClientEvent({ event_type: "page_view", title: "Rewards teaser", source_module: "marketing" });
     (async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not yet in generated types
       const { data } = await (supabase as any).rpc("get_public_contract_benefits");
       setBenefits((data ?? []) as PublicBenefit[]);
     })();
@@ -33,63 +44,82 @@ export default function RewardsPage() {
         description="The OCCTA Rewards programme is launching soon. Final reward values, eligibility and unlock rules will be published before activation."
         canonical="/rewards"
       />
-      <section className="container mx-auto px-4 py-16 max-w-3xl text-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 border-2 border-foreground mb-6 text-xs font-display uppercase tracking-wider">
-          <Lock className="w-3 h-3" /> Launching soon
-        </div>
-        <h1 className="font-display uppercase text-4xl md:text-6xl leading-[0.95] tracking-tight mb-6">
-          OCCTA <span className="text-primary">Rewards</span>
-        </h1>
-        <p className="text-lg text-muted-foreground mb-8">
-          Our rewards programme is launching soon. Final reward values, eligibility, fraud rules and the unlock
-          trigger will be published before activation — nothing here is guaranteed yet, and no live reward
-          values are shown until we've confirmed them.
-        </p>
+      <MotionConfig reducedMotion="user">
+        <PosterStage>
+          <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Rewards" }]} />
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_360px] xl:gap-20">
+            <div>
+              <HeroKicker>Launching soon</HeroKicker>
+              <HeroTitle>
+                OCCTA <span className="text-primary">Rewards</span>
+              </HeroTitle>
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">
+                Our rewards programme is launching soon. Final reward values, eligibility, fraud rules and the unlock
+                trigger will be published before activation — nothing here is guaranteed yet, and no live reward
+                values are shown until we've confirmed them.
+              </p>
+              <div className="mt-8">
+                {rewardsEnabled ? (
+                  <p className="text-sm text-white/70">
+                    Rewards are now enabled — see your dashboard for live reward status.
+                  </p>
+                ) : (
+                  <Link to="/broadband">
+                    <Button variant="hero" size="lg" className="font-display uppercase">Check Availability</Button>
+                  </Link>
+                )}
+              </div>
+            </div>
+            <TicketSlab className="mr-3 mb-3">
+              <div className="border-[3px] border-white bg-white p-8">
+                <GiftLockArt className="mx-auto h-auto w-full max-w-[240px]" />
+              </div>
+            </TicketSlab>
+          </div>
+        </PosterStage>
 
-        <div className="border-4 border-foreground p-6 text-left mb-6">
-          <h2 className="font-display uppercase text-xl mb-3 flex items-center gap-2">
-            <Gift className="w-5 h-5 text-primary" /> What we can tell you today
-          </h2>
-          <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
-            <li>Rewards will be tied to cleared payments, not sign-ups.</li>
-            <li>Eligibility rules and fraud checks will be transparent and published.</li>
-            <li>Contract Saver customers will have stronger rewards eligibility than Flex customers.</li>
-            <li>You'll see your reward status inside your customer dashboard once the programme is live.</li>
-          </ul>
-        </div>
+        <BrandSection tone="paper">
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+            <Reveal className="lg:sticky lg:top-28 lg:self-start">
+              <SectionEyebrow index="01" label="So far" />
+              <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">What we can tell you today</h2>
+            </Reveal>
+            <Reveal as="ol" stagger className="border-t-[3px] border-foreground">
+              {facts.map((f, i) => (
+                <motion.li key={f} variants={revealItem} className="grid grid-cols-[3.5rem_1fr] items-center gap-4 border-b-[3px] border-foreground py-6 sm:grid-cols-[5rem_1fr]">
+                  <span aria-hidden className="font-display text-5xl leading-none text-foreground/25">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="text-lg">{f}</span>
+                </motion.li>
+              ))}
+            </Reveal>
+          </div>
+        </BrandSection>
 
         {benefits.length > 0 && (
-          <div className="border-4 border-foreground p-6 text-left mb-6">
-            <h2 className="font-display uppercase text-xl mb-3">Active benefits</h2>
-            <ul className="space-y-4">
+          <BrandSection tone="dark">
+            <Reveal>
+              <SectionEyebrow index="02" label="Live now" tone="dark" />
+              <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Active benefits</h2>
+            </Reveal>
+            <Reveal stagger as="ul" className="mt-10 grid gap-5 md:grid-cols-2">
               {benefits.map((b) => (
-                <li key={b.id} className="border-l-4 border-primary pl-3">
-                  <p className="font-display uppercase text-sm">
+                <motion.li key={b.id} variants={revealItem} className="border-[3px] border-white/25 p-6">
+                  <p className="font-display text-2xl uppercase leading-none text-white">
                     {b.benefit_name}
                     {b.value_label && <span className="text-primary"> — {b.value_label}</span>}
                   </p>
-                  {b.description && <p className="text-xs text-muted-foreground mt-1">{b.description}</p>}
-                  {b.terms_text && <p className="text-[11px] text-muted-foreground mt-1">Terms: {b.terms_text}</p>}
-                  <p className="text-[11px] text-muted-foreground mt-1">
+                  {b.description && <p className="mt-3 text-sm text-white/70">{b.description}</p>}
+                  {b.terms_text && <p className="mt-2 text-xs text-white/55">Terms: {b.terms_text}</p>}
+                  <p className="mt-3 border-t border-white/15 pt-3 text-xs text-white/55">
                     Plan: {b.plan_type} · Customer: {b.customer_type}
                     {b.ends_at && ` · Until ${new Date(b.ends_at).toLocaleDateString()}`}
                   </p>
-                </li>
+                </motion.li>
               ))}
-            </ul>
-          </div>
+            </Reveal>
+          </BrandSection>
         )}
-
-        {rewardsEnabled ? (
-          <p className="text-sm text-muted-foreground">
-            Rewards are now enabled — see your dashboard for live reward status.
-          </p>
-        ) : (
-          <Link to="/broadband">
-            <Button variant="outline" className="font-display uppercase">Check Availability</Button>
-          </Link>
-        )}
-      </section>
+      </MotionConfig>
     </Layout>
   );
 }

@@ -253,3 +253,21 @@ export const LockStripArt = ({ className = "" }: { className?: string }) => (
     ))}
   </svg>
 );
+
+/** A gift box held shut by a padlock — rewards that are coming but not live yet. */
+export const GiftLockArt = ({ className = "" }: { className?: string }) => (
+  <svg viewBox="0 0 220 180" className={className} role="img" aria-label="Illustration of a locked gift box">
+    <g className="occ-float">
+      <rect x="40" y="70" width="140" height="94" fill={YELLOW} stroke={INK} strokeWidth={5} />
+      <rect x="32" y="52" width="156" height="26" fill={PAPER} stroke={INK} strokeWidth={5} />
+      <rect x="100" y="52" width="20" height="112" fill={INK} />
+      <path d="M110 52 C 90 20, 60 30, 74 52 Z" fill={PAPER} stroke={INK} strokeWidth={5} strokeLinejoin="round" />
+      <path d="M110 52 C 130 20, 160 30, 146 52 Z" fill={PAPER} stroke={INK} strokeWidth={5} strokeLinejoin="round" />
+    </g>
+    <g className="occ-ring" style={{ transformOrigin: "110px 104px" }}>
+      <path d="M 96 104 V 92 A 14 14 0 0 1 124 92 V 104" fill="none" stroke={INK} strokeWidth={5} />
+      <rect x="88" y="102" width="44" height="34" fill={PAPER} stroke={INK} strokeWidth={5} />
+      <rect x="107" y="112" width="6" height="12" fill={INK} />
+    </g>
+  </svg>
+);

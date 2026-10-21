@@ -1,56 +1,55 @@
-// The shared secret that scheduled jobs (pg_cron) and internal
-// function-to-function calls present in `x-cron-secret` / `x-internal-secret`.
+// Authentication for scheduled jobs (pg_cron) and internal
+// function-to-function calls, presented in `x-cron-secret` /
+// `x-internal-secret` / `x-internal-kickoff`.
 //
-// Source of truth is Supabase Vault (secret name `cron_job_secret`), read via
-// the service-role-only RPC public.get_cron_job_secret(). The database
-// generates and rotates it (public.rotate_cron_job_secret()), and the cron
-// jobs read it from Vault at run time, so no person or file ever holds it.
-//
-// The CRON_JOB_SECRET env var is only a fallback for the window before the
-// Vault secret exists (RPC missing or returning null). Once it exists the env
-// value is never accepted, so the old secret stops working.
+// There is no shared secret any more. Every call carries a single-use code
+// minted by the database (public.mint_cron_token(): 256 random bits, only the
+// hash stored, valid 10 minutes) and accepted at most once
+// (public.consume_cron_token()). Cron jobs mint theirs through
+// public.invoke_edge_function_from_cron(); functions calling other functions
+// mint one per call with getCronSecret(). The old CRON_JOB_SECRET value is
+// never accepted, so the copy that leaked into git history is worthless.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const TTL_MS = 60_000;
-let cached: { value: string | null; at: number } | null = null;
+const TOKEN_RE = /^[0-9a-f]{64}$/;
 
+function serviceClient() {
+  return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+/**
+ * A fresh single-use code for one outgoing internal call. Call it once per
+ * request you send; a code is spent by the first function that checks it.
+ */
 export async function getCronSecret(): Promise<string | null> {
-  if (cached && Date.now() - cached.at < TTL_MS) return cached.value;
-
-  let value: string | null = null;
   try {
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data, error } = await sb.rpc("get_cron_job_secret");
+    const { data, error } = await serviceClient().rpc("mint_cron_token");
     if (error) {
-      // Before the migration is applied the RPC doesn't exist yet.
-      if (!/could not find the function|does not exist|PGRST202/i.test(`${error.code ?? ""} ${error.message}`)) {
-        console.error("cron_secret_lookup_failed", error.message);
-        return null; // fail closed on any other error; don't cache
-      }
-    } else if (typeof data === "string" && data.length >= 32) {
-      value = data;
+      console.error("cron_token_mint_failed", error.message);
+      return null;
     }
+    return typeof data === "string" && TOKEN_RE.test(data) ? data : null;
   } catch (e) {
-    console.error("cron_secret_lookup_threw", e instanceof Error ? e.message : e);
+    console.error("cron_token_mint_threw", e instanceof Error ? e.message : e);
     return null;
   }
-
-  if (!value) value = Deno.env.get("CRON_JOB_SECRET") || null;
-  cached = { value, at: Date.now() };
-  return value;
 }
 
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
-/** True only for a non-empty candidate that matches the current secret. */
+/** True only for an unexpired, unused code; using it spends it. */
 export async function isCronSecret(candidate: string | null | undefined): Promise<boolean> {
-  if (!candidate) return false;
-  const expected = await getCronSecret();
-  return !!expected && safeEqual(candidate, expected);
+  if (!candidate || !TOKEN_RE.test(candidate)) return false;
+  try {
+    const { data, error } = await serviceClient().rpc("consume_cron_token", { _token: candidate });
+    if (error) {
+      console.error("cron_token_check_failed", error.message);
+      return false;
+    }
+    return data === true;
+  } catch (e) {
+    console.error("cron_token_check_threw", e instanceof Error ? e.message : e);
+    return false;
+  }
 }

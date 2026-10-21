@@ -173,6 +173,15 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           pmMethod = pm?.method ?? null;
           ddStatus = pm?.dd_setup_status ?? null;
         }
+      } else {
+        // Legacy-approved services have no order, so no payment_methods row:
+        // they pay by the customer's active Direct Debit mandate, if any.
+        const { data: legacyMandate } = await supabase.from("dd_mandates")
+          .select("id").eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle();
+        if (legacyMandate) {
+          pmMethod = "direct_debit";
+          ddStatus = "active";
+        }
       }
       const { data: activeMandate } = pmMethod === "direct_debit"
         ? await supabase.from("dd_mandates").select(DD_MANDATE_PDF_COLUMNS)

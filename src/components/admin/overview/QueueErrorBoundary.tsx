@@ -2,7 +2,7 @@ import { Component, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/audit";
 
 interface Props {
   children: ReactNode;
@@ -26,20 +26,15 @@ export class QueueErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error) {
     // Log error to audit_logs (fire and forget)
-    supabase
-      .from("audit_logs")
-      .insert({
-        action: "error",
-        entity: "admin_overview",
-        metadata: {
-          queue: this.props.queueName,
-          error: error.message,
-          stack: error.stack?.slice(0, 500),
-        },
-      })
-      .then(() => {
-        // Logged successfully
-      });
+    void logAudit({
+      action: "error",
+      entity: "admin_overview",
+      metadata: {
+        queue: this.props.queueName,
+        error: error.message,
+        stack: error.stack?.slice(0, 500),
+      },
+    });
   }
 
   handleRetry = () => {

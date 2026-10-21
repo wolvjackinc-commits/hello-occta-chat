@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -320,11 +321,11 @@ export default function AdminLiveChat() {
       URL.revokeObjectURL(url);
 
       // Log for audit trail (best-effort).
-      const { data: userRes } = await supabase.auth.getUser();
-      await supabase.from("audit_logs").insert({
+      // The actor is recorded from the session by log_audit_action().
+      await logAudit({
         action: "chat_transcript_export",
         entity: "chat_conversation",
-        metadata: { conversation_id: active.id, message_count: msgs?.length ?? 0, by: userRes.user?.id },
+        metadata: { conversation_id: active.id, message_count: msgs?.length ?? 0 },
       });
 
       toast({ title: "Transcript exported", description: `${msgs?.length ?? 0} messages · ${attachmentsMeta.length} attachments` });

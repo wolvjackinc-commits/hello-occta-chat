@@ -201,3 +201,55 @@ export const BuildingArt = ({ className = "" }: { className?: string }) => (
     <line x1="10" y1="160" x2="230" y2="160" stroke={INK} strokeWidth={5} strokeLinecap="square" />
   </svg>
 );
+
+/** A 30-day dial with a rolling arrow — used for Flex 30 / rolling terms. */
+export const RollingDialArt = ({ className = "" }: { className?: string }) => (
+  <svg viewBox="0 0 200 200" className={className} role="img" aria-label="Illustration of a rolling 30-day term">
+    <circle cx="100" cy="100" r="78" fill={PAPER} stroke={INK} strokeWidth={6} />
+    {Array.from({ length: 30 }, (_, i) => {
+      const a = (i / 30) * Math.PI * 2 - Math.PI / 2;
+      const r1 = i % 5 === 0 ? 58 : 64;
+      return (
+        <line
+          key={i}
+          x1={100 + Math.cos(a) * r1}
+          y1={100 + Math.sin(a) * r1}
+          x2={100 + Math.cos(a) * 70}
+          y2={100 + Math.sin(a) * 70}
+          stroke={INK}
+          strokeWidth={i % 5 === 0 ? 4 : 2}
+        />
+      );
+    })}
+    <g className="occ-spin" style={{ transformOrigin: "100px 100px" }}>
+      <path d="M 100 14 A 86 86 0 0 1 186 100" fill="none" stroke={YELLOW} strokeWidth={12} strokeLinecap="square" />
+      <path d="M 176 92 L 186 108 L 196 92 Z" fill={INK} />
+    </g>
+    <text x="100" y="114" textAnchor="middle" fontFamily="'Bebas Neue', sans-serif" fontSize="52" fill={INK}>30</text>
+    <text x="100" y="134" textAnchor="middle" fontFamily="sans-serif" fontWeight="700" fontSize="11" letterSpacing="2" fill={INK}>DAYS</text>
+  </svg>
+);
+
+/** A 24-month strip of equal bars under a padlock — a fixed price for the term. */
+export const LockStripArt = ({ className = "" }: { className?: string }) => (
+  <svg viewBox="0 0 240 150" className={className} role="img" aria-label="Illustration of a monthly price fixed for 24 months">
+    <g className="occ-float">
+      <rect x="98" y="30" width="44" height="34" fill={YELLOW} stroke={INK} strokeWidth={5} />
+      <path d="M 106 30 V 18 A 14 14 0 0 1 134 18 V 30" fill="none" stroke={INK} strokeWidth={5} />
+      <rect x="117" y="40" width="6" height="12" fill={INK} />
+    </g>
+    <line x1="10" y1="84" x2="230" y2="84" stroke={INK} strokeWidth={2} strokeDasharray="6 5" />
+    {Array.from({ length: 24 }, (_, i) => (
+      <rect
+        key={i}
+        x={12 + i * 9.1}
+        y={92}
+        width={6.5}
+        height={44}
+        fill={INK}
+        className="occ-signal"
+        style={{ animationDelay: `${i * 60}ms` }}
+      />
+    ))}
+  </svg>
+);

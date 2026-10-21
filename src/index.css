@@ -481,6 +481,9 @@
 .occ-tick { animation: occ-tick 6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite both; }
 @keyframes occ-tick { 0% { transform: scale(0); } 8%, 88% { transform: scale(1); } 100% { transform: scale(0); } }
 
+.occ-spin { animation: occ-spin 9s linear infinite; }
+@keyframes occ-spin { to { transform: rotate(360deg); } }
+
 .occ-marquee { animation: occ-marquee var(--occ-marquee-duration, 40s) linear infinite; }
 .occ-marquee-reverse { animation-direction: reverse; }
 .occ-marquee-host:hover .occ-marquee { animation-play-state: paused; }
@@ -492,7 +495,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .occ-wave, .occ-blink, .occ-float, .occ-signal, .occ-ring, .occ-pop, .occ-typing,
-  .occ-switch, .occ-drop, .occ-shadow, .occ-tick, .occ-marquee { animation: none !important; }
+  .occ-switch, .occ-drop, .occ-shadow, .occ-tick, .occ-marquee, .occ-spin { animation: none !important; }
   .occ-switch { transform: translateX(var(--occ-switch-x, 36px)); background: hsl(var(--primary)); }
   .occ-draw { transition: none; transform: scaleX(1); }
 }

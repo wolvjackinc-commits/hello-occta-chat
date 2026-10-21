@@ -1,42 +1,23 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Check, X, Shield, Zap, Phone, MapPin, ArrowRight, MessageCircle } from "lucide-react";
+import { MotionConfig, motion } from "framer-motion";
+import { Check, Minus, Shield, Zap, Phone, MapPin, ArrowRight } from "lucide-react";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, TicketSlab } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { RollingDialArt, RouterArt, SimArt, VoiceArt } from "@/components/brand/illustrations";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useAppMode } from "@/hooks/useAppMode";
-import { SEO, StructuredData, JsonLd, createFAQSchema, createOfferSchema } from "@/components/seo";
+import { SEO, JsonLd, createFAQSchema, createOfferSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 import { getFromPrices } from "@/lib/pricing/engine";
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
 
 const trustBadges = [
   { icon: Shield, text: "Flex 30 · No Fixed Minimum Term" },
@@ -116,335 +97,203 @@ const NoContractBroadband = () => {
         <JsonLd data={offerSchema} />
         <JsonLd data={faqSchema} />
 
+      <MotionConfig reducedMotion="user">
       {/* Hero Section */}
-      <section className="relative bg-background py-16 md:py-24 overflow-hidden">
-        <div className="absolute inset-0 grid-pattern opacity-30" />
-        <motion.div
-          className="container mx-auto px-4 relative z-10"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <div className="max-w-4xl mx-auto text-center">
-            <motion.h1
-              variants={itemVariants}
-              className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight mb-6"
-            >
+      <PosterStage ghost="30">
+        <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Broadband", to: "/broadband" }, { label: "No-contract broadband" }]} />
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-20">
+          <div>
+            <HeroKicker>Flex 30 · Rolling monthly</HeroKicker>
+            <HeroTitle size="md">
               No-Contract Broadband UK.{" "}
-              <span className="text-accent">Flex 30. Rolling Monthly.</span>
-            </motion.h1>
-
-            <motion.p
-              variants={itemVariants}
-              className="text-xl md:text-2xl font-bold text-muted-foreground mb-4"
-            >
+              <span className="block text-primary">Flex 30. Rolling Monthly.</span>
+            </HeroTitle>
+            <p className="mt-6 max-w-2xl text-xl font-semibold text-white/80">
               Broadband from{" "}
-              <span className="text-foreground">£{prices.broadband}/month</span>, with
+              <span className="text-primary">£{prices.broadband}/month</span>, with
               clear term, notice and charge information before acceptance.
-            </motion.p>
-
-            <motion.p
-              variants={itemVariants}
-              className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto"
-            >
+            </p>
+            <p className="mt-3 max-w-2xl text-lg leading-relaxed text-white/65">
               Flex 30 is a 30-day rolling broadband option with no fixed minimum term
               where eligible. Normal notice is 30 days. Availability, speed information,
               setup, price and any applicable charges are confirmed before acceptance.
-            </motion.p>
-
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
-            >
-              <PostcodeChecker />
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-wrap justify-center gap-4"
-            >
-              <Link to="/order">
-                <Button variant="outline" size="lg" className="font-bold">
-                  Compare Plans
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </motion.div>
-
-            {/* Trust Badges */}
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-wrap justify-center gap-4 md:gap-8 mt-12"
-            >
-              {trustBadges.map((badge, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2 text-sm font-bold"
-                >
-                  <badge.icon className="h-5 w-5 text-accent" />
-                  <span>{badge.text}</span>
-                </div>
-              ))}
-            </motion.div>
+            </p>
+            <div className="mt-8">
+              <PostcodeChecker variant="hero" />
+            </div>
+            <Link to="/order" className="group mt-5 inline-flex items-center gap-2 text-sm font-semibold text-white transition-colors hover:text-primary">
+              <span className="underline decoration-white/30 underline-offset-4 group-hover:decoration-primary">Compare Plans</span>
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
           </div>
-        </motion.div>
-      </section>
+          <TicketSlab className="mr-3 mb-3 hidden lg:block">
+            <div className="border-[3px] border-white bg-white p-8">
+              <RollingDialArt className="mx-auto h-auto w-full max-w-[240px]" />
+            </div>
+          </TicketSlab>
+        </div>
+
+        {/* Trust Badges */}
+        <ul className="mt-14 grid grid-cols-2 border-t border-white/15 lg:grid-cols-4">
+          {trustBadges.map((badge, index) => (
+            <li
+              key={index}
+              className={`flex items-center gap-3 py-5 pr-4 text-sm font-semibold text-white/85 ${index % 2 === 1 ? "border-l border-white/15 pl-4" : ""} ${index >= 2 ? "border-t border-white/15 lg:border-t-0" : ""} ${index === 2 ? "lg:border-l lg:pl-4" : ""}`}
+            >
+              <span className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center bg-primary text-black">
+                <badge.icon className="h-4 w-4" />
+              </span>
+              <span>{badge.text}</span>
+            </li>
+          ))}
+        </ul>
+      </PosterStage>
 
       {/* Why Switch Section */}
-      <section className="py-16 md:py-20 bg-muted/30">
-        <motion.div
-          className="container mx-auto px-4"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <motion.h2
-            variants={itemVariants}
-            className="text-3xl md:text-4xl font-black uppercase text-center mb-12"
-          >
-            Why people are switching to{" "}
-            <span className="text-accent">OCCTA</span>
-          </motion.h2>
-
-          <div className="max-w-3xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-4">
-              {whySwitchReasons.map((reason, index) => (
-                <motion.div
-                  key={index}
-                  variants={itemVariants}
-                  className="flex items-center gap-3 p-4 bg-background border-2 border-border rounded-lg"
-                >
-                  <div className="flex-shrink-0 w-8 h-8 bg-accent/20 rounded-full flex items-center justify-center">
-                    <Check className="h-5 w-5 text-accent" />
-                  </div>
-                  <span className="font-semibold">{reason}</span>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
-      </section>
+      <BrandSection tone="paper">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow index="01" label="Why switch" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">
+              Why people are switching to{" "}
+              <span className="relative isolate inline-block">OCCTA<span aria-hidden className="absolute -bottom-1 left-0 -z-10 h-3 w-full bg-primary" /></span>
+            </h2>
+          </Reveal>
+          <Reveal as="ol" stagger className="border-t-[3px] border-foreground">
+            {whySwitchReasons.map((reason, index) => (
+              <motion.li key={index} variants={revealItem} className="group relative isolate border-b-[3px] border-foreground">
+                <span aria-hidden className="absolute inset-0 -z-10 origin-left scale-x-0 bg-primary transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-x-100" />
+                <div className="grid grid-cols-[3.5rem_1fr] items-center gap-4 px-1 py-5 sm:grid-cols-[5rem_1fr]">
+                  <span aria-hidden className="font-display text-4xl leading-none text-foreground/25 transition-colors group-hover:text-black sm:text-5xl">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="text-lg font-semibold transition-colors group-hover:text-black">{reason}</span>
+                </div>
+              </motion.li>
+            ))}
+          </Reveal>
+        </div>
+      </BrandSection>
 
       {/* Comparison Section */}
-      <section className="py-16 md:py-20">
-        <motion.div
-          className="container mx-auto px-4"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <motion.h2
-            variants={itemVariants}
-            className="text-3xl md:text-4xl font-black uppercase text-center mb-4"
-          >
-            Flex 30 vs Typical Fixed-Term Broadband
-          </motion.h2>
-          <motion.p
-            variants={itemVariants}
-            className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto"
-          >
-            Compare the contract features that matter before choosing any provider.
-          </motion.p>
+      <BrandSection tone="dark">
+        <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-end">
+          <div>
+            <SectionEyebrow index="02" label="Side by side" tone="dark" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Flex 30 vs Typical Fixed-Term Broadband</h2>
+          </div>
+          <p className="text-lg text-white/70">Compare the contract features that matter before choosing any provider.</p>
+        </Reveal>
 
-          <motion.div variants={itemVariants} className="max-w-4xl mx-auto">
-            <Card className="border-2 border-border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="font-black uppercase">
-                      Feature
-                    </TableHead>
-                    <TableHead className="font-black uppercase text-accent text-center">
-                      OCCTA
-                    </TableHead>
-                    <TableHead className="font-black uppercase text-muted-foreground text-center">
-                      Typical fixed-term plan
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {comparisonData.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-semibold">
-                        {row.feature}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <Check className="h-5 w-5 text-success" />
-                          <span className="font-medium">{row.occta}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <X className="h-5 w-5 text-destructive" />
-                          <span className="text-muted-foreground">
-                            {row.others}
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          </motion.div>
-        </motion.div>
-      </section>
+        <Reveal className="mt-12 overflow-x-auto border-[3px] border-white/25">
+          <table className="w-full min-w-[560px] text-left">
+            <thead>
+              <tr className="border-b-[3px] border-white/25">
+                <th scope="col" className="p-4 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">Feature</th>
+                <th scope="col" className="bg-primary p-4 font-display text-2xl uppercase leading-none text-black">OCCTA</th>
+                <th scope="col" className="p-4 font-display text-2xl uppercase leading-none text-white/60">Typical fixed-term plan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparisonData.map((row, index) => (
+                <tr key={index} className="border-b border-white/15 last:border-b-0">
+                  <th scope="row" className="p-4 align-top font-display text-lg uppercase leading-tight text-white">{row.feature}</th>
+                  <td className="bg-white/[0.04] p-4 align-top">
+                    <span className="flex items-start gap-2 text-sm font-medium text-white">
+                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                      {row.occta}
+                    </span>
+                  </td>
+                  <td className="p-4 align-top">
+                    <span className="flex items-start gap-2 text-sm text-white/60">
+                      <Minus className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      {row.others}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Reveal>
+      </BrandSection>
 
       {/* CTA Section */}
-      <section className="py-16 md:py-20 bg-accent">
-        <motion.div
-          className="container mx-auto px-4 text-center"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <motion.h2
-            variants={itemVariants}
-            className="text-3xl md:text-4xl font-black uppercase mb-6 text-accent-foreground"
-          >
-            Want a rolling broadband option?
-          </motion.h2>
-          <motion.p
-            variants={itemVariants}
-            className="text-lg mb-8 text-accent-foreground/80 max-w-xl mx-auto"
-          >
-            Check availability at your address and see our plans. No commitment
-            required.
-          </motion.p>
-          <motion.div
-            variants={itemVariants}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-          >
+      <BrandSection tone="yellow" className="border-y-[3px] border-black">
+        <Reveal className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div>
+            <SectionEyebrow index="03" label="Your move" tone="yellow" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Want a rolling broadband option?</h2>
+            <p className="mt-4 max-w-xl text-lg text-black/75">
+              Check availability at your address and see our plans. No commitment
+              required.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
             <Link to="/order">
-              <Button
-                size="lg"
-                className="bg-background text-foreground hover:bg-background/90 font-bold"
-              >
+              <Button size="lg" className="border-[3px] border-black bg-black font-display uppercase text-primary hover:bg-white hover:text-black">
                 <Zap className="mr-2 h-5 w-5" />
                 View All Plans
               </Button>
             </Link>
             <Link to="/sim">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-accent-foreground text-accent-foreground hover:bg-accent-foreground/10 font-bold"
-              >
+              <Button size="lg" variant="outline" className="bg-white font-display uppercase text-black">
                 Explore SIM Plans
               </Button>
             </Link>
-          </motion.div>
-        </motion.div>
-      </section>
+          </div>
+        </Reveal>
+      </BrandSection>
 
       {/* FAQ Section */}
-      <section className="py-16 md:py-20 bg-muted/30">
-        <motion.div
-          className="container mx-auto px-4"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <motion.h2
-            variants={itemVariants}
-            className="text-3xl md:text-4xl font-black uppercase text-center mb-4"
-          >
-            Frequently Asked Questions
-          </motion.h2>
-          <motion.p
-            variants={itemVariants}
-            className="text-muted-foreground text-center mb-12 max-w-2xl mx-auto"
-          >
-            Honest answers to common questions about no-contract broadband
-          </motion.p>
-
-          <motion.div variants={itemVariants} className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="space-y-4">
-              {faqs.map((faq, index) => (
-                <AccordionItem
-                  key={index}
-                  value={`faq-${index}`}
-                  className="bg-background border-2 border-border rounded-lg px-6"
-                >
-                  <AccordionTrigger className="text-left font-bold hover:no-underline">
-                    {faq.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </motion.div>
-        </motion.div>
-      </section>
+      <BrandSection tone="light">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow index="04" label="Questions" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Frequently Asked Questions</h2>
+            <p className="mt-4 text-lg text-foreground/70">
+              Honest answers to common questions about no-contract broadband
+            </p>
+          </Reveal>
+          <Accordion type="single" collapsible className="border-t-[3px] border-foreground">
+            {faqs.map((faq, index) => (
+              <AccordionItem key={index} value={`faq-${index}`} className="border-b-[3px] border-foreground">
+                <AccordionTrigger className="py-5 text-left font-display text-xl uppercase leading-tight hover:no-underline sm:text-2xl">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent className="pb-6 text-base leading-relaxed text-muted-foreground">
+                  {faq.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </BrandSection>
 
       {/* Internal Links Section */}
-      <section className="py-16 md:py-20">
-        <motion.div
-          className="container mx-auto px-4"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <motion.h2
-            variants={itemVariants}
-            className="text-3xl md:text-4xl font-black uppercase text-center mb-12"
-          >
-            Explore More Services
-          </motion.h2>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <motion.div variants={itemVariants}>
-              <Link to="/order">
-                <Card className="p-6 border-2 border-border hover:border-accent transition-colors group">
-                  <Zap className="h-10 w-10 text-accent mb-4" />
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
-                    Broadband Plans
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    Compare all our broadband packages from £{prices.broadband}/month
-                  </p>
-                </Card>
+      <BrandSection tone="dark">
+        <Reveal>
+          <SectionEyebrow index="05" label="Explore" tone="dark" />
+          <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Explore More Services</h2>
+        </Reveal>
+        <Reveal stagger className="mt-12 grid gap-5 md:grid-cols-3">
+          {[
+            { to: "/order", art: <RouterArt className="h-auto w-full" />, title: "Broadband Plans", desc: <>Compare all our broadband packages from £{prices.broadband}/month</> },
+            { to: "/sim", art: <SimArt className="h-auto w-full" />, title: "SIM Plans", desc: <>Mobile plans with 30-day and fixed-term options from the live SIM catalogue</> },
+            { to: "/landline", art: <VoiceArt className="h-auto w-full" />, title: "Home Phone", desc: <>Keep your number with Digital Home Phone from £{prices.landline}/month</> },
+          ].map((s, i) => (
+            <motion.div key={s.to} variants={revealItem}>
+              <Link to={s.to} className="group flex h-full flex-col border-[3px] border-white/25 transition-colors hover:border-primary">
+                <div className={`flex min-h-[160px] items-center justify-center border-b-[3px] border-white/25 p-6 ${i === 1 ? "bg-primary" : "bg-white"}`}>
+                  <div className="w-full max-w-[200px]">{s.art}</div>
+                </div>
+                <div className="flex-1 p-6">
+                  <h3 className="font-display text-3xl uppercase leading-none text-white group-hover:text-primary">{s.title}</h3>
+                  <p className="mt-2 text-sm text-white/65">{s.desc}</p>
+                </div>
               </Link>
             </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Link to="/sim">
-                <Card className="p-6 border-2 border-border hover:border-accent transition-colors group">
-                  <Phone className="h-10 w-10 text-accent mb-4" />
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
-                    SIM Plans
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    Mobile plans with 30-day and fixed-term options from the live SIM catalogue
-                  </p>
-                </Card>
-              </Link>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <Link to="/landline">
-                <Card className="p-6 border-2 border-border hover:border-accent transition-colors group">
-                  <MessageCircle className="h-10 w-10 text-accent mb-4" />
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
-                    Home Phone
-                  </h3>
-                  <p className="text-muted-foreground text-sm">
-                    Keep your number with Digital Home Phone from £{prices.landline}/month
-                  </p>
-                </Card>
-              </Link>
-            </motion.div>
-          </div>
-        </motion.div>
-      </section>
+          ))}
+        </Reveal>
+      </BrandSection>
+      </MotionConfig>
     </LayoutComponent>
     </AvailabilityProvider>
   );

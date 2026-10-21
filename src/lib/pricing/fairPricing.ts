@@ -32,8 +32,11 @@ export interface AddonChoice {
 }
 
 /**
- * Defaults shown before the server resolver responds.
- * Governed customer-facing headline prices (incl. VAT, residential):
+ * Resolver starting prices (fallback defaults and test fixtures). These are NOT
+ * what customers pay: the margin check auto-bumps them against supplier cost,
+ * and the database's governed headline has moved on (Giacom V4, Aug 2026).
+ * Advertise prices from chargedPrices.ts instead.
+ * Starting headline prices (incl. VAT, residential):
  *   Essential up to 80    — PL24 £34.99 / Flex £37.99
  *   Superfast up to 330   — PL24 £39.99 / Flex £44.99
  *   Ultrafast up to 550   — PL24 £49.99 / Flex £52.99

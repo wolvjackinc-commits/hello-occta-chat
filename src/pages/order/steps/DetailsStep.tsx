@@ -10,6 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Journey2Session } from "@/lib/journey2/client";
 import DateOfBirthInput from "@/components/order/DateOfBirthInput";
+import AddressAutocomplete from "@/components/address/AddressAutocomplete";
+
+/** Common UK home broadband providers, offered as suggestions (any name can still be typed). */
+const UK_PROVIDERS = [
+  "BT", "Sky", "Virgin Media", "TalkTalk", "Vodafone", "EE", "Plusnet", "Shell Energy", "NOW Broadband",
+  "Hyperoptic", "Community Fibre", "Zen", "Utility Warehouse", "Origin", "KCOM", "Gigaclear", "Trooli", "Cuckoo",
+  "YouFibre", "Lit Fibre", "Brsk", "Truespeed", "Toob", "Air Broadband", "Swish Fibre",
+];
 
 function ageFrom(dob: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return null;
@@ -157,6 +165,20 @@ export default function DetailsStep({
           </Button>
         </div>
         {!billingSame && (
+          <div className="mt-4">
+            <AddressAutocomplete
+              label="Find your billing address"
+              helperText="Start typing the house number and street, then pick it — or fill in the boxes below."
+              onSelect={(addr) => {
+                setBLine1(addr.line1);
+                setBLine2(addr.line2 ?? "");
+                setBTown(addr.city);
+                setBPostcode((addr.postcode ?? "").toUpperCase());
+              }}
+            />
+          </div>
+        )}
+        {!billingSame && (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Label htmlFor="j2-b1">Address line 1</Label>
@@ -185,7 +207,10 @@ export default function DetailsStep({
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="j2-provider">Current provider</Label>
-            <Input id="j2-provider" value={provider ?? ""} onChange={(e) => setProvider(e.target.value)} maxLength={80} />
+            <Input id="j2-provider" value={provider ?? ""} onChange={(e) => setProvider(e.target.value)} maxLength={80} list="j2-provider-list" autoComplete="off" placeholder="Start typing, e.g. BT" />
+            <datalist id="j2-provider-list">
+              {UK_PROVIDERS.map((name) => <option key={name} value={name} />)}
+            </datalist>
           </div>
           <div>
             <Label htmlFor="j2-cstatus">Contract status</Label>

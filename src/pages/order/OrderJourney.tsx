@@ -10,7 +10,8 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { journey2, quoteTokenStore, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
+import { journey2, journeyCapabilities, quoteTokenStore, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
+import { getAvailabilityPrefill } from "@/lib/journey2/prefill";
 import { loadJourneyCatalogue, loadJourneySession } from "@/lib/journey2/route";
 import type { OrderSelection } from "@/lib/journey2/selection";
 import Journey2Progress from "./steps/Journey2Progress";
@@ -53,7 +54,19 @@ function applySaveLocally(s: Journey2Session, step: PreContractStep, payload: Re
   };
   const details = (s.customer_details ?? {}) as Record<string, unknown>;
   if (step === "address") {
-    next.customer_details = { ...details, email: payload.contact_email, full_name: payload.contact_full_name } as Journey2Session["customer_details"];
+    next.customer_details = {
+      ...details,
+      ...(payload.contact_email ? { email: payload.contact_email } : {}),
+      ...(payload.contact_full_name ? { full_name: payload.contact_full_name } : {}),
+    } as Journey2Session["customer_details"];
+    next.service_address = {
+      postcode: payload.postcode,
+      address_line_1: payload.address_line_1,
+      address_line_2: payload.address_line_2 ?? null,
+      town: payload.town,
+      county: payload.county ?? null,
+    };
+    next.postcode = payload.postcode;
     next.supplier_availability_snapshot = null;
   } else if (step === "plan") {
     next.speed_bucket = payload.speed_bucket;
@@ -105,6 +118,16 @@ export default function OrderJourney() {
   const updateSelection = useCallback((next: OrderSelection) => {
     setSelection((current) => ({ ...(current ?? {}), ...next }));
   }, []);
+
+  // Which newer server behaviours are live (see journeyCapabilities).
+  const [capabilities, setCapabilities] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void journeyCapabilities().then((caps) => { if (!cancelled) setCapabilities(caps); });
+    return () => { cancelled = true; };
+  }, []);
+  const autoAddressTriedRef = useRef(false);
+  const [addressConfirmedAutomatically, setAddressConfirmedAutomatically] = useState(false);
 
   // Don't let a customer close the tab while a background save is still in flight.
   useEffect(() => {
@@ -370,6 +393,25 @@ export default function OrderJourney() {
     });
   };
 
+  // Skip re-confirming the address when the customer already picked it on the
+  // homepage checker: save it straight away and open the plan screen. Only once
+  // the live server accepts an address without contact details.
+  useEffect(() => {
+    if (!capabilities?.has("optional_address_contact") || !session || !token) return;
+    if (autoAddressTriedRef.current || backStep || session.current_step !== "address" || session.service_address) return;
+    const prefill = getAvailabilityPrefill();
+    if (!prefill || prefill.postcode.trim().length < 5 || prefill.line1.trim().length < 3 || prefill.town.trim().length < 2) return;
+    autoAddressTriedRef.current = true;
+    setAddressConfirmedAutomatically(true);
+    saveInBackground("address", {
+      postcode: prefill.postcode.trim().toUpperCase(),
+      address_line_1: prefill.line1.trim(),
+      address_line_2: prefill.line2.trim() || null,
+      town: prefill.town.trim(),
+      county: prefill.county.trim() || null,
+    });
+  }, [capabilities, session, token, backStep]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const save = async (step: EditableStep, payload: Record<string, unknown>) => {
     if (!token || saving) return;
     if (!editingRef.current && OPTIMISTIC_STEPS.includes(step)) {
@@ -483,10 +525,11 @@ export default function OrderJourney() {
         <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,360px)] lg:gap-8">
           <div className="min-w-0" onInvalidCapture={() => { if (token) void trackConversion(session, token, displayStep, "validation_error"); }}>
             {inSelection && activeStep === "address" && (
-              <AddressStep session={session} saving={saving} onSave={(p) => save("address", p)} />
+              <AddressStep session={session} saving={saving} onSave={(p) => save("address", p)}
+                contactOptional={!!capabilities?.has("optional_address_contact")} />
             )}
             {inSelection && activeStep === "plan" && catalogue && (
-              <PlanStep catalogue={catalogue} session={session} saving={saving}
+              <PlanStep catalogue={catalogue} session={session} saving={saving} addressConfirmedAutomatically={addressConfirmedAutomatically}
                 onSave={(p) => save("plan", p)} onBack={() => setBackStep("address")} onSelectionChange={updateSelection} />
             )}
             {inSelection && activeStep === "router" && catalogue && (
@@ -590,7 +633,12 @@ export default function OrderJourney() {
               </>
             )}
 
-            <JourneyRecovery expiresAt={session.expires_at} />
+            <JourneyRecovery
+              expiresAt={session.expires_at}
+              token={token ?? null}
+              canSaveEmail={!!capabilities?.has("save_contact") && inSelection && !session.customer_details?.email}
+              onEmailSaved={(email) => setSession((current) => current ? { ...current, customer_details: { ...(current.customer_details ?? {}), email } as Journey2Session["customer_details"] } : current)}
+            />
             <div className="mt-4 flex justify-end">
               <button
                 type="button"

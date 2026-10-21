@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2Session, type PlanTerm, type SpeedBucket } from "@/lib/journey2/client";
 import { clearPreferredSpeedBucket, getPreferredSpeedBucket } from "@/lib/journey2/prefill";
 import type { OrderSelection } from "@/lib/journey2/selection";
+import JourneyTermsNote from "./JourneyTermsNote";
 
 export default function PlanStep({
-  catalogue, session, saving, onSave, onBack, onSelectionChange,
+  catalogue, session, saving, onSave, onBack, onSelectionChange, addressConfirmedAutomatically = false,
 }: {
   catalogue: Catalogue;
   session: Journey2Session;
@@ -16,6 +17,8 @@ export default function PlanStep({
   onBack: () => void;
   /** Reports the unsaved choice so the order summary can price it live. */
   onSelectionChange?: (selection: OrderSelection) => void;
+  /** The address screen was skipped: show the address with a Change link, and the opening terms note. */
+  addressConfirmedAutomatically?: boolean;
 }) {
   const preferred = getPreferredSpeedBucket();
   const verifiedEvidence = session.supplier_availability_snapshot;
@@ -68,6 +71,13 @@ export default function PlanStep({
         <p className="text-sm text-muted-foreground mt-1">
           {hasVerifiedEvidence ? "These are the OCCTA prices for plans confirmed for your installation address, including VAT." : "These are OCCTA's current plans and prices, including VAT. Speeds shown are OCCTA plan estimates."} No teaser rates and no scheduled mid-contract price rises on Price Lock.
         </p>
+        {addressConfirmedAutomatically && session.service_address && (
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-2 border-foreground/20 bg-muted/30 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Installing at</span>
+            <strong>{[session.service_address.address_line_1, session.service_address.town, session.service_address.postcode].filter(Boolean).join(", ")}</strong>
+            <button type="button" onClick={onBack} className="ml-auto text-xs underline">Change</button>
+          </p>
+        )}
       </div>
 
       {switch50 && (
@@ -199,6 +209,7 @@ export default function PlanStep({
           {saving ? "Saving…" : "Choose router for this plan"}
         </Button>
       </div>
+      {addressConfirmedAutomatically && <JourneyTermsNote />}
     </div>
   );
 }

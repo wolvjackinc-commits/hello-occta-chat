@@ -45,6 +45,14 @@ export default function StartDateStep({
   const earliest = ymd(addDays(today, EARLIEST_START_OFFSET_DAYS));
   const latest = ymd(addDays(today, 90));
   const [date, setDate] = useState(session.preferred_start_date ?? earliest);
+  const quickPicks = useMemo(
+    () => [
+      { label: "As soon as possible", value: earliest },
+      { label: "A week later", value: ymd(addDays(today, EARLIEST_START_OFFSET_DAYS + 7)) },
+      { label: "Two weeks later", value: ymd(addDays(today, EARLIEST_START_OFFSET_DAYS + 14)) },
+    ],
+    [earliest, today],
+  );
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,8 +92,30 @@ export default function StartDateStep({
         </p>
       </div>
 
+      {/* One-tap choices for the common cases; the date box stays for anything else. */}
+      <fieldset>
+        <legend className="font-display uppercase text-xs tracking-widest mb-2">Quick choice</legend>
+        <div className="flex flex-wrap gap-2">
+          {quickPicks.map((pick) => {
+            const selected = date === pick.value;
+            return (
+              <button
+                key={pick.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => { setDate(pick.value); setErr(null); }}
+                className={`min-h-11 border-2 px-3 py-2 text-left text-sm transition-colors ${selected ? "border-foreground bg-primary text-black" : "border-border hover:border-foreground"}`}
+              >
+                <span className="block font-display uppercase leading-none">{pick.label}</span>
+                <span className="mt-1 block text-xs">{pretty(pick.value)}</span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
       <div className="max-w-xs">
-        <Label htmlFor="j2-start-date">Preferred start date</Label>
+        <Label htmlFor="j2-start-date">Or pick another date</Label>
         <Input
           id="j2-start-date"
           type="date"

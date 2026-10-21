@@ -8,6 +8,8 @@ import PostcodeChecker from "@/components/home/PostcodeChecker";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/AvailabilityContext";
 import { prewarmAssignedJourney } from "@/lib/journey2/route";
+import { useLiveBandPrices } from "@/lib/pricing/useLiveBandPrices";
+import type { SpeedBucket } from "@/lib/pricing/fairPricing";
 import { setPreferredSpeedBucket } from "@/lib/journey2/prefill";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import SignalField from "@/components/brand/SignalField";
@@ -19,6 +21,8 @@ const HeroSection = () => {
   const retailCards = getRetailBroadbandCards();
 
   const hasResult = status === "success" && result;
+  // Prices from the same catalogue the order page charges (primed once an address is picked).
+  const livePrices = useLiveBandPrices(!!hasResult);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -66,7 +70,7 @@ const HeroSection = () => {
           name: card.publicTitle,
           speed: card.maxSpeed,
           speedLabel: card.speedLabel,
-          price: card.fromPrice,
+          price: livePrices?.[planId as SpeedBucket]?.lock24.toFixed(2) ?? card.fromPrice,
           isRecommended: planId === result.recommendedPlan,
           isUpgrade: planId === result.upgradePlan,
         };

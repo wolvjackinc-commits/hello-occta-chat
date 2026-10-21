@@ -1,5 +1,10 @@
 import SeoContentLayout from "@/components/seo/SeoContentLayout";
 import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
+import { CHARGED_PRICES } from "@/lib/pricing/chargedPrices";
+
+const BANDS = ["essential", "superfast", "ultrafast", "gigabit"] as const;
+const pl = BANDS.map((b) => `£${CHARGED_PRICES[b].lock24.toFixed(2)}`).join(", ");
+const fx = BANDS.map((b) => `£${CHARGED_PRICES[b].flex30.toFixed(2)}`).join(", ");
 
 export default function BroadbandPlansSeo() {
   return (
@@ -11,7 +16,7 @@ export default function BroadbandPlansSeo() {
       shortAnswer="OCCTA broadband starts at £34.99/mo across four speed bands — Essential up to 80Mbps, Superfast up to 330Mbps, Ultrafast up to 550Mbps and Gigabit up to 1000Mbps. No plan includes a router — buy one from us one-off or monthly where offered, or bring your own compatible router. Flex 30 and Price Lock 24 options depend on the selected plan and service availability."
       intro="A clear choice of speed bands and terms, with the price and contractual information shown before you accept your order."
       sections={[
-        { heading: "The plans", body: "Four OCCTA speed bands are shown in our system: Essential up to 80Mbps, Superfast up to 330Mbps, Ultrafast up to 550Mbps and Gigabit up to 1000Mbps. Headline Price Lock 24 prices are £34.99, £39.99, £49.99 and £49.99 respectively; Flex 30 headline prices are £37.99, £44.99, £52.99 and £52.99 where that term is offered. The order journey calculates the exact price for the selectable combination and shows VAT before acceptance. Routers and setup are priced separately." },
+        { heading: "The plans", body: `Four OCCTA speed bands are shown in our system: Essential up to 80Mbps, Superfast up to 330Mbps, Ultrafast up to 550Mbps and Gigabit up to 1000Mbps. Price Lock 24 prices are ${pl}, respectively; Flex 30 prices are ${fx} where that term is offered. The order journey calculates the exact price for the selectable combination and shows VAT before acceptance. Routers and setup are priced separately.` },
         { heading: "Availability at your address", body: "Plans shown are current OCCTA offers and may not all be available at every address. Final availability, speed and network technology are subject to network and supplier validation for the installation address. If a selected plan cannot be supplied, OCCTA contacts the customer with available options before provisioning and does not substitute a different plan or price without agreement." },
         { heading: "Flex 30 vs Price Lock 24", body: "Flex 30 is a rolling option where offered, with the notice period shown before acceptance. Price Lock 24 gives a fixed monthly broadband price for the agreed 24-month term, subject to the scope and exceptions stated in the Contract Summary and Contract Information." },
         { heading: "What's included", body: "UK-based support, optional add-ons where available, and a clear first-bill view. Routers are not automatically bundled — bring your own compatible router for £0 or select an available router option. Any setup or activation charge is shown before you accept the agreement." },

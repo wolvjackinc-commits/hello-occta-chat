@@ -255,6 +255,29 @@ export function prewarmContractPipeline(): void {
   );
 }
 
+let capabilitiesPromise: Promise<Set<string>> | null = null;
+
+/**
+ * Features the deployed journey2-session build supports, read from its GET
+ * version probe (no database writes). Lets the order page switch to newer
+ * behaviour only once the matching server is live, whichever ships first.
+ */
+export function journeyCapabilities(): Promise<Set<string>> {
+  if (!capabilitiesPromise) {
+    capabilitiesPromise = supabase.functions
+      .invoke("journey2-session", { method: "GET" })
+      .then(({ data }) => {
+        const list = (data as { capabilities?: unknown } | null)?.capabilities;
+        return new Set<string>(Array.isArray(list) ? list.filter((c): c is string => typeof c === "string") : []);
+      })
+      .catch(() => {
+        capabilitiesPromise = null; // try again next time rather than caching a network blip
+        return new Set<string>();
+      });
+  }
+  return capabilitiesPromise;
+}
+
 export const journey2 = {
   start: async (opts: { adminTest?: boolean } = {}) => {
     const result = await call<StartResult>("journey2-session", {
@@ -303,6 +326,10 @@ export const journey2 = {
   },
 
   cancel: (token: string) => call<{ ok: boolean }>("journey2-session", { action: "cancel", token }),
+
+  /** "Email me a link back to my order" — stores the email without changing any choices. */
+  saveContact: (token: string, email: string) =>
+    call<{ ok: boolean; resume_emails?: boolean; error?: string }>("journey2-session", { action: "save_contact", token, email }),
 
   catalogue: (customer_type: "residential" | "business" = "residential") =>
     call<{ ok: boolean; catalogue: Catalogue; error?: string }>("journey2-catalogue", { customer_type }),

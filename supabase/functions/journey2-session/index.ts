@@ -53,12 +53,17 @@ const AddressPayload = z.object({
   town: z.string().trim().min(2).max(80),
   county: z.string().trim().max(80).optional().nullable(),
   /**
-   * Early contact capture. Almost every abandonment happens before the details
-   * step, so an email here is the only way an abandoned order can be recovered.
+   * Optional early contact. The address is usually confirmed automatically from
+   * the homepage checker, so the customer sees prices before giving details.
+   * Abandoned-order recovery still gets an email via `save_contact` (the
+   * "email me a link back" box on every early screen) or the details step.
    */
-  contact_email: z.string().trim().toLowerCase().email().max(180),
-  contact_full_name: z.string().trim().min(2).max(120),
+  contact_email: z.string().trim().toLowerCase().email().max(180).optional().nullable(),
+  contact_full_name: z.string().trim().min(2).max(120).optional().nullable(),
 });
+
+/** What this build supports; the order page reads it from the GET probe before using new behaviour. */
+const CAPABILITIES = ["optional_address_contact", "save_contact"] as const;
 const PlanPayload = z.object({
   speed_bucket: z.enum(["essential", "superfast", "ultrafast", "gigabit"]),
   plan_term: z.enum(["price_lock_24", "flex_30"]),
@@ -141,6 +146,11 @@ const Schema = z.discriminatedUnion("action", [
     attribution: z.record(z.string().max(300)).optional(),
   }),
   z.object({ action: z.literal("cancel"), token: z.string().min(16) }),
+  z.object({
+    action: z.literal("save_contact"),
+    token: z.string().min(16),
+    email: z.string().trim().toLowerCase().email().max(180),
+  }),
 ]);
 
 /**
@@ -182,7 +192,7 @@ function isCrawler(ua: string): boolean {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS" || req.method === "GET") {
     console.log(JSON.stringify({ occta_fn_version: fnVersionValue(FN_ID), method: req.method }));
-    return new Response(JSON.stringify(fnVersionProbe(FN_ID)), {
+    return new Response(JSON.stringify({ ...fnVersionProbe(FN_ID), capabilities: CAPABILITIES }), {
       status: 200,
       headers: { ...corsHeaders, ...fnVersionHeaders(FN_ID), "Content-Type": "application/json" },
     });
@@ -338,6 +348,26 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, cancelled: true });
   }
 
+  // ── save_contact ─────────────────────────────────────────────────────────
+  // "Email me a link back to my order": stores the email for abandoned-order
+  // recovery without moving the customer on or touching their choices.
+  if (body.action === "save_contact") {
+    if (!["active", "contract_prepared"].includes(session.status)) {
+      return jsonResponse({ error: "session_locked", status: session.status }, 409);
+    }
+    const existing = (session.customer_details ?? {}) as Record<string, unknown>;
+    await supabase
+      .from("customer_journey_sessions")
+      .update({
+        customer_details: { ...existing, email: body.email },
+        last_activity_at: new Date().toISOString(),
+        abandoned_at: null,
+      })
+      .eq("id", session.id);
+    // Tells the page whether to promise a "link back" email or just order updates.
+    return jsonResponse({ ok: true, resume_emails: !!settings.customer_journey_v2_abandoned_resume_enabled });
+  }
+
   // ── save_step ────────────────────────────────────────────────────────────
   const isPostContractBilling =
     body.step === "billing" &&
@@ -386,11 +416,12 @@ Deno.serve(async (req) => {
     patch.network_validation_status = "pending";
     patch.manual_review_reason = null;
 
+    // Contact is optional here; keep whatever we already hold when it's left out.
     const existing = (session.customer_details ?? {}) as Record<string, unknown>;
     patch.customer_details = {
       ...existing,
-      email: contact_email,
-      full_name: contact_full_name,
+      ...(contact_email ? { email: contact_email } : {}),
+      ...(contact_full_name ? { full_name: contact_full_name } : {}),
     };
   } else if (body.step === "plan") {
     const p = PlanPayload.safeParse(body.payload);

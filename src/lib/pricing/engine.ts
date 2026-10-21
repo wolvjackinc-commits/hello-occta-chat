@@ -1,17 +1,19 @@
 import type { FromPrices, OrderSummary, ServiceFamily, VatMode } from './types';
 import { catalogueProducts, voiceProducts, installScenarios, careLevels, bundleConfigs, addonCatalogue, portingOptions, numberTypes, smsTiers, callTariffs, GLOBAL_CEASE_FEE } from './catalogue';
 import { broadbandRetailCards, landlineRetailCard } from './retailCards';
-import { FAIR_PRICING_DEFAULTS, PUBLIC_SPEED_BUCKETS } from './fairPricing';
+import { PUBLIC_SPEED_BUCKETS } from './fairPricing';
+import { CHARGED_PRICES } from './chargedPrices';
 
 // ── Fair Pricing display map (Price Lock 24 / Flex 30) ──
-// This is the public source of truth for "from" prices on cards.
-// The server-side resolver remains authoritative for the final price.
+// These are the prices customers are actually charged (see chargedPrices.ts),
+// never the resolver's pre-bump starting prices. The server-side resolver
+// remains authoritative for each final price.
 // Four public bands: Essential, Superfast, Ultrafast and Gigabit.
 const FAIR_DISPLAY: Record<string, { lock24: number; flex30: number; speedLabel: string }> = {
-  essential: { lock24: FAIR_PRICING_DEFAULTS.headline.essential.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.essential.flex30, speedLabel: 'Up to 80Mbps' },
-  superfast: { lock24: FAIR_PRICING_DEFAULTS.headline.superfast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.superfast.flex30, speedLabel: 'Up to 330Mbps' },
-  ultrafast: { lock24: FAIR_PRICING_DEFAULTS.headline.ultrafast.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.ultrafast.flex30, speedLabel: 'Up to 550Mbps' },
-  gigabit: { lock24: FAIR_PRICING_DEFAULTS.headline.gigabit.lock24, flex30: FAIR_PRICING_DEFAULTS.headline.gigabit.flex30, speedLabel: 'Up to 1000Mbps' },
+  essential: { lock24: CHARGED_PRICES.essential.lock24, flex30: CHARGED_PRICES.essential.flex30, speedLabel: 'Up to 80Mbps' },
+  superfast: { lock24: CHARGED_PRICES.superfast.lock24, flex30: CHARGED_PRICES.superfast.flex30, speedLabel: 'Up to 330Mbps' },
+  ultrafast: { lock24: CHARGED_PRICES.ultrafast.lock24, flex30: CHARGED_PRICES.ultrafast.flex30, speedLabel: 'Up to 550Mbps' },
+  gigabit: { lock24: CHARGED_PRICES.gigabit.lock24, flex30: CHARGED_PRICES.gigabit.flex30, speedLabel: 'Up to 1000Mbps' },
 };
 
 // ── Resolve cheapest eligible product for a broadband card ──

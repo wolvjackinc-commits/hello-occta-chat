@@ -59,9 +59,9 @@ const businessInfo = {
   ],
   broadbandPlans: [
     { name: "ESSENTIAL", speed: "Up to 80Mbps public band", price: "Price Lock 24 from £34.99 / Flex 30 from £37.99", description: "Final address-specific technology, speeds, setup and price are confirmed before acceptance" },
-    { name: "SUPERFAST", speed: "Up to 330Mbps public band", price: "Price Lock 24 from £39.99 / Flex 30 from £44.99", description: "Subject to address and supplier availability" },
-    { name: "ULTRAFAST", speed: "Up to 550Mbps public band", price: "Price Lock 24 from £49.99 / Flex 30 from £52.99", description: "Subject to address and supplier availability" },
-    { name: "GIGABIT", speed: "Up to 1000Mbps public band", price: "Price Lock 24 from £49.99 / Flex 30 from £52.99", description: "Subject to address and supplier availability" },
+    { name: "SUPERFAST", speed: "Up to 330Mbps public band", price: "Price Lock 24 from £43.99 / Flex 30 from £45.99", description: "Subject to address and supplier availability" },
+    { name: "ULTRAFAST", speed: "Up to 550Mbps public band", price: "Price Lock 24 from £51.99 / Flex 30 from £52.99", description: "Subject to address and supplier availability" },
+    { name: "GIGABIT", speed: "Up to 1000Mbps public band", price: "Price Lock 24 from £57.99 / Flex 30 from £57.99", description: "Subject to address and supplier availability" },
   ],
   // SIM plans are catalogue-driven — Ollie must not invent them. See the SIM
   // PLANS section of the system prompt and the SIM-only guardrail. She should

@@ -1,19 +1,21 @@
 import { contactError } from "@/lib/journey2/conversion";
 import { useCallback, useState } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import AddressAutocomplete from "@/components/address/AddressAutocomplete";
 import type { Journey2Session } from "@/lib/journey2/client";
 import { getAvailabilityPrefill } from "@/lib/journey2/prefill";
+import JourneyTermsNote from "./JourneyTermsNote";
 
 export default function AddressStep({
-  session, saving, onSave,
+  session, saving, onSave, contactOptional = false,
 }: {
   session: Journey2Session;
   saving: boolean;
   onSave: (payload: Record<string, unknown>) => void;
+  /** Server accepts the address without contact details: ask only for an optional email, no name. */
+  contactOptional?: boolean;
 }) {
   const a = session.service_address;
   // Anything the customer already told us on the availability checker is reused
@@ -47,11 +49,12 @@ export default function AddressStep({
       setErr("Please find your address above or enter it manually.");
       return;
     }
-    if (!firstName.trim() || firstName.trim().length < 2) {
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+    if (!contactOptional && (!firstName.trim() || firstName.trim().length < 2)) {
       setErr("Please enter your full name.");
       return;
     }
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+    if ((!contactOptional || email.trim()) && !emailValid) {
       setErr("Please enter a valid email address.");
       return;
     }
@@ -62,8 +65,8 @@ export default function AddressStep({
       address_line_2: line2.trim() || null,
       town: town.trim(),
       county: county.trim() || null,
-      contact_email: email.trim().toLowerCase(),
-      contact_full_name: firstName.trim(),
+      ...(email.trim() ? { contact_email: email.trim().toLowerCase() } : {}),
+      ...(!contactOptional ? { contact_full_name: firstName.trim() } : {}),
     });
   };
 
@@ -190,28 +193,31 @@ export default function AddressStep({
       )}
 
       {hasUsableAddress && <div className="border-2 border-foreground/20 p-4 space-y-3">
-        <p className="font-display uppercase text-sm">Where should we send your order updates?</p>
+        <p className="font-display uppercase text-sm">
+          {contactOptional ? "Want a link back to your order? (optional)" : "Where should we send your order updates?"}
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
+          {!contactOptional && (
+            <div>
+              <Label htmlFor="j2-first-name">Full name</Label>
+              <Input id="j2-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)}
+                autoComplete="name" required maxLength={120} onBlur={() => validateContact("name", firstName)} aria-invalid={!!fieldErrors.name} aria-describedby="j2-name-error" />
+              <p id="j2-name-error" className="text-xs text-destructive" aria-live="polite">{fieldErrors.name}</p>
+            </div>
+          )}
           <div>
-            <Label htmlFor="j2-first-name">Full name</Label>
-            <Input id="j2-first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)}
-              autoComplete="name" required maxLength={120} onBlur={() => validateContact("name", firstName)} aria-invalid={!!fieldErrors.name} aria-describedby="j2-name-error" />
-            <p id="j2-name-error" className="text-xs text-destructive" aria-live="polite">{fieldErrors.name}</p>
-          </div>
-          <div>
-            <Label htmlFor="j2-early-email">Email address</Label>
+            <Label htmlFor="j2-early-email">{contactOptional ? "Email address (optional)" : "Email address"}</Label>
             <Input id="j2-early-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required maxLength={180} placeholder="you@example.com" onBlur={() => validateContact("email", email)} aria-invalid={!!fieldErrors.email} aria-describedby="j2-early-email-error" />
+              autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required={!contactOptional} maxLength={180} placeholder="you@example.com" onBlur={() => { if (!contactOptional || email.trim()) validateContact("email", email); }} aria-invalid={!!fieldErrors.email} aria-describedby="j2-early-email-error" />
             <p id="j2-early-email-error" className="text-xs text-destructive" aria-live="polite">{fieldErrors.email}</p>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Used for your order and service updates. You can choose marketing preferences later.
+          {contactOptional
+            ? "You can skip this — we'll ask for your details once you've chosen your plan. If you add it, it's used for this order and your order updates."
+            : "Used for your order and service updates. You can choose marketing preferences later."}
         </p>
-        <p className="text-xs text-muted-foreground">
-          By continuing, you acknowledge OCCTA's <Link to="/terms" className="underline hover:text-foreground">Terms of Service</Link> and{" "}
-          <Link to="/privacy" className="underline hover:text-foreground">Privacy Policy</Link>. Entering the order journey does not allow OCCTA to substitute a different broadband plan or price without your agreement.
-        </p>
+        <JourneyTermsNote />
       </div>}
 
       {err && <p className="text-sm text-destructive" role="alert">{err}</p>}

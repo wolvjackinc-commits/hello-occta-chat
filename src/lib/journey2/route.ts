@@ -1,4 +1,4 @@
-import { journey2, type StartResult } from "./client";
+import { journey2, journeyCapabilities, type StartResult } from "./client";
 
 const JOURNEY1_ROUTE = "/quote/start?interest=broadband";
 const ANON_SESSION_KEY = "occta_j2_anon_id";
@@ -87,6 +87,7 @@ export async function loadJourneyCatalogue(): Promise<CatalogueResult> {
  * "Choose plan" click without creating sessions for casual homepage visitors.
  */
 export function prewarmAssignedJourney(): void {
+  void journeyCapabilities();
   primeCatalogue();
   void ensurePreparedStart()
     .then((res) => {

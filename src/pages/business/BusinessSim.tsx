@@ -1,12 +1,15 @@
 import { Link } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { businessSim } from "@/lib/business/catalogue";
 import VatExPrice from "@/components/business/VatExPrice";
 import BusinessTrustBar from "@/components/business/BusinessTrustBar";
-import LeadForm from "@/components/business/LeadForm";
-import { CheckCircle2 } from "lucide-react";
+import { BusinessLeadBand, BusinessProductCard, LeadForm } from "@/components/business/BusinessKit";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, TicketSlab } from "@/components/brand/kit";
+import { SimArt } from "@/components/brand/illustrations";
 
 const BusinessSimPage = () => (
   <Layout>
@@ -16,37 +19,53 @@ const BusinessSimPage = () => (
       canonical="/business/sim"
       keywords="business SIM UK, pooled data SIM, 5G business SIM, multi-line SIM UK"
     />
-    <section className="border-b-4 border-foreground bg-background">
-      <div className="container mx-auto px-4 py-14">
-        <h1 className="font-display text-5xl lg:text-6xl mb-4">One SIM plan. Whole team. One bill.</h1>
-        <p className="text-lg text-muted-foreground max-w-2xl">Pooled data means big users share with light users. Add and remove lines any month, no renegotiation.</p>
-      </div>
-    </section>
-    <BusinessTrustBar />
-    <section className="container mx-auto px-4 py-14">
-      <div className="grid md:grid-cols-3 gap-6">
-        {businessSim.map((p) => (
-          <div key={p.id} className="border-4 border-foreground bg-background p-6 shadow-brutal flex flex-col">
-            <h3 className="font-display text-2xl mb-1">{p.name}</h3>
-            <p className="text-sm text-muted-foreground mb-4">{p.summary}</p>
-            <VatExPrice amount={p.priceExVat} unit={p.unit} size="lg" />
-            <ul className="mt-5 space-y-2 text-sm flex-1">
-              {p.features.map((f) => (
-                <li key={f} className="flex gap-2"><CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" /> {f}</li>
-              ))}
-            </ul>
-            <Link to="/business/contact-sales" className="mt-6"><Button variant="hero" className="w-full">Get a quote</Button></Link>
+    <MotionConfig reducedMotion="user">
+      <PosterStage ghost="5G">
+        <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Business", to: "/business" }, { label: "Business SIMs" }]} />
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_400px] xl:gap-20">
+          <div>
+            <HeroKicker>Business SIMs</HeroKicker>
+            <HeroTitle size="md">
+              One SIM plan. Whole team.
+              {" "}<span className="block text-primary">One bill.</span>
+            </HeroTitle>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">Pooled data means big users share with light users. Add and remove lines any month, no renegotiation.</p>
+            <Link to="/business/contact-sales" className="mt-8 inline-block">
+              <Button variant="hero" size="lg">Get a quote <ArrowRight className="ml-2 h-4 w-4" /></Button>
+            </Link>
           </div>
-        ))}
-      </div>
-    </section>
-    <section className="border-t-4 border-foreground bg-secondary">
-      <div className="container mx-auto px-4 py-14 max-w-2xl">
-        <div className="border-4 border-foreground bg-background p-6 shadow-brutal">
-          <LeadForm interest="sim" source="business_sim" heading="Rolling out 5+ SIMs?" />
+          <TicketSlab className="mr-3 mb-3">
+            <div className="border-[3px] border-white bg-white p-8">
+              <SimArt className="mx-auto h-auto w-full max-w-[300px]" />
+            </div>
+          </TicketSlab>
         </div>
-      </div>
-    </section>
+      </PosterStage>
+      <BusinessTrustBar />
+      <BrandSection tone="paper">
+        <Reveal>
+          <SectionEyebrow index="01" label="Plans" />
+          <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Lines for every team</h2>
+        </Reveal>
+        <Reveal stagger className="mt-10 grid gap-6 md:grid-cols-3">
+          {businessSim.map((p, i) => (
+            <BusinessProductCard
+              key={p.id}
+              name={p.name}
+              summary={p.summary}
+              price={<VatExPrice amount={p.priceExVat} unit={p.unit} size="lg" />}
+              features={p.features}
+              ctaTo="/business/contact-sales"
+              ctaLabel="Get a quote"
+              featured={i === 1}
+            />
+          ))}
+        </Reveal>
+      </BrandSection>
+      <BusinessLeadBand index="02" title="Rolling out 5+ SIMs?">
+        <LeadForm interest="sim" source="business_sim" heading="Rolling out 5+ SIMs?" />
+      </BusinessLeadBand>
+    </MotionConfig>
   </Layout>
 );
 

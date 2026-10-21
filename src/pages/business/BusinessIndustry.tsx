@@ -1,12 +1,15 @@
 import { Link, useParams, Navigate } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { businessIndustries, businessBundles, type BusinessIndustrySlug } from "@/lib/business/catalogue";
 import VatExPrice from "@/components/business/VatExPrice";
 import BusinessTrustBar from "@/components/business/BusinessTrustBar";
-import LeadForm from "@/components/business/LeadForm";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { BusinessLeadBand, LeadForm } from "@/components/business/BusinessKit";
+import { AlertCircle, ArrowRight, Check } from "lucide-react";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, TicketSlab } from "@/components/brand/kit";
+import { BuildingArt } from "@/components/brand/illustrations";
 
 const BusinessIndustryPage = () => {
   const { slug } = useParams<{ slug: BusinessIndustrySlug }>();
@@ -22,58 +25,80 @@ const BusinessIndustryPage = () => {
         canonical={`/business/industries/${industry.slug}`}
         keywords={`business broadband for ${industry.name.toLowerCase()}, ${industry.name.toLowerCase()} phone system, business wifi ${industry.name.toLowerCase()}`}
       />
-      <section className="border-b-4 border-foreground bg-background">
-        <div className="container mx-auto px-4 py-14">
-          <div className="text-sm uppercase tracking-wider text-muted-foreground mb-2">For {industry.name}</div>
-          <h1 className="font-display text-5xl lg:text-6xl mb-4">{industry.hero}</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl">A practical telecom design for {industry.name.toLowerCase()} teams, with availability, care level and resilience options checked against the actual site.</p>
-        </div>
-      </section>
-      <BusinessTrustBar />
-      <section className="container mx-auto px-4 py-14 grid lg:grid-cols-2 gap-8">
-        <div className="border-4 border-foreground bg-secondary p-6 shadow-brutal">
-          <AlertCircle className="w-8 h-8 text-destructive mb-3" />
-          <h2 className="font-display text-2xl mb-2">Sound familiar?</h2>
-          <p>{industry.pain}</p>
-        </div>
-        <div className="border-4 border-foreground bg-background p-6 shadow-brutal">
-          <h2 className="font-display text-2xl mb-4">What we recommend checking</h2>
-          <ul className="space-y-2">
-            {industry.solution.map((s) => (
-              <li key={s} className="flex gap-2"><CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" /> {s}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-      {bundle && (
-        <section className="border-t-4 border-foreground bg-foreground text-background">
-          <div className="container mx-auto px-4 py-14 grid md:grid-cols-2 gap-8 items-center">
+      <MotionConfig reducedMotion="user">
+        <PosterStage>
+          <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Business", to: "/business" }, { label: industry.name }]} />
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_360px] xl:gap-20">
             <div>
-              <div className="text-sm uppercase tracking-wider opacity-80 mb-2">Recommended bundle design</div>
-              <h2 className="font-display text-4xl mb-3">{bundle.name}</h2>
-              <p className="opacity-80 mb-4">{bundle.tagline}</p>
-              {bundle.priceExVat != null ? (
-                <VatExPrice amount={bundle.priceExVat} size="xl" className="[&_span]:text-background" />
-              ) : (
-                <div className="font-display text-3xl">Tailored to your site</div>
-              )}
+              <HeroKicker>For {industry.name}</HeroKicker>
+              <HeroTitle size="sm">{industry.hero}</HeroTitle>
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">A practical telecom design for {industry.name.toLowerCase()} teams, with availability, care level and resilience options checked against the actual site.</p>
             </div>
-            <div className="border-4 border-background bg-background text-foreground p-6">
-              <ul className="space-y-2">
-                {bundle.includes.map((f) => (
-                  <li key={f} className="flex gap-2 text-sm"><CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" /> {f}</li>
-                ))}
-              </ul>
-              <Link to={`/business/quote?service=bundle&bundle=${encodeURIComponent(bundle.id)}`} className="mt-6 block"><Button variant="hero" className="w-full">Build this quote</Button></Link>
+            <div className="hidden border-[3px] border-white bg-white p-6 lg:block">
+              <BuildingArt className="h-auto w-full" />
             </div>
           </div>
-        </section>
-      )}
-      <section className="container mx-auto px-4 py-14 max-w-2xl">
-        <div className="border-4 border-foreground bg-background p-6 shadow-brutal">
+        </PosterStage>
+        <BusinessTrustBar />
+        <BrandSection tone="paper">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Reveal className="border-[3px] border-foreground bg-[hsl(0_0%_5%)] p-7 text-white">
+              <SectionEyebrow index="01" label="The problem" tone="dark" />
+              <AlertCircle className="mt-6 h-8 w-8 text-primary" />
+              <h2 className="mt-3 font-display text-4xl uppercase leading-none">Sound familiar?</h2>
+              <p className="mt-4 text-lg leading-relaxed text-white/75">{industry.pain}</p>
+            </Reveal>
+            <Reveal className="border-[3px] border-foreground bg-card p-7">
+              <SectionEyebrow index="02" label="The fix" />
+              <h2 className="mt-6 font-display text-4xl uppercase leading-none">What we recommend checking</h2>
+              <ul className="mt-5 space-y-3">
+                {industry.solution.map((s) => (
+                  <li key={s} className="flex gap-3">
+                    <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center bg-primary text-black" aria-hidden><Check className="h-3.5 w-3.5" strokeWidth={3} /></span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+          </div>
+        </BrandSection>
+        {bundle && (
+          <BrandSection tone="dark">
+            <div className="grid items-center gap-10 md:grid-cols-2 lg:gap-20">
+              <Reveal>
+                <SectionEyebrow index="03" label="Recommended bundle design" tone="dark" />
+                <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">{bundle.name}</h2>
+                <p className="mt-4 text-lg text-white/70">{bundle.tagline}</p>
+                <div className="mt-6">
+                  {bundle.priceExVat != null ? (
+                    <VatExPrice amount={bundle.priceExVat} size="xl" />
+                  ) : (
+                    <div className="font-display text-4xl uppercase text-primary">Tailored to your site</div>
+                  )}
+                </div>
+              </Reveal>
+              <TicketSlab className="mr-3 mb-3">
+                <div className="border-[3px] border-white bg-white p-6 text-black">
+                  <ul className="space-y-2.5">
+                    {bundle.includes.map((f) => (
+                      <li key={f} className="flex gap-2.5 text-sm">
+                        <span className="mt-0.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center bg-black text-primary" aria-hidden><Check className="h-3 w-3" strokeWidth={3} /></span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to={`/business/quote?service=bundle&bundle=${encodeURIComponent(bundle.id)}`} className="mt-6 block">
+                    <Button className="w-full border-[3px] border-black bg-black text-primary hover:bg-primary hover:text-black">Build this quote <ArrowRight className="ml-1 h-4 w-4" /></Button>
+                  </Link>
+                </div>
+              </TicketSlab>
+            </div>
+          </BrandSection>
+        )}
+        <BusinessLeadBand index={bundle ? "04" : "03"} title={`Talk to a ${industry.name} specialist`}>
           <LeadForm source={`industry_${industry.slug}`} heading={`Talk to a ${industry.name} specialist`} />
-        </div>
-      </section>
+        </BusinessLeadBand>
+      </MotionConfig>
     </Layout>
   );
 };

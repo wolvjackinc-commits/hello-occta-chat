@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/audit";
 import { isOutstandingInvoice } from "@/lib/dashboard/status";
 import {
   applyImport,
@@ -51,11 +52,9 @@ export async function linkReconSubject(input: {
   const at = new Date().toISOString();
   const next = linkSubject(previous, { ...input, actorId: who.id, actorEmail: who.email, at });
   await persist(previous, next);
-  await (supabase as unknown as { from: (t: string) => { insert: (r: unknown) => Promise<unknown> } }).from("audit_logs").insert({
-    actor_user_id: who.id,
+  await logAudit({
     action: "link",
     entity: "payment_reconciliation",
-    entity_id: null,
     metadata: {
       subject_type: input.subjectType,
       subject_key: input.subjectKey,

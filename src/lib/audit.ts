@@ -20,7 +20,10 @@ type AuditAction =
   | "payment_received"
   | "phone_payment"
   | "verify"
-  | "submit_to_provider";
+  | "submit_to_provider"
+  | "link"
+  | "chat_transcript_export"
+  | "error";
 
 type AuditEntity =
   | "service"
@@ -40,7 +43,10 @@ type AuditEntity =
   | "complaint"
   | "complaint_event"
   | "communication_thread"
-  | "communication_message";
+  | "communication_message"
+  | "payment_reconciliation"
+  | "chat_conversation"
+  | "admin_overview";
 
 interface LogAuditParams {
   action: AuditAction;

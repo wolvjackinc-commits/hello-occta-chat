@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
-import { Check, X, ChevronRight, Zap } from "lucide-react";
+import { Check, X } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
-import { motion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
+import { LockStripArt, RollingDialArt } from "@/components/brand/illustrations";
 
 const rows = [
   { feature: "Minimum term", rolling: "30 days", fixed: "12 / 18 / 24 months" },
@@ -67,123 +69,130 @@ const RollingVsFixedBroadbandComparisonPage = () => {
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 
-      <div className="bg-secondary border-b-4 border-foreground/10">
-        <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium">Rolling vs Fixed Broadband</span>
-          </nav>
-        </div>
-      </div>
-
-      <section className="py-12 md:py-16 grid-pattern">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
-                <Zap className="w-4 h-4 inline mr-2" />
-                Flex 30 vs fixed-term broadband · Clear guide
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                Rolling vs Fixed
-                <br />
-                <span className="text-gradient">Broadband, Compared</span>
-              </h1>
-              <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
-                Should you take a 30-day rolling plan or lock in for 24 months? Here's the trade-off in plain English — with OCCTA's Flex 30 and Price Lock 24 as the case studies.
-              </p>
-              <PostcodeChecker />
-            </motion.div>
+      <MotionConfig reducedMotion="user">
+      <PosterStage>
+        <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Rolling vs fixed broadband" }]} />
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_420px] xl:gap-20">
+          <div>
+            <HeroKicker>Flex 30 vs fixed-term broadband · Clear guide</HeroKicker>
+            <HeroTitle size="md">
+              Rolling vs Fixed
+              {" "}<span className="block text-primary">Broadband, Compared</span>
+            </HeroTitle>
+            <p className="mt-6 mb-8 max-w-2xl text-lg leading-relaxed text-white/70">
+              Should you take a 30-day rolling plan or lock in for 24 months? Here's the trade-off in plain English — with OCCTA's Flex 30 and Price Lock 24 as the case studies.
+            </p>
+            <PostcodeChecker variant="hero" />
+          </div>
+          <div className="hidden grid-cols-2 gap-[3px] border-[3px] border-white bg-white lg:grid">
+            <div className="bg-[hsl(0_0%_8%)] p-5">
+              <p className="mb-3 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">Flex 30</p>
+              <div className="bg-white p-3"><RollingDialArt className="h-auto w-full" /></div>
+            </div>
+            <div className="bg-[hsl(0_0%_8%)] p-5">
+              <p className="mb-3 font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-white/60">Price Lock 24</p>
+              <div className="flex h-[calc(100%-1.75rem)] items-center bg-white p-3"><LockStripArt className="h-auto w-full" /></div>
+            </div>
           </div>
         </div>
-      </section>
+      </PosterStage>
 
-      <section className="py-12 md:py-16 bg-background">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-3xl md:text-4xl font-display uppercase mb-8">The trade-off at a glance</h2>
-          <div className="overflow-x-auto border-4 border-foreground">
-            <table className="w-full text-left">
-              <thead className="bg-foreground text-background uppercase text-sm">
-                <tr>
-                  <th className="p-4">Feature</th>
-                  <th className="p-4">Rolling (Flex 30)</th>
-                  <th className="p-4">Fixed (Price Lock 24)</th>
+      <BrandSection tone="paper">
+        <Reveal>
+          <SectionEyebrow index="01" label="At a glance" />
+          <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">The trade-off at a glance</h2>
+        </Reveal>
+        <Reveal className="mt-10 overflow-x-auto border-[3px] border-foreground bg-card">
+          <table className="w-full min-w-[560px] text-left">
+            <thead>
+              <tr className="border-b-[3px] border-foreground">
+                <th scope="col" className="p-4 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">Feature</th>
+                <th scope="col" className="border-l-[3px] border-foreground bg-primary p-4 font-display text-2xl uppercase leading-none text-black">Rolling (Flex 30)</th>
+                <th scope="col" className="border-l-[3px] border-foreground bg-black p-4 font-display text-2xl uppercase leading-none text-primary">Fixed (Price Lock 24)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.feature} className="border-b-2 border-foreground/10 last:border-b-0">
+                  <th scope="row" className="p-4 align-top font-display text-lg uppercase leading-tight">{r.feature}</th>
+                  <td className="border-l-[3px] border-foreground p-4 align-top text-sm">{r.rolling}</td>
+                  <td className="border-l-[3px] border-foreground p-4 align-top text-sm">{r.fixed}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.feature} className="border-t-2 border-foreground/20">
-                    <td className="p-4 font-semibold">{r.feature}</td>
-                    <td className="p-4">{r.rolling}</td>
-                    <td className="p-4">{r.fixed}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
+              ))}
+            </tbody>
+          </table>
+        </Reveal>
+      </BrandSection>
 
-      <section className="py-12 md:py-16 bg-secondary border-y-4 border-foreground">
-        <div className="container mx-auto px-4 max-w-5xl grid md:grid-cols-2 gap-8">
-          <div className="bg-background border-4 border-foreground p-6">
-            <h3 className="text-2xl font-display uppercase mb-4">Rolling — Flex 30</h3>
-            <ul className="space-y-2 mb-4">
-              {rollingPros.map((p) => (
-                <li key={p} className="flex gap-2"><Check className="w-5 h-5 text-accent shrink-0" /><span>{p}</span></li>
-              ))}
-            </ul>
-            <ul className="space-y-2">
-              {rollingCons.map((p) => (
-                <li key={p} className="flex gap-2 text-muted-foreground"><X className="w-5 h-5 shrink-0" /><span>{p}</span></li>
-              ))}
-            </ul>
-          </div>
-          <div className="bg-background border-4 border-foreground p-6">
-            <h3 className="text-2xl font-display uppercase mb-4">Fixed — Price Lock 24</h3>
-            <ul className="space-y-2 mb-4">
-              {fixedPros.map((p) => (
-                <li key={p} className="flex gap-2"><Check className="w-5 h-5 text-accent shrink-0" /><span>{p}</span></li>
-              ))}
-            </ul>
-            <ul className="space-y-2">
-              {fixedCons.map((p) => (
-                <li key={p} className="flex gap-2 text-muted-foreground"><X className="w-5 h-5 shrink-0" /><span>{p}</span></li>
-              ))}
-            </ul>
-          </div>
+      <BrandSection tone="dark">
+        <Reveal>
+          <SectionEyebrow index="02" label="Pros and cons" tone="dark" />
+        </Reveal>
+        <div className="mt-8 grid gap-6 md:grid-cols-2">
+          {[
+            { title: "Rolling — Flex 30", pros: rollingPros, cons: rollingCons, accent: "bg-primary text-black" },
+            { title: "Fixed — Price Lock 24", pros: fixedPros, cons: fixedCons, accent: "bg-white text-black" },
+          ].map((c) => (
+            <Reveal key={c.title} className="border-[3px] border-white/25">
+              <h3 className={`px-6 py-4 font-display text-3xl uppercase leading-none ${c.accent}`}>{c.title}</h3>
+              <div className="p-6">
+                <ul className="space-y-2.5">
+                  {c.pros.map((p) => (
+                    <li key={p} className="flex gap-3 text-white/90">
+                      <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center bg-primary text-black" aria-hidden><Check className="h-3.5 w-3.5" strokeWidth={3} /></span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+                <ul className="mt-5 space-y-2.5 border-t border-white/15 pt-5">
+                  {c.cons.map((p) => (
+                    <li key={p} className="flex gap-3 text-white/60">
+                      <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center border border-white/30" aria-hidden><X className="h-3.5 w-3.5" /></span>
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Reveal>
+          ))}
         </div>
-      </section>
+      </BrandSection>
 
-      <section className="py-12 md:py-16 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-display uppercase mb-6">Which should you pick?</h2>
-          <div className="space-y-4 text-lg leading-relaxed">
-            <p><strong>Pick Flex 30</strong> if you're renting, moving in the next year, or simply don't want to be told what your April price rise is going to be. You get a 30-day rolling option where available, normally with 30 days’ notice and no remaining-month ETF. Separately valid network charges may apply.</p>
-            <p><strong>Pick Price Lock 24</strong> if you're settled and want the reassurance of a locked monthly price for two years — with no CPI or RPI mid-contract hikes.</p>
-            <p>Network technology, router options, setup and availability depend on the address and selected service. The Contract Summary shows the customer-specific details before acceptance.</p>
-          </div>
-          <div className="flex flex-wrap gap-3 mt-8">
-            <Button asChild size="lg"><Link to="/broadband/flex">See Flex 30</Link></Button>
-            <Button asChild size="lg" variant="outline"><Link to="/broadband/contract-saver">See Price Lock 24</Link></Button>
-          </div>
+      <BrandSection tone="yellow" className="border-y-[3px] border-black">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal>
+            <SectionEyebrow index="03" label="Decide" tone="yellow" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Which should you pick?</h2>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg" className="border-[3px] border-black bg-black font-display uppercase text-primary hover:bg-white hover:text-black"><Link to="/broadband/flex">See Flex 30</Link></Button>
+              <Button asChild size="lg" variant="outline" className="bg-white font-display uppercase text-black"><Link to="/broadband/contract-saver">See Price Lock 24</Link></Button>
+            </div>
+          </Reveal>
+          <Reveal className="space-y-5 text-lg leading-relaxed text-black/80">
+            <p className="border-l-[3px] border-black pl-5"><strong className="text-black">Pick Flex 30</strong> if you're renting, moving in the next year, or simply don't want to be told what your April price rise is going to be. You get a 30-day rolling option where available, normally with 30 days’ notice and no remaining-month ETF. Separately valid network charges may apply.</p>
+            <p className="border-l-[3px] border-black pl-5"><strong className="text-black">Pick Price Lock 24</strong> if you're settled and want the reassurance of a locked monthly price for two years — with no CPI or RPI mid-contract hikes.</p>
+            <p className="text-base text-black/70">Network technology, router options, setup and availability depend on the address and selected service. The Contract Summary shows the customer-specific details before acceptance.</p>
+          </Reveal>
         </div>
-      </section>
+      </BrandSection>
 
-      <section className="py-12 md:py-16 bg-secondary">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-display uppercase mb-6">FAQs</h2>
-          <Accordion type="single" collapsible className="border-4 border-foreground bg-background">
+      <BrandSection tone="light">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow index="04" label="Questions" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">FAQs</h2>
+          </Reveal>
+          <Accordion type="single" collapsible className="border-t-[3px] border-foreground">
             {faqs.map((f, i) => (
-              <AccordionItem key={i} value={`item-${i}`} className="border-b-2 border-foreground/20 last:border-b-0">
-                <AccordionTrigger className="px-4 text-left font-semibold">{f.question}</AccordionTrigger>
-                <AccordionContent className="px-4 pb-4 text-muted-foreground">{f.answer}</AccordionContent>
+              <AccordionItem key={i} value={`item-${i}`} className="border-b-[3px] border-foreground">
+                <AccordionTrigger className="py-5 text-left font-display text-xl uppercase leading-tight hover:no-underline sm:text-2xl">{f.question}</AccordionTrigger>
+                <AccordionContent className="pb-6 text-base leading-relaxed text-muted-foreground">{f.answer}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </div>
-      </section>
+      </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

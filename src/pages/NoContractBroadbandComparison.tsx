@@ -1,12 +1,13 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Check, X, ChevronRight, Zap } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
-import { motion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
 
 const providers = [
   { name: "OCCTA Flex 30", price: "From £37.99/mo", term: "30-day rolling", midRise: "No scheduled CPI/RPI/percentage rise under v2026.10.1", credit: "Check order terms", exit: "No remaining-month ETF; valid disclosed network charge may apply", highlight: true },
@@ -46,141 +47,131 @@ const NoContractBroadbandComparisonPage = () => {
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 
-      <div className="bg-secondary border-b-4 border-foreground/10">
-        <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium">Compare no-contract broadband</span>
-          </nav>
+      <MotionConfig reducedMotion="user">
+      <PosterStage>
+        <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Compare no-contract broadband" }]} />
+        <div className="max-w-3xl">
+          <HeroKicker>From £37.99/mo · No minimum term</HeroKicker>
+          <HeroTitle size="md">
+            No-Contract Broadband
+            {" "}<span className="block text-primary">Compared (UK 2026)</span>
+          </HeroTitle>
+          <p className="mt-6 mb-8 max-w-2xl text-lg leading-relaxed text-white/70">
+            Compare rolling and fixed-term broadband using the things that change your real cost: minimum term, scheduled price changes, setup, eligibility requirements and termination charges.
+          </p>
+          <PostcodeChecker variant="hero" />
         </div>
-      </div>
+      </PosterStage>
 
-      <section className="py-12 md:py-16 grid-pattern">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
-                <Zap className="w-4 h-4 inline mr-2" />
-                From £37.99/mo · No minimum term
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                No-Contract Broadband
-                <br />
-                <span className="text-gradient">Compared (UK 2026)</span>
-              </h1>
-              <p className="text-lg text-muted-foreground mb-6 max-w-2xl leading-relaxed">
-                Compare rolling and fixed-term broadband using the things that change your real cost: minimum term, scheduled price changes, setup, eligibility requirements and termination charges.
-              </p>
-              <PostcodeChecker />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">Rolling and fixed broadband at a glance</h2>
-          <div className="overflow-x-auto border-4 border-foreground/10">
-            <table className="w-full text-sm">
-              <thead className="bg-secondary">
-                <tr>
-                  <th className="text-left p-3 font-display uppercase">Provider</th>
-                  <th className="text-left p-3 font-display uppercase">From</th>
-                  <th className="text-left p-3 font-display uppercase">Term</th>
-                  <th className="text-left p-3 font-display uppercase">Mid-contract rise</th>
-                  <th className="text-left p-3 font-display uppercase">Credit check</th>
-                  <th className="text-left p-3 font-display uppercase">Exit fee</th>
-                </tr>
-              </thead>
-              <tbody>
-                {providers.map((p) => (
-                  <tr key={p.name} className={`border-t-2 border-foreground/10 ${p.highlight ? "bg-accent/10 font-semibold" : ""}`}>
-                    <td className="p-3">{p.name}{p.highlight && <span className="ml-2 text-xs text-accent">Flex 30</span>}</td>
-                    <td className="p-3">{p.price}</td>
-                    <td className="p-3">{p.term}</td>
-                    <td className="p-3">{p.midRise}</td>
-                    <td className="p-3">{p.credit}</td>
-                    <td className="p-3">{p.exit}</td>
-                  </tr>
+      <BrandSection tone="paper">
+        <Reveal>
+          <SectionEyebrow index="01" label="At a glance" />
+          <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Rolling and fixed broadband at a glance</h2>
+        </Reveal>
+        <Reveal className="mt-10 overflow-x-auto border-[3px] border-foreground bg-card">
+          <table className="w-full min-w-[760px] text-sm">
+            <thead>
+              <tr className="border-b-[3px] border-foreground">
+                {["Provider", "From", "Term", "Mid-contract rise", "Credit check", "Exit fee"].map((h) => (
+                  <th key={h} scope="col" className="p-4 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">{h}</th>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">Headline prices for entry-level fibre, correct at time of writing. Always check current provider pricing before switching.</p>
-        </div>
-      </section>
+              </tr>
+            </thead>
+            <tbody>
+              {providers.map((p) => (
+                <tr key={p.name} className={`border-b-2 border-foreground/10 last:border-b-0 ${p.highlight ? "bg-primary/25 font-semibold" : ""}`}>
+                  <th scope="row" className="p-4 text-left align-top font-display text-lg uppercase leading-tight">
+                    {p.name}
+                    {p.highlight && <span className="ml-2 inline-block bg-black px-1.5 py-0.5 font-sans text-[10px] font-bold tracking-wider text-primary">FLEX 30</span>}
+                  </th>
+                  <td className="p-4 align-top font-display text-lg leading-tight">{p.price}</td>
+                  <td className="p-4 align-top">{p.term}</td>
+                  <td className="p-4 align-top">{p.midRise}</td>
+                  <td className="p-4 align-top">{p.credit}</td>
+                  <td className="p-4 align-top">{p.exit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Reveal>
+        <p className="text-xs text-muted-foreground mt-4">Headline prices for entry-level fibre, correct at time of writing. Always check current provider pricing before switching.</p>
+      </BrandSection>
 
-      <section className="py-12 bg-secondary">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">How OCCTA Flex 30 works</h2>
-          <ul className="space-y-2">
-            {[
-              "Flex 30 is 30-day rolling where eligible — normal 30-day notice",
-              "No remaining-month ETF on Flex 30; separately valid network charges may apply",
-              "Current eligibility requirements are shown before you commit",
-              "Setup from £0 may be available; exact setup is confirmed before acceptance",
-              "Address-specific speed information and final price are confirmed before acceptance",
-              "UK-based support",
-            ].map((b) => (
-              <li key={b} className="flex items-start gap-3">
-                <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-muted-foreground">{b}</span>
-              </li>
-            ))}
-          </ul>
+      <BrandSection tone="dark">
+        <div className="grid gap-12 lg:grid-cols-2 lg:gap-16">
+          <Reveal>
+            <SectionEyebrow index="02" label="Flex 30" tone="dark" />
+            <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl">How OCCTA Flex 30 works</h2>
+            <ul className="mt-8 space-y-3">
+              {[
+                "Flex 30 is 30-day rolling where eligible — normal 30-day notice",
+                "No remaining-month ETF on Flex 30; separately valid network charges may apply",
+                "Current eligibility requirements are shown before you commit",
+                "Setup from £0 may be available; exact setup is confirmed before acceptance",
+                "Address-specific speed information and final price are confirmed before acceptance",
+                "UK-based support",
+              ].map((b) => (
+                <li key={b} className="flex items-start gap-3 text-white/85">
+                  <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center bg-primary text-black" aria-hidden><Check className="h-3.5 w-3.5" strokeWidth={3} /></span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+          <Reveal>
+            <SectionEyebrow index="03" label="Checklist" tone="dark" />
+            <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl">What to compare on any provider</h2>
+            <ol className="mt-8 border-t border-white/20">
+              {[
+                "The exact monthly price and any scheduled pounds-and-pence increase",
+                "Minimum term and notice period",
+                "Setup, engineer, router and delivery charges",
+                "Early-termination and network cease or migration charges",
+                "Identity, credit or eligibility checks",
+                "Address-specific speed information and technology",
+              ].map((b, i) => (
+                <li key={b} className="flex items-start gap-4 border-b border-white/20 py-3 text-white/80">
+                  <span className="font-display text-xl leading-none text-primary">{String(i + 1).padStart(2, "0")}</span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ol>
+          </Reveal>
         </div>
-      </section>
+      </BrandSection>
 
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">What to compare on any provider</h2>
-          <ul className="space-y-2">
-            {[
-              "The exact monthly price and any scheduled pounds-and-pence increase",
-              "Minimum term and notice period",
-              "Setup, engineer, router and delivery charges",
-              "Early-termination and network cease or migration charges",
-              "Identity, credit or eligibility checks",
-              "Address-specific speed information and technology",
-            ].map((b) => (
-              <li key={b} className="flex items-start gap-3">
-                <X className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                <span className="text-muted-foreground">{b}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="py-12 bg-secondary">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">Frequently Asked Questions</h2>
-          <Accordion type="single" collapsible className="space-y-2">
+      <BrandSection tone="light">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow index="04" label="Questions" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Frequently Asked Questions</h2>
+          </Reveal>
+          <Accordion type="single" collapsible className="border-t-[3px] border-foreground">
             {faqs.map((faq, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground/10 bg-card px-4">
-                <AccordionTrigger className="font-display text-left text-base hover:no-underline">{faq.question}</AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">{faq.answer}</AccordionContent>
+              <AccordionItem key={i} value={`faq-${i}`} className="border-b-[3px] border-foreground">
+                <AccordionTrigger className="py-5 text-left font-display text-xl uppercase leading-tight hover:no-underline sm:text-2xl">{faq.question}</AccordionTrigger>
+                <AccordionContent className="pb-6 text-base leading-relaxed text-muted-foreground">{faq.answer}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </div>
-      </section>
+      </BrandSection>
 
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="card-brutal bg-card p-6 md:p-8 text-center">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">Check your address</h2>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto">See which OCCTA Flex 30 and Price Lock 24 options are available at your address, with the applicable speed, price, term and setup information before acceptance.</p>
-            <Link to="/broadband">
-              <Button variant="hero" size="lg">
-                Check Availability
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-            </Link>
+      <BrandSection tone="yellow" className="border-t-[3px] border-black">
+        <Reveal className="grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_auto]">
+          <div>
+            <h2 className="font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Check your address</h2>
+            <p className="mt-4 max-w-2xl text-lg text-black/75">See which OCCTA Flex 30 and Price Lock 24 options are available at your address, with the applicable speed, price, term and setup information before acceptance.</p>
           </div>
-        </div>
-      </section>
+          <Link to="/broadband">
+            <Button size="lg" className="h-14 border-[3px] border-black bg-black px-8 font-display text-lg uppercase text-primary hover:bg-white hover:text-black">
+              Check Availability
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          </Link>
+        </Reveal>
+      </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

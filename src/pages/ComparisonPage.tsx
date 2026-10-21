@@ -1,12 +1,14 @@
 import { Link, useParams } from "react-router-dom";
-import { ArrowRight, Check, X, ChevronRight, Zap } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { SEO, StructuredData, createFAQSchema, createBreadcrumbSchema } from "@/components/seo";
 import { getComparisonBySlug, comparisons } from "@/data/comparisons";
 import NotFound from "@/pages/NotFound";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
+import { BrandSection, HeroKicker, HeroTitle, NumberedLinkList, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
 import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
 import PostcodeChecker from "@/components/home/PostcodeChecker";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
@@ -43,162 +45,133 @@ const ComparisonPageView = () => {
       />
       <StructuredData customOnly customSchema={combinedSchema} />
 
-      {/* Breadcrumb */}
-      <div className="bg-secondary border-b-4 border-foreground/10">
-        <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center gap-1 text-sm text-muted-foreground" aria-label="Breadcrumb">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <ChevronRight className="w-3 h-3" />
-            <Link to="/broadband" className="hover:text-foreground transition-colors">Broadband</Link>
-            <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium truncate">{comparison.heroTitle}</span>
-          </nav>
-        </div>
-      </div>
-
+      <MotionConfig reducedMotion="user">
       {/* Hero */}
-      <section className="py-12 md:py-16 grid-pattern">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <div className="inline-block stamp text-accent border-accent mb-4 rotate-[-2deg]">
-                <Zap className="w-4 h-4 inline mr-2" />
-                Comparison
-              </div>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-display uppercase leading-[0.9] mb-4 text-foreground">
-                {comparison.heroTitle.split(" ").map((word, i) => (
-                  <span key={i}>
-                    {i === 2 ? <span className="text-gradient">{word}</span> : word}
-                    {" "}
-                  </span>
-                ))}
-              </h1>
-              <p className="text-xl font-display text-muted-foreground mb-4">{comparison.heroSubtitle}</p>
-              <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">{comparison.intro}</p>
-            </motion.div>
-          </div>
+      <PosterStage>
+        <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Broadband", to: "/broadband" }, { label: comparison.heroTitle }]} />
+        <div className="max-w-4xl">
+          <HeroKicker>Comparison</HeroKicker>
+          <HeroTitle size="md">
+            {comparison.heroTitle.split(" ").map((word, i) => (
+              <span key={i}>
+                {i === 2 ? <span className="text-primary">{word}</span> : word}
+                {" "}
+              </span>
+            ))}
+          </HeroTitle>
+          <p className="mt-6 font-display text-2xl uppercase leading-tight text-white/85">{comparison.heroSubtitle}</p>
+          <p className="mt-3 max-w-2xl text-lg leading-relaxed text-white/65">{comparison.intro}</p>
         </div>
-      </section>
+      </PosterStage>
 
       {/* Comparison Table */}
-      <section className="py-16 bg-secondary stripes">
-        <div className="container mx-auto px-4">
-          <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-            <h2 className="text-display-md mb-8">SIDE BY SIDE</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full border-4 border-foreground bg-card">
-                <thead>
-                  <tr className="border-b-4 border-foreground">
-                    <th className="text-left p-4 font-display uppercase text-sm">Feature</th>
-                    <th className="text-left p-4 font-display uppercase text-sm bg-primary/10 border-l-4 border-foreground">OCCTA</th>
-                    <th className="text-left p-4 font-display uppercase text-sm border-l-4 border-foreground">{comparison.competitor}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparison.points.map((point, i) => (
-                    <tr key={i} className="border-b-2 border-foreground/10">
-                      <td className="p-4 font-medium text-sm">{point.feature}</td>
-                      <td className="p-4 text-sm bg-primary/5 border-l-4 border-foreground">
-                        <span className="flex items-center gap-2">
-                          <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                          {point.occta}
-                        </span>
-                      </td>
-                      <td className="p-4 text-sm text-muted-foreground border-l-4 border-foreground">
-                        {point.competitor}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      <BrandSection tone="paper">
+        <Reveal>
+          <SectionEyebrow index="01" label="Feature by feature" />
+          <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Side by side</h2>
+        </Reveal>
+        <Reveal className="mt-10 overflow-x-auto border-[3px] border-foreground bg-card">
+          <table className="w-full min-w-[560px]">
+            <thead>
+              <tr className="border-b-[3px] border-foreground">
+                <th scope="col" className="p-4 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground/60">Feature</th>
+                <th scope="col" className="border-l-[3px] border-foreground bg-primary p-4 text-left font-display text-2xl uppercase leading-none text-black">OCCTA</th>
+                <th scope="col" className="border-l-[3px] border-foreground p-4 text-left font-display text-2xl uppercase leading-none">{comparison.competitor}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.points.map((point, i) => (
+                <tr key={i} className="border-b-2 border-foreground/10 last:border-b-0">
+                  <th scope="row" className="p-4 text-left align-top font-display text-lg uppercase leading-tight">{point.feature}</th>
+                  <td className="border-l-[3px] border-foreground bg-primary/10 p-4 align-top text-sm">
+                    <span className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                      {point.occta}
+                    </span>
+                  </td>
+                  <td className="border-l-[3px] border-foreground p-4 align-top text-sm text-muted-foreground">
+                    {point.competitor}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Reveal>
+      </BrandSection>
 
       {/* Summary */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-display uppercase mb-4">The Verdict</h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">{comparison.summary}</p>
-        </div>
-      </section>
+      <BrandSection tone="dark">
+        <Reveal className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <div>
+            <SectionEyebrow index="02" label="Summary" tone="dark" />
+            <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">The Verdict</h2>
+          </div>
+          <p className="border-l-[3px] border-primary pl-6 text-xl leading-relaxed text-white/80">{comparison.summary}</p>
+        </Reveal>
+      </BrandSection>
 
       {/* FAQs */}
       {comparison.faqs.length > 0 && (
-        <section className="py-12 bg-secondary">
-          <div className="container mx-auto px-4 max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-6">
-              {comparison.heroTitle} — FAQs
-            </h2>
-            <Accordion type="single" collapsible className="space-y-2">
+        <BrandSection tone="light">
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+            <Reveal className="lg:sticky lg:top-28 lg:self-start">
+              <SectionEyebrow index="03" label="Questions" />
+              <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl">
+                {comparison.heroTitle} — FAQs
+              </h2>
+            </Reveal>
+            <Accordion type="single" collapsible className="border-t-[3px] border-foreground">
               {comparison.faqs.map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border-4 border-foreground/10 bg-card px-4">
-                  <AccordionTrigger className="font-display text-left text-base hover:no-underline">
+                <AccordionItem key={i} value={`faq-${i}`} className="border-b-[3px] border-foreground">
+                  <AccordionTrigger className="py-5 text-left font-display text-xl uppercase leading-tight hover:no-underline sm:text-2xl">
                     {faq.question}
                   </AccordionTrigger>
-                  <AccordionContent className="text-muted-foreground">
+                  <AccordionContent className="pb-6 text-base leading-relaxed text-muted-foreground">
                     {faq.answer}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
           </div>
-        </section>
+        </BrandSection>
       )}
 
-      {/* Other Comparisons */}
-      <section className="py-12 bg-background">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-xl font-display uppercase mb-4">More Comparisons</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {otherComparisons.map((c) => (
-              <Link key={c.slug} to={`/compare/${c.slug}`} className="card-brutal bg-card p-4 hover:bg-secondary transition-colors group">
-                <h3 className="font-display text-base mb-1 group-hover:text-primary transition-colors">{c.heroTitle}</h3>
-                <p className="text-sm text-muted-foreground">{c.heroSubtitle}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA */}
-      <section className="py-12 bg-secondary">
-        <div className="container mx-auto px-4 max-w-3xl">
-          <div className="card-brutal bg-card p-6 md:p-8">
-            <h2 className="text-2xl md:text-3xl font-display uppercase mb-3 text-center">
-              Ready to switch from {comparison.competitor}?
-            </h2>
-            <p className="text-muted-foreground mb-6 max-w-lg mx-auto text-center">
-              Three ways to get moving — check your postcode, pick a plan, or ask us to do it for you. Price Lock 24 or Flex 30 where eligible.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3 mb-6">
-              <Link to="/coverage-areas" className="border-4 border-foreground p-4 text-center hover:bg-secondary transition-colors group">
-                <div className="font-display uppercase text-sm mb-1 group-hover:text-primary">1. Check my address</div>
-                <div className="text-xs text-muted-foreground">See what speeds we can deliver.</div>
+      <BrandSection tone="yellow" className="border-y-[3px] border-black">
+        <Reveal>
+          <SectionEyebrow index={comparison.faqs.length > 0 ? "04" : "03"} label="Your move" tone="yellow" />
+          <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">
+            Ready to switch from {comparison.competitor}?
+          </h2>
+          <p className="mt-4 max-w-xl text-lg text-black/75">
+            Three ways to get moving — check your postcode, pick a plan, or ask us to do it for you. Price Lock 24 or Flex 30 where eligible.
+          </p>
+        </Reveal>
+        <Reveal stagger as="ol" className="mt-10 grid gap-[3px] border-[3px] border-black bg-black sm:grid-cols-3">
+          {[
+            { to: "/coverage-areas", t: "1. Check my address", d: "See what speeds we can deliver." },
+            { to: "/broadband", t: "2. Pick a plan", d: "Flex 30 or Price Lock 24." },
+            { to: "/contact", t: "3. Talk to us", d: "A human, not a script." },
+          ].map((s) => (
+            <motion.li key={s.to} variants={revealItem}>
+              <Link to={s.to} className="group flex h-full flex-col bg-white p-6 text-black transition-colors hover:bg-black hover:text-primary">
+                <span className="font-display text-3xl uppercase leading-none">{s.t}</span>
+                <span className="mt-2 text-sm text-black/65 group-hover:text-white/70">{s.d}</span>
+                <ArrowRight className="mt-4 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              <Link to="/broadband" className="border-4 border-foreground p-4 text-center hover:bg-secondary transition-colors group">
-                <div className="font-display uppercase text-sm mb-1 group-hover:text-primary">2. Pick a plan</div>
-                <div className="text-xs text-muted-foreground">Flex 30 or Price Lock 24.</div>
-              </Link>
-              <Link to="/contact" className="border-4 border-foreground p-4 text-center hover:bg-secondary transition-colors group">
-                <div className="font-display uppercase text-sm mb-1 group-hover:text-primary">3. Talk to us</div>
-                <div className="text-xs text-muted-foreground">A human, not a script.</div>
-              </Link>
-            </div>
-            <div className="max-w-md mx-auto mb-6">
-              <PostcodeChecker />
-            </div>
-            <div className="text-center">
-              <Link to="/broadband">
-                <Button variant="hero" size="lg">
-                  View all plans <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
+            </motion.li>
+          ))}
+        </Reveal>
+        <div className="mt-10 grid items-start gap-8 lg:grid-cols-2">
+          <div className="border-[3px] border-black bg-black p-6 dark hero-stage">
+            <PostcodeChecker variant="hero" />
+            <Link to="/broadband" className="mt-5 inline-block">
+              <Button variant="hero" size="lg">
+                View all plans <ArrowRight className="w-5 h-5" />
+              </Button>
+            </Link>
           </div>
-
-          <div className="mt-6">
+          <div className="border-[3px] border-black bg-white text-black">
             <LeadCaptureWidget
               source={`compare-${comparison.slug}`}
               title={`Want us to compare ${comparison.competitor} against your address?`}
@@ -208,7 +181,19 @@ const ComparisonPageView = () => {
             />
           </div>
         </div>
-      </section>
+      </BrandSection>
+
+      {/* Other Comparisons */}
+      <BrandSection tone="light">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-20">
+          <Reveal>
+            <SectionEyebrow index={comparison.faqs.length > 0 ? "05" : "04"} label="Keep reading" />
+            <h2 className="mt-5 font-display text-[2.5rem] uppercase leading-[0.9] sm:text-5xl">More Comparisons</h2>
+          </Reveal>
+          <NumberedLinkList items={otherComparisons.map((c) => ({ title: c.heroTitle, desc: c.heroSubtitle, path: `/compare/${c.slug}` }))} />
+        </div>
+      </BrandSection>
+      </MotionConfig>
     </Layout>
   );
 };

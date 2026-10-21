@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { journey2, quoteTokenStore, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
+import { loadJourneyCatalogue, loadJourneySession } from "@/lib/journey2/route";
 import Journey2Progress from "./steps/Journey2Progress";
 import OrderSummaryCard from "./steps/OrderSummaryCard";
 import AddressStep from "./steps/AddressStep";
@@ -82,7 +83,8 @@ export default function OrderJourney() {
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        const res = await journey2.get(token);
+        // First try may use the session primed while the plan cards were shown.
+        const res = attempt === 0 ? await loadJourneySession(token) : await journey2.get(token);
         if (!res?.ok || !res.session) {
           setError(res?.error ?? "session_not_found");
           return null;
@@ -150,7 +152,7 @@ export default function OrderJourney() {
       try {
         const [s, cat] = await Promise.all([
           loadSession(),
-          journey2.catalogue().then((r) => r?.catalogue ?? null).catch(() => null),
+          loadJourneyCatalogue().then((r) => r?.catalogue ?? null).catch(() => null),
         ]);
         setCatalogue(cat);
         if (s) {

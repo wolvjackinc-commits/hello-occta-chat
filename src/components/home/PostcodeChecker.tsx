@@ -24,6 +24,7 @@ const PostcodeChecker = ({ variant = "standalone", externalAddressSelect = false
     if (externalAddressSelect || status !== "success" || !result || !selectedAddress) return;
     prewarmAssignedJourney();
     void import("@/pages/order/OrderStart");
+    void import("@/pages/order/OrderJourney");
   }, [externalAddressSelect, status, result, selectedAddress]);
 
   // Navigate first so the click feels immediate. /order consumes the already

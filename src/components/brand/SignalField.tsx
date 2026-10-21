@@ -11,20 +11,28 @@ const SPACING = 28;
 const WAVE_SPEED = 0.42; // px per ms
 const WAVE_WIDTH = 70;
 const WAVE_LIFE = 2600; // ms
-const AUTO_PING_EVERY = 3400; // ms
-const GLOW_RADIUS = 150;
+const AUTO_PING_EVERY = 4200; // ms
+const GLOW_RADIUS = 110;
 
 type Wave = { x: number; y: number; t0: number; strength: number };
 
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const SignalField = ({ className = "" }: { className?: string }) => {
+const SignalField = ({
+  className = "",
+  quiet = false,
+}: {
+  className?: string;
+  /** Hold still (static grid) while the customer is reading something important, e.g. plan cards. */
+  quiet?: boolean;
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [animated, setAnimated] = useState(false);
+  const [motionAllowed, setMotionAllowed] = useState(false);
+  const animated = motionAllowed && !quiet;
 
   useEffect(() => {
-    setAnimated(!prefersReducedMotion());
+    setMotionAllowed(!prefersReducedMotion());
   }, []);
 
   useEffect(() => {
@@ -69,7 +77,7 @@ const SignalField = ({ className = "" }: { className?: string }) => {
       cursor.active = true;
       const now = performance.now();
       if (now - lastCursorWave > 420) {
-        waves.push({ x: p.x, y: p.y, t0: now, strength: 0.55 });
+        waves.push({ x: p.x, y: p.y, t0: now, strength: 0.35 });
         lastCursorWave = now;
       }
     };
@@ -87,7 +95,7 @@ const SignalField = ({ className = "" }: { className?: string }) => {
 
       if (now - lastAuto > AUTO_PING_EVERY) {
         // Auto pings come from the upper right, where the "24" ghost sits.
-        waves.push({ x: width * (0.62 + Math.random() * 0.3), y: height * (0.15 + Math.random() * 0.35), t0: now, strength: 0.85 });
+        waves.push({ x: width * (0.62 + Math.random() * 0.3), y: height * (0.15 + Math.random() * 0.35), t0: now, strength: 0.55 });
         lastAuto = now;
       }
       for (let i = waves.length - 1; i >= 0; i -= 1) {
@@ -113,7 +121,7 @@ const SignalField = ({ className = "" }: { className?: string }) => {
           }
           if (cursor.active) {
             const d = Math.hypot(x - cursor.x, y - cursor.y);
-            if (d < GLOW_RADIUS) energy += (1 - d / GLOW_RADIUS) * 0.6;
+            if (d < GLOW_RADIUS) energy += (1 - d / GLOW_RADIUS) * 0.35;
           }
 
           if (energy < 0.04) {
@@ -121,8 +129,8 @@ const SignalField = ({ className = "" }: { className?: string }) => {
             ctx.fillRect(x - 0.75, y - 0.75, 1.5, 1.5);
           } else {
             const e = Math.min(energy, 1);
-            const size = 1.5 + e * 2.5;
-            ctx.fillStyle = `rgba(255,230,0,${0.15 + e * 0.8})`;
+            const size = 1.5 + e * 1.6;
+            ctx.fillStyle = `rgba(255,230,0,${0.1 + e * 0.5})`;
             ctx.fillRect(x - size / 2, y - size / 2, size, size);
           }
         }

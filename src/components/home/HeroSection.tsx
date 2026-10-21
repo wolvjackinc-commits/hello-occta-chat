@@ -46,6 +46,7 @@ const HeroSection = () => {
     // click can therefore change route immediately.
     prewarmAssignedJourney();
     void import("@/pages/order/OrderStart");
+    void import("@/pages/order/OrderJourney");
   }, [hasResult, selectedAddress]);
 
   const handleChoosePlan = (planId: string) => {
@@ -96,7 +97,8 @@ const HeroSection = () => {
     // `dark` flips the design tokens for everything inside the hero (checker,
     // address list, loader, plan cards) so the stage reads as one black poster.
     <section className="dark hero-stage occ-grain relative overflow-clip bg-background text-foreground border-b-4 border-primary">
-      <SignalField />
+      {/* Still whenever the checker is in use, so plan cards and addresses read cleanly */}
+      <SignalField quiet={status !== "idle"} />
       <div aria-hidden className="pointer-events-none absolute -right-24 top-0 hidden lg:block font-display text-[34rem] leading-[0.8] text-white/[0.025] select-none">
         24
       </div>

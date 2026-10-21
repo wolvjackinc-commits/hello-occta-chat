@@ -182,11 +182,21 @@ import SwitchingPolicy from "./pages/legal/SwitchingPolicy";
 import NetworkManagement from "./pages/legal/NetworkManagement";
 import { MotionConfig } from "framer-motion";
 import RouteShutter from "@/components/brand/RouteShutter";
+import Layout from "@/components/layout/Layout";
 
 const LocationBroadband = lazy(() => import("./pages/LocationBroadband"));
 const queryClient = new QueryClient();
 
 const AdminRouteFallback = () => <OcctaLoader context="admin" variant="page" showTips={false} />;
+// Keeps the checkout header and the same "Setting up your order" loader on screen
+// while an order page's code downloads, so the hand-off never flashes blank.
+const OrderRouteFallback = () => (
+  <Layout>
+    <section className="container mx-auto max-w-xl px-4 py-16">
+      <OcctaLoader context="checkout" label="Setting up your order…" className="px-0 py-0 text-left" />
+    </section>
+  </Layout>
+);
 const CityPage = () => (
   <Suspense fallback={<div className="container mx-auto px-4 py-16 text-muted-foreground">Opening this city page…</div>}>
     <LocationBroadband />
@@ -299,7 +309,7 @@ const AnimatedRoutes = () => {
           </Route>
         </Route>
         <Route path="/broadband" element={<Broadband />} />
-        <Route path="/order" element={<Suspense fallback={<AdminRouteFallback />}><OrderStart /></Suspense>} />
+        <Route path="/order" element={<Suspense fallback={<OrderRouteFallback />}><OrderStart /></Suspense>} />
         <Route path="/broadband/flex" element={<FlexBroadband />} />
         <Route path="/broadband/contract-saver" element={<ContractSaverBroadband />} />
         <Route path="/switching" element={<SwitchingPage />} />
@@ -313,9 +323,9 @@ const AnimatedRoutes = () => {
         <Route path="/receipt/:token" element={<ReceiptView mode="token" />} />
         <Route path="/quote/payment/:token" element={<QuotePayment />} />
         <Route path="/quote/:token" element={<UnifiedJourney />} />
-        <Route path="/order" element={<Suspense fallback={<AdminRouteFallback />}><OrderStart /></Suspense>} />
-        <Route path="/order/:token" element={<Suspense fallback={<AdminRouteFallback />}><OrderJourney /></Suspense>} />
-        <Route path="/order/:token/complete" element={<Suspense fallback={<AdminRouteFallback />}><OrderComplete /></Suspense>} />
+        <Route path="/order" element={<Suspense fallback={<OrderRouteFallback />}><OrderStart /></Suspense>} />
+        <Route path="/order/:token" element={<Suspense fallback={<OrderRouteFallback />}><OrderJourney /></Suspense>} />
+        <Route path="/order/:token/complete" element={<Suspense fallback={<OrderRouteFallback />}><OrderComplete /></Suspense>} />
         <Route path="/legal/acceptable-use" element={<AcceptableUse />} />
         <Route path="/legal/complaints-code" element={<ComplaintsCode />} />
         <Route path="/legal/vulnerable-customers" element={<VulnerableCustomers />} />

@@ -36,7 +36,7 @@ export default function IncludedFreeSection() {
       <BrandContainer className="pt-16 md:pt-20">
         <Reveal className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <SectionEyebrow index="04" label="Always with OCCTA" tone="yellow" />
+            <SectionEyebrow index="05" label="Always with OCCTA" tone="yellow" />
             <SectionTitle className="mt-5 text-black">Included at no extra cost</SectionTitle>
           </div>
           <p className="max-w-[360px] text-base font-medium text-black/70">

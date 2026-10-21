@@ -1,8 +1,9 @@
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { revealItem, revealParent } from "@/components/brand/motion";
+import SignalField from "@/components/brand/SignalField";
 
 /* Shared building blocks for the homepage and marketing pages so every section
    reads as one system: the same container width, dark poster heroes,
@@ -26,8 +27,8 @@ export const PosterStage = ({
   ghost?: string;
   className?: string;
 }) => (
-  <section className={`dark hero-stage relative overflow-clip border-b-4 border-primary bg-background text-foreground ${className}`}>
-    <div aria-hidden className="hero-grid pointer-events-none absolute inset-0" />
+  <section className={`dark hero-stage occ-grain relative overflow-clip border-b-4 border-primary bg-background text-foreground ${className}`}>
+    <SignalField />
     {ghost && (
       <div
         aria-hidden
@@ -205,13 +206,31 @@ export const SectionEyebrow = ({ index, label, tone = "light" }: { index: string
   );
 };
 
-/** Big display heading used at the top of each homepage section. */
+const titleMask: Variants = {
+  hidden: { clipPath: "inset(0% -5% 100% -5%)", y: 36 },
+  visible: {
+    clipPath: "inset(-15% -5% -20% -5%)",
+    y: 0,
+    transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+  },
+};
+
+/** Big display heading used at the top of each section. It rises out of a mask
+    as it scrolls into view (instantly under reduced motion, via MotionConfig).
+    The heading itself stays unclipped so IntersectionObserver can see it; only
+    the inner span is masked. */
 export const SectionTitle = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
-  <h2
+  <motion.h2
     className={`font-display uppercase leading-[0.9] tracking-[-0.005em] text-[2.75rem] sm:text-6xl lg:text-7xl ${className}`}
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true, margin: "-60px" }}
+    variants={{ hidden: {}, visible: {} }}
   >
-    {children}
-  </h2>
+    <motion.span className="block" variants={titleMask}>
+      {children}
+    </motion.span>
+  </motion.h2>
 );
 
 /** Editorial card for guides, help articles and posts: label strip, display title, summary, read link. */

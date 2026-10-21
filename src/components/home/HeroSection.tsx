@@ -10,6 +10,7 @@ import { useAvailability, getShortAddress, getAddressLabel } from "@/contexts/Av
 import { prewarmAssignedJourney } from "@/lib/journey2/route";
 import { setPreferredSpeedBucket } from "@/lib/journey2/prefill";
 import OcctaLoader from "@/components/loading/OcctaLoader";
+import SignalField from "@/components/brand/SignalField";
 
 const HeroSection = () => {
   const prices = getFromPrices();
@@ -94,8 +95,8 @@ const HeroSection = () => {
   return (
     // `dark` flips the design tokens for everything inside the hero (checker,
     // address list, loader, plan cards) so the stage reads as one black poster.
-    <section className="dark hero-stage relative overflow-clip bg-background text-foreground border-b-4 border-primary">
-      <div aria-hidden className="hero-grid pointer-events-none absolute inset-0" />
+    <section className="dark hero-stage occ-grain relative overflow-clip bg-background text-foreground border-b-4 border-primary">
+      <SignalField />
       <div aria-hidden className="pointer-events-none absolute -right-24 top-0 hidden lg:block font-display text-[34rem] leading-[0.8] text-white/[0.025] select-none">
         24
       </div>

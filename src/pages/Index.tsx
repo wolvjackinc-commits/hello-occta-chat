@@ -16,6 +16,7 @@ const WhyUsSection = lazy(() => import("@/components/home/WhyUsSection"));
 const CustomerLoveSection = lazy(() => import("@/components/home/CustomerLoveSection"));
 const CTASection = lazy(() => import("@/components/home/CTASection"));
 const FairBroadbandPromise = lazy(() => import("@/components/home/FairBroadbandPromise"));
+const SpeedLabSection = lazy(() => import("@/components/home/SpeedLabSection"));
 const IncludedFreeSection = lazy(() => import("@/components/home/IncludedFreeSection"));
 const AppHome = lazy(() => import("@/components/app/AppHome"));
 const AppWelcome = lazy(() => import("@/components/app/AppWelcome"));
@@ -71,6 +72,7 @@ const Index = () => {
           <Suspense fallback={null}>
             <FairBroadbandPromise />
             <ServicesSection />
+            <SpeedLabSection />
             <IncludedFreeSection />
             <WhyUsSection />
             <CustomerLoveSection />

@@ -180,6 +180,8 @@ import CodeOfPractice from "./pages/legal/CodeOfPractice";
 import PriceTransparency from "./pages/legal/PriceTransparency";
 import SwitchingPolicy from "./pages/legal/SwitchingPolicy";
 import NetworkManagement from "./pages/legal/NetworkManagement";
+import { MotionConfig } from "framer-motion";
+import RouteShutter from "@/components/brand/RouteShutter";
 
 const LocationBroadband = lazy(() => import("./pages/LocationBroadband"));
 const queryClient = new QueryClient();
@@ -222,6 +224,7 @@ const AnimatedRoutes = () => {
   return (
     <>
       <ScrollToTop />
+      <RouteShutter />
       <CanonicalPath />
       <PrivateRouteNoIndex />
       <Routes location={location}>
@@ -480,8 +483,11 @@ const App = () => (
         <Sonner />
         <StructuredData type="all" />
         <BrowserRouter>
-          <AnimatedRoutes />
-          <CookieConsent />
+          {/* Every framer-motion reveal honours the visitor's reduced-motion setting */}
+          <MotionConfig reducedMotion="user">
+            <AnimatedRoutes />
+            <CookieConsent />
+          </MotionConfig>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

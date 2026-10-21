@@ -6,6 +6,7 @@ import CheckoutJourneyTracker from "@/components/checkout/CheckoutJourneyTracker
 import TopicCrosslink from "@/components/seo/TopicCrosslink";
 import Switch50CampaignStrip from "@/components/campaigns/Switch50CampaignStrip";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
+import CursorCompanion from "@/components/brand/CursorCompanion";
 
 const Footer = lazy(() => import("./Footer"));
 const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionV4"));
@@ -66,6 +67,7 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="min-h-screen flex flex-col">
       <CheckoutJourneyTracker />
       {isCheckout ? <CheckoutHeader /> : <Header />}
+      {!isCheckout && <CursorCompanion />}
       {!isCheckout && <TopicCrosslink />}
       {!isCheckout && <Switch50CampaignStrip />}
       <main className="flex-1">{children}</main>

@@ -34,7 +34,7 @@ const CTASection = () => (
       >
         <div>
           <motion.div variants={revealItem}>
-            <SectionEyebrow index="07" label="Ready when you are" tone="yellow" />
+            <SectionEyebrow index="08" label="Ready when you are" tone="yellow" />
           </motion.div>
 
           <motion.p

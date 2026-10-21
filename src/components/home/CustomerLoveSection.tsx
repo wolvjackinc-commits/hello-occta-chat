@@ -60,7 +60,7 @@ const CustomerLoveSection = () => {
       <BrandContainer className="py-20 md:py-28">
         <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-end">
           <div>
-            <SectionEyebrow index="06" label="Find your fit" tone="dark" />
+            <SectionEyebrow index="07" label="Find your fit" tone="dark" />
             <SectionTitle className="mt-5 text-white">
               Which kind of
               <br />

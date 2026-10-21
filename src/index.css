@@ -392,6 +392,60 @@
   mask-image: radial-gradient(ellipse 75% 65% at 70% 35%, #000 20%, transparent 80%);
 }
 
+/* Interactive dot field (brand/SignalField.tsx): fades out towards the edges. */
+.signal-field {
+  -webkit-mask-image: radial-gradient(ellipse 85% 80% at 65% 35%, #000 25%, transparent 85%);
+  mask-image: radial-gradient(ellipse 85% 80% at 65% 35%, #000 25%, transparent 85%);
+}
+
+/* Download race lanes (brand/SpeedRace.tsx): downloads fill linearly. Under reduced
+   motion they finish instantly but still fire animationend so the times reveal. */
+.occ-race { width: 0; animation: occ-race var(--occ-race-ms, 1s) linear forwards; }
+@keyframes occ-race { to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .occ-race { animation-duration: 1ms !important; }
+}
+
+/* Route shutter (brand/RouteShutter.tsx): covers the page swap, then lifts away. */
+.occ-shutter { animation: occ-shutter 720ms cubic-bezier(0.76, 0, 0.24, 1) forwards; }
+@keyframes occ-shutter { 0%, 28% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+.occ-shutter-mark { animation: occ-shutter-mark 720ms cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes occ-shutter-mark {
+  0% { transform: scale(0.6) rotate(-8deg); opacity: 0; }
+  22% { transform: scale(1) rotate(0deg); opacity: 1; }
+  60% { opacity: 1; }
+  100% { transform: translateY(-40px); opacity: 0; }
+}
+
+/* Cursor companion (brand/CursorCompanion.tsx): a difference-blended square, so it
+   inverts whatever it sits on and stays visible on black, paper and yellow alike. */
+.occ-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 150;
+  width: 34px;
+  height: 34px;
+  border: 2px solid #fff;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  transition: opacity 200ms ease, border-width 200ms ease;
+  will-change: transform;
+}
+.occ-cursor[data-hot="true"] { border-width: 1.5px; }
+
+/* Printed-poster grain over the dark stages. Static, so no reduced-motion rule. */
+.occ-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 .hero-strike { position: relative; white-space: nowrap; }
 .hero-strike::after {
   content: "";

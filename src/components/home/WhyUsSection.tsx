@@ -63,7 +63,7 @@ const WhyUsSection = () => (
     <BrandContainer className="py-20 md:py-28">
       <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-end">
         <div>
-          <SectionEyebrow index="05" label="Why switch" />
+          <SectionEyebrow index="06" label="Why switch" />
           <SectionTitle className="mt-5">
             Reasons people
             <br />

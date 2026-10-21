@@ -21,6 +21,7 @@ import { setPreferredSpeedBucket } from "@/lib/journey2/prefill";
 import { BrandSection, HeroKicker, HeroTitle, NumberedLinkList, PosterStage, Reveal, SectionEyebrow, SectionTitle, TicketSlab } from "@/components/brand/kit";
 import { revealItem, revealParent } from "@/components/brand/motion";
 import { RouterArt, VoiceArt } from "@/components/brand/illustrations";
+import SpeedRace from "@/components/brand/SpeedRace";
 
 const BroadbandInner = () => {
   const [showVoiceDialog, setShowVoiceDialog] = useState(false);
@@ -561,11 +562,31 @@ const BroadbandInner = () => {
         </p>
       </BrandSection>
 
+      {/* The download race: what each speed band feels like */}
+      <BrandSection tone="dark">
+        <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:items-end">
+          <div>
+            <SectionEyebrow index="02" label="The download race" tone="dark" />
+            <SectionTitle className="mt-5 text-white">
+              Feel the difference
+              <br />
+              <span className="text-[hsl(var(--primary))]">before you choose.</span>
+            </SectionTitle>
+          </div>
+          <p className="text-lg leading-relaxed text-white/65">
+            Same download, four speed bands, side by side. Pick the band that fits how your home actually uses the internet.
+          </p>
+        </Reveal>
+        <div className="mt-12 text-white">
+          <SpeedRace tone="dark" />
+        </div>
+      </BrandSection>
+
       {/* Flex 30 */}
       <BrandSection tone="yellow" className="border-y-[3px] border-black" containerClassName="!py-14 md:!py-20">
         <Reveal className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div>
-            <SectionEyebrow index="02" label="Rolling option" tone="yellow" />
+            <SectionEyebrow index="03" label="Rolling option" tone="yellow" />
             <SectionTitle className="mt-5">Flex 30 where offered / no fixed minimum term</SectionTitle>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-black/75">
               Need broadband without a long tie-in? See the rolling option and its notice terms, where Flex 30 is offered for your selected plan.
@@ -589,7 +610,7 @@ const BroadbandInner = () => {
       <BrandSection tone="dark">
         <div className="grid gap-12 md:grid-cols-2 md:items-center lg:gap-20">
           <Reveal>
-            <SectionEyebrow index="03" label="Home phone" tone="dark" />
+            <SectionEyebrow index="04" label="Home phone" tone="dark" />
             <SectionTitle className="mt-5">Add Digital Voice (optional add-on)</SectionTitle>
             <p className="mt-5 text-lg leading-relaxed text-white/70">
               Home Phone over broadband — keep your number where porting is available and plug into a compatible router. Add-on to your broadband, from <span className="font-bold text-white">£{getFromPrices().landline}/month</span>.
@@ -639,7 +660,7 @@ const BroadbandInner = () => {
       <BrandSection tone="paper">
         <Reveal className="grid items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:gap-20">
           <div>
-            <SectionEyebrow index="04" label="Equipment" />
+            <SectionEyebrow index="05" label="Equipment" />
             <SectionTitle className="mt-5">Router Choice</SectionTitle>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-foreground/70">
               Bring your own compatible router for £0, or choose an available router option during your order. Digital Voice requires compatible equipment; the order journey shows the applicable options and charges before acceptance.
@@ -659,7 +680,7 @@ const BroadbandInner = () => {
         <div className="grid gap-14 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-20">
           <div>
             <Reveal>
-              <SectionEyebrow index="05" label="Keep reading" />
+              <SectionEyebrow index="06" label="Keep reading" />
               <SectionTitle className="mt-5">Broadband Guides</SectionTitle>
             </Reveal>
             <div className="mt-10">

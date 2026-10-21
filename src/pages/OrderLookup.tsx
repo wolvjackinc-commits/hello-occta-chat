@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/layout/Layout";
+import { HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage } from "@/components/brand/kit";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,23 +118,20 @@ export default function OrderLookup() {
   return (
     <Layout>
       <SEO title="Track an OCCTA order" description="Look up an OCCTA order with the order number and the email address used at checkout." canonical="/track-order" noIndex />
-      <div className="min-h-screen bg-background py-12">
+      <PosterStage>
+        <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Track your order" }]} />
+        <HeroKicker>Order tracking</HeroKicker>
+        <HeroTitle size="md">Track your order</HeroTitle>
+        <p className="mt-6 max-w-2xl text-lg text-white/70">Enter your order number and email to check your order status</p>
+      </PosterStage>
+      <div className="min-h-[60vh] bg-secondary py-12 md:py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="max-w-2xl mx-auto"
           >
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
-                TRACK YOUR ORDER
-              </h1>
-              <p className="text-muted-foreground text-lg">
-                Enter your order number and email to check your order status
-              </p>
-            </div>
-
-            <Card className="border-4 border-foreground shadow-brutal mb-8">
+            <Card className="border-[3px] border-foreground shadow-[8px_8px_0_0_hsl(var(--primary))] mb-8">
               <CardHeader>
                 <CardTitle className="font-display flex items-center gap-2">
                   <Search className="w-5 h-5" />

@@ -58,6 +58,10 @@ const Header = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // Desktop links are text-only so the row fits from 1024px; xl gets the roomier size.
+  const desktopLink =
+    "whitespace-nowrap px-2 py-1.5 font-display text-base tracking-wide transition-all duration-150 flex items-center border-4 xl:px-3 xl:py-2 xl:text-lg";
+
   return (
     <header className="sticky top-0 z-50 bg-background border-b-4 border-foreground">
       {/* Announcement Bar */}
@@ -72,33 +76,32 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-4 group">
+          <Link to="/" className="flex shrink-0 items-center gap-3 xl:gap-4 group">
             <div className="relative">
               <div className="w-14 h-14 bg-primary border-4 border-foreground shadow-brutal flex items-center justify-center group-hover:-translate-y-0.5 group-hover:-translate-x-0.5 group-hover:shadow-brutal-lg transition-all duration-150">
                 <span className="font-display text-2xl text-primary-foreground">O</span>
               </div>
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col whitespace-nowrap">
               <span className="font-display text-3xl tracking-tight">OCCTA</span>
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+              <span className="lg:hidden xl:block text-xs font-medium text-muted-foreground uppercase tracking-widest">
                 Telecom That Gets It
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex shrink-0 items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.path}
-                className={`px-4 py-2 font-display text-lg tracking-wide transition-all duration-150 flex items-center gap-2 border-4 ${
+                className={`${desktopLink} ${
                   isActive(item.path)
                     ? "bg-secondary text-foreground border-foreground shadow-brutal -translate-y-0.5"
                     : "border-transparent hover:border-foreground hover:bg-secondary"
                 }`}
               >
-                {item.icon && <item.icon className="w-4 h-4" />}
                 {item.name}
               </Link>
             ))}
@@ -106,45 +109,44 @@ const Header = () => {
             <Link
               to={user ? "/dashboard" : "/auth?claim=1&next=/dashboard"}
               aria-label={user ? "My OCCTA dashboard" : "Customer login"}
-              className={`px-4 py-2 font-display text-lg tracking-wide transition-all duration-150 flex items-center gap-2 border-4 ${
+              className={`${desktopLink} ${
                 isActive("/dashboard")
                   ? "bg-secondary text-foreground border-foreground shadow-brutal -translate-y-0.5"
                   : "border-transparent hover:border-foreground hover:bg-secondary"
               }`}
             >
-              <User className="w-4 h-4" />
               {user ? "My OCCTA" : "Customer Login"}
             </Link>
             {isAdmin && (
               <Link
                 to="/admin"
-                className={`px-4 py-2 font-display text-lg tracking-wide transition-all duration-150 flex items-center gap-2 border-4 ${
+                className={`${desktopLink} ${
                   isActive("/admin")
                     ? "bg-destructive text-destructive-foreground border-foreground shadow-brutal -translate-y-0.5"
                     : "border-transparent hover:border-foreground hover:bg-destructive/10 text-destructive"
                 }`}
               >
-                <ShieldCheck className="w-4 h-4" />
                 Admin
               </Link>
             )}
           </nav>
 
-          {/* CTA Buttons */}
-          <div className="hidden lg:flex items-center gap-4">
-            <a 
-              href={CONTACT_PHONE_TEL} 
-              className="flex items-center gap-2 font-display text-lg hover:text-accent transition-colors"
+          {/* CTA Buttons: phone number and Track Order sit inline from 2xl, in the menu below that */}
+          <div className="hidden lg:flex shrink-0 items-center gap-3 2xl:gap-4">
+            <a
+              href={CONTACT_PHONE_TEL}
+              aria-label={`Call OCCTA on ${CONTACT_PHONE_DISPLAY}`}
+              className="hidden xl:flex items-center gap-2 whitespace-nowrap font-display text-lg hover:text-accent transition-colors"
             >
               <div className="p-2 bg-foreground text-background">
                 <Phone className="w-4 h-4" />
               </div>
-              {CONTACT_PHONE_DISPLAY}
+              <span className="hidden 2xl:inline">{CONTACT_PHONE_DISPLAY}</span>
             </a>
             {user ? (
               <>
                 <NotificationBell />
-                <Link to="/dashboard">
+                <Link to="/dashboard" className="hidden 2xl:block">
                   <Button variant="outline" size="sm" className="gap-2">
                     <User className="w-4 h-4" />
                     Dashboard
@@ -153,14 +155,11 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Link to="/track-order">
+                <Link to="/track-order" className="hidden 2xl:block">
                   <Button variant="ghost" size="sm" className="gap-2">
                     <Search className="w-4 h-4" />
                     Track Order
                   </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button variant="outline" size="sm">Sign In</Button>
                 </Link>
                 <Link to="/auth?mode=signup">
                   <Button variant="hero" size="sm">Get Started</Button>
@@ -169,26 +168,28 @@ const Header = () => {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Menu Button: the full menu below lg; overflow items (phone, Track Order, Sign In) until 2xl */}
           <button
-            className="lg:hidden p-3 border-4 border-foreground bg-background hover:bg-secondary transition-colors"
+            className="2xl:hidden flex shrink-0 items-center gap-2 p-3 lg:p-2 border-4 border-foreground bg-background hover:bg-secondary transition-colors"
             onClick={() => setIsOpen(!isOpen)}
             aria-label="Toggle menu"
+            aria-expanded={isOpen}
           >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isOpen ? <X className="w-6 h-6 lg:w-5 lg:h-5" /> : <Menu className="w-6 h-6 lg:w-5 lg:h-5" />}
+            <span className="hidden lg:inline font-display text-base tracking-wide">Menu</span>
           </button>
         </div>
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="lg:hidden py-4 border-t-4 border-foreground animate-slide-up">
+          <div className="2xl:hidden py-4 border-t-4 border-foreground animate-slide-up">
             <nav className="flex flex-col gap-2">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
                   onClick={() => setIsOpen(false)}
-                  className={`px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
+                  className={`lg:hidden px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
                     isActive(item.path)
                       ? "bg-secondary text-foreground border-foreground shadow-brutal"
                       : "border-transparent hover:border-foreground hover:bg-secondary"
@@ -202,7 +203,7 @@ const Header = () => {
                 to={user ? "/dashboard" : "/auth?claim=1&next=/dashboard"}
                 onClick={() => setIsOpen(false)}
                 aria-label={user ? "My OCCTA dashboard" : "Customer login"}
-                className={`px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
+                className={`lg:hidden px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
                   isActive("/dashboard")
                     ? "bg-secondary text-foreground border-foreground shadow-brutal"
                     : "border-transparent hover:border-foreground hover:bg-secondary"
@@ -215,7 +216,7 @@ const Header = () => {
                 <Link
                   to="/admin"
                   onClick={() => setIsOpen(false)}
-                  className={`px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
+                  className={`lg:hidden px-4 py-3 font-display text-xl tracking-wide transition-all duration-150 flex items-center gap-3 border-4 ${
                     isActive("/admin")
                       ? "bg-destructive text-destructive-foreground border-foreground shadow-brutal"
                       : "border-transparent hover:border-foreground hover:bg-destructive/10 text-destructive"
@@ -225,8 +226,9 @@ const Header = () => {
                   Admin
                 </Link>
               )}
-              <div className="flex flex-col gap-3 mt-4 pt-4 border-t-4 border-foreground">
-                <a href={CONTACT_PHONE_TEL} className="flex items-center gap-3 px-4 py-2 font-display text-lg">
+              {/* From lg the links above are in the header row, so only these overflow items show, in a row */}
+              <div className="flex flex-col gap-3 mt-4 pt-4 border-t-4 border-foreground lg:flex-row lg:items-center lg:justify-end lg:mt-0 lg:pt-0 lg:border-t-0">
+                <a href={CONTACT_PHONE_TEL} className="flex items-center gap-3 px-4 py-2 font-display text-lg lg:mr-auto lg:px-0">
                   <div className="p-2 bg-foreground text-background">
                     <Phone className="w-5 h-5" />
                   </div>
@@ -234,7 +236,7 @@ const Header = () => {
                 </a>
                 {user ? (
                   <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                    <Button variant="outline" className="w-full gap-2">
+                    <Button variant="outline" className="w-full gap-2 lg:w-auto">
                       <User className="w-4 h-4" />
                       Dashboard
                     </Button>
@@ -242,15 +244,15 @@ const Header = () => {
                 ) : (
                   <>
                     <Link to="/track-order" onClick={() => setIsOpen(false)}>
-                      <Button variant="ghost" className="w-full gap-2">
+                      <Button variant="ghost" className="w-full gap-2 lg:w-auto">
                         <Search className="w-4 h-4" />
                         Track Order
                       </Button>
                     </Link>
                     <Link to="/auth" onClick={() => setIsOpen(false)}>
-                      <Button variant="outline" className="w-full">Sign In</Button>
+                      <Button variant="outline" className="w-full lg:w-auto">Sign In</Button>
                     </Link>
-                    <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
+                    <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)} className="lg:hidden">
                       <Button variant="hero" className="w-full">Get Started</Button>
                     </Link>
                   </>

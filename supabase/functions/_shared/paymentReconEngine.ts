@@ -410,9 +410,16 @@ export function mapStatus(raw: string | null | undefined): ReconStatus {
   if (text.includes("do not chase") || text === "closed" || text.startsWith("closed ")) return "closed";
   if (text.includes("not yet submitted") || text.includes("awaiting submission")) return "not_yet_submitted";
   if (text.includes("cancelled mandate") || text.includes("mandate cancelled") || text.includes("addacs")) return "cancelled_mandate";
-  if (text.includes("failed") || text.includes("arudd")) return "failed";
+  // A payment is only ever "paid" on an unambiguous success word. "Unpaid",
+  // "not paid", returned or re-presented collections are failures, never paid.
+  if (
+    text.includes("failed") || text.includes("arudd") || text.includes("unpaid") ||
+    text.includes("not paid") || text.includes("unsuccessful") || text.includes("returned") ||
+    text.includes("rejected") || text.includes("bounced") || text.includes("refer to payer") ||
+    text.includes("represent") || text.includes("re present")
+  ) return "failed";
   if (text.includes("overdue")) return "overdue";
-  if (text.includes("paid") || text === "collected") return "paid";
+  if (/\bpaid\b/.test(text) || text === "collected") return "paid";
   if (text.includes("pending")) return "pending";
   return "pending";
 }

@@ -1,16 +1,19 @@
 import { oneOffTotal } from "@/lib/journey2/conversion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { money, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
+import type { OrderSelection } from "@/lib/journey2/selection";
 
 export default function RouterStep({
-  catalogue, session, saving, onSave, onBack,
+  catalogue, session, saving, onSave, onBack, onSelectionChange,
 }: {
   catalogue: Catalogue;
   session: Journey2Session;
   saving: boolean;
   onSave: (payload: Record<string, unknown>) => void;
   onBack: () => void;
+  /** Reports the unsaved choice so the order summary can price it live. */
+  onSelectionChange?: (selection: OrderSelection) => void;
 }) {
   // Flex 30 must not offer the monthly Standard WiFi 6 option: the pricing
   // engine intentionally blocks that combination so there is no long equipment
@@ -24,6 +27,10 @@ export default function RouterStep({
   const [key, setKey] = useState(current);
   const selectedKey = availableRouters.some((r) => r.key === key) ? key : availableRouters[0]?.key;
   const chosen = availableRouters.find((r) => r.key === selectedKey) ?? availableRouters[0];
+
+  useEffect(() => {
+    if (chosen) onSelectionChange?.({ router: { option: chosen.option, payment_type: chosen.payment_type } });
+  }, [chosen?.option, chosen?.payment_type, onSelectionChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const optionLabel = (r: (typeof availableRouters)[number]) => {
     if (r.option === "own") return "Bring your own router";

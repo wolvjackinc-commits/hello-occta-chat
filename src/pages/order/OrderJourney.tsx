@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { journey2, quoteTokenStore, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
 import { loadJourneyCatalogue, loadJourneySession } from "@/lib/journey2/route";
+import type { OrderSelection } from "@/lib/journey2/selection";
 import Journey2Progress from "./steps/Journey2Progress";
 import OrderSummaryCard from "./steps/OrderSummaryCard";
 import AddressStep from "./steps/AddressStep";
@@ -29,6 +30,44 @@ type PreContractStep = typeof PRE_CONTRACT_STEPS[number];
 type EditableStep = PreContractStep | "billing";
 const NETWORK_RETRY_DELAY_MS = 450;
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+/**
+ * Steps whose Continue moves straight to the next screen while the save runs
+ * in the background (each save takes ~2-5s). They only lead to another
+ * pre-contract screen, so nothing binding depends on the round trip; the server
+ * still validates every save, queued in order, and a failure brings the
+ * customer back to that screen. Start date (which prepares the contract) and
+ * billing stay blocking.
+ */
+const OPTIMISTIC_STEPS: readonly EditableStep[] = ["address", "plan", "router", "extras", "details"];
+
+/** Mirrors what save_step changes on the server, so the next screen renders straight away. */
+function applySaveLocally(s: Journey2Session, step: PreContractStep, payload: Record<string, any>): Journey2Session {
+  const savedIdx = PRE_CONTRACT_STEPS.indexOf(step);
+  const currentIdx = PRE_CONTRACT_STEPS.indexOf(s.current_step as PreContractStep);
+  const next: Journey2Session = {
+    ...s,
+    // The saved price is re-resolved server-side; hide it rather than show a stale total.
+    price_snapshot: null,
+    current_step: currentIdx < 0 || savedIdx >= currentIdx ? PRE_CONTRACT_STEPS[savedIdx + 1] : s.current_step,
+  };
+  const details = (s.customer_details ?? {}) as Record<string, unknown>;
+  if (step === "address") {
+    next.customer_details = { ...details, email: payload.contact_email, full_name: payload.contact_full_name } as Journey2Session["customer_details"];
+    next.supplier_availability_snapshot = null;
+  } else if (step === "plan") {
+    next.speed_bucket = payload.speed_bucket;
+    next.plan_term = payload.plan_term;
+  } else if (step === "router") {
+    next.router_option = payload as Journey2Session["router_option"];
+  } else if (step === "extras") {
+    next.selected_addons = payload.addons;
+    next.digital_voice_acknowledged = !!payload.digital_voice_acknowledged;
+  } else if (step === "details") {
+    next.customer_details = { ...details, ...payload } as Journey2Session["customer_details"];
+  }
+  return next;
+}
 
 /**
  * Journey 2 — one continuous ordering flow.
@@ -56,6 +95,24 @@ export default function OrderJourney() {
   const applyingRef = useRef(false);
   const [applyError, setApplyError] = useState<string | null>(null);
   const editingRef = useRef(false);
+  // Background saves (see OPTIMISTIC_STEPS): a FIFO chain so the server sees steps in order.
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingSavesRef = useRef(0);
+  const failedSaveRef = useRef(false);
+  const [backgroundSaves, setBackgroundSaves] = useState(0);
+  // Unsaved choices on the plan/router/extras screens, priced live in the summary.
+  const [selection, setSelection] = useState<OrderSelection | null>(null);
+  const updateSelection = useCallback((next: OrderSelection) => {
+    setSelection((current) => ({ ...(current ?? {}), ...next }));
+  }, []);
+
+  // Don't let a customer close the tab while a background save is still in flight.
+  useEffect(() => {
+    if (backgroundSaves === 0) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [backgroundSaves]);
 
   const activeStep = (backStep ?? session?.current_step ?? "address") as string;
   const inSelection = (PRE_CONTRACT_STEPS as readonly string[]).includes(activeStep);
@@ -259,23 +316,79 @@ export default function OrderJourney() {
     }
   }, [journeyState?.journey?.current_step, journeyState?.journey?.contract_accepted_at, quoteToken, session?.current_step, applyPostContract]);
 
+  const reportSaveFailure = (step: EditableStep, res: any) => {
+    if (session) void trackConversion(session, token!, step, "save_error");
+    toast({
+      title: res?.error === "not_orderable_online" ? "We'll price this with you" : "Couldn't save that",
+      description: res?.message ?? "Please check your answers and try again.",
+      variant: "destructive",
+    });
+    if (res?.redirect) window.location.assign(res.redirect);
+  };
+
+  /** Continue without waiting: advance now, save in the background, in order. */
+  const saveInBackground = (step: PreContractStep, payload: Record<string, unknown>) => {
+    if (!token || !session) return;
+    failedSaveRef.current = false;
+    setBackStep(null);
+    setSelection(null);
+    setSession((current) => (current ? applySaveLocally(current, step, payload as Record<string, any>) : current));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    pendingSavesRef.current += 1;
+    setBackgroundSaves(pendingSavesRef.current);
+    saveChainRef.current = saveChainRef.current.then(async () => {
+      if (failedSaveRef.current) return; // an earlier save failed; the customer is back on that screen
+      try {
+        const res = await journey2.saveStep(token, step, payload);
+        if (!res?.ok || !res.session) {
+          failedSaveRef.current = true;
+          reportSaveFailure(step, res);
+          setBackStep(step);
+          await loadSession();
+          return;
+        }
+        void trackConversion(res.session, token, step, "saved");
+        // Only adopt the server's copy once the queue is drained, so an earlier
+        // response never pulls the customer back from a screen they've moved on to.
+        if (pendingSavesRef.current === 1) {
+          setSession((current) => {
+            const local = PRE_CONTRACT_STEPS.indexOf(current?.current_step as PreContractStep);
+            const server = PRE_CONTRACT_STEPS.indexOf(res.session.current_step as PreContractStep);
+            return local > server ? { ...res.session, current_step: current!.current_step } : res.session;
+          });
+        }
+      } catch (e) {
+        failedSaveRef.current = true;
+        reportSaveFailure(step, { message: "We couldn't save that just now. Please check your connection and try again." });
+        setBackStep(step);
+        await loadSession();
+      } finally {
+        pendingSavesRef.current -= 1;
+        setBackgroundSaves(pendingSavesRef.current);
+      }
+    });
+  };
+
   const save = async (step: EditableStep, payload: Record<string, unknown>) => {
     if (!token || saving) return;
+    if (!editingRef.current && OPTIMISTIC_STEPS.includes(step)) {
+      saveInBackground(step as PreContractStep, payload);
+      return;
+    }
     setSaving(true);
     try {
+      // Blocking saves wait for any background saves so the server sees steps in order.
+      await saveChainRef.current;
+      if (failedSaveRef.current) return;
       const res = await journey2.saveStep(token, step, payload);
       if (!res?.ok || !res.session) {
-        if (session) void trackConversion(session, token, step, "save_error");
-        toast({
-          title: res?.error === "not_orderable_online" ? "We'll price this with you" : "Couldn't save that",
-          description: res?.message ?? "Please check your answers and try again.",
-          variant: "destructive",
-        });
-        if (res?.redirect) window.location.assign(res.redirect);
+        reportSaveFailure(step, res);
         return;
       }
       void trackConversion(res.session, token, step, "saved");
       setBackStep(null);
+      setSelection(null);
       setSession(res.session);
       // Editing after the contract was prepared invalidates it — regenerate so
       // the customer only ever signs a contract that matches their choices.
@@ -360,7 +473,7 @@ export default function OrderJourney() {
       />
       <section className="w-full px-3 py-4 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <Journey2Progress current={displayStep} />
-        <MobileOrderTotal session={session} />
+        <MobileOrderTotal session={session} catalogue={catalogue} selection={inSelection ? selection : null} />
         {session.test_session && (
           <p className="mb-4 border-2 border-foreground p-3 text-xs font-display uppercase tracking-widest">
             Test session — this order is marked internally as a test.
@@ -374,15 +487,15 @@ export default function OrderJourney() {
             )}
             {inSelection && activeStep === "plan" && catalogue && (
               <PlanStep catalogue={catalogue} session={session} saving={saving}
-                onSave={(p) => save("plan", p)} onBack={() => setBackStep("address")} />
+                onSave={(p) => save("plan", p)} onBack={() => setBackStep("address")} onSelectionChange={updateSelection} />
             )}
             {inSelection && activeStep === "router" && catalogue && (
               <RouterStep catalogue={catalogue} session={session} saving={saving}
-                onSave={(p) => save("router", p)} onBack={() => setBackStep("plan")} />
+                onSave={(p) => save("router", p)} onBack={() => setBackStep("plan")} onSelectionChange={updateSelection} />
             )}
             {inSelection && activeStep === "extras" && catalogue && (
               <ExtrasStep catalogue={catalogue} session={session} saving={saving}
-                onSave={(p) => save("extras", p)} onBack={() => setBackStep("router")} />
+                onSave={(p) => save("extras", p)} onBack={() => setBackStep("router")} onSelectionChange={updateSelection} />
             )}
             {inSelection && activeStep === "details" && (
               <DetailsStep session={session} saving={saving}
@@ -494,7 +607,7 @@ export default function OrderJourney() {
             </div>
           </div>
 
-          <OrderSummaryCard session={session} />
+          <OrderSummaryCard session={session} catalogue={catalogue} selection={inSelection ? selection : null} />
         </div>
       </section>
     </Layout>

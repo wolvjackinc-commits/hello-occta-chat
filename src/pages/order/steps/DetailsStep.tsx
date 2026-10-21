@@ -9,11 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Journey2Session } from "@/lib/journey2/client";
+import DateOfBirthInput from "@/components/order/DateOfBirthInput";
 
 function ageFrom(dob: string): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) return null;
   const b = new Date(`${dob}T00:00:00Z`);
   if (Number.isNaN(b.getTime())) return null;
+  // Reject dates that roll over (e.g. 31/02), which typed day/month boxes allow.
+  if (b.toISOString().slice(0, 10) !== dob) return null;
   const now = new Date();
   let age = now.getUTCFullYear() - b.getUTCFullYear();
   const m = now.getUTCMonth() - b.getUTCMonth();
@@ -63,7 +66,7 @@ export default function DetailsStep({
       return setErr("Please check your name, email address and phone number.");
     }
     const age = ageFrom(dob);
-    if (age === null) return setErr("Please enter your date of birth.");
+    if (age === null) return setErr("Please enter a valid date of birth (day, month and year).");
     if (age < 18) return setErr("You must be 18 or over to take out this service.");
     if (age > 120) return setErr("Please enter a valid date of birth.");
     if (!billingSame && (bLine1.trim().length < 2 || bTown.trim().length < 2 || bPostcode.trim().length < 3)) {
@@ -120,12 +123,12 @@ export default function DetailsStep({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
           <Label htmlFor="j2-name">Full name</Label>
-          <Input id="j2-name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required maxLength={120} readOnly className="bg-muted" />
-          <p className="text-[10px] text-muted-foreground mt-1">Locked to this order session.</p>
+          <Input id="j2-name" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required maxLength={120} />
         </div>
         <div>
           <Label htmlFor="j2-email">Email address</Label>
-          <Input id="j2-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required maxLength={180} readOnly className="bg-muted" />
+          <Input id="j2-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" inputMode="email" required maxLength={180} />
+          <p className="text-[10px] text-muted-foreground mt-1">Your order confirmation and contract documents go here, so check it's right.</p>
         </div>
         <div>
           <Label htmlFor="j2-phone">Mobile or phone number</Label>
@@ -133,9 +136,11 @@ export default function DetailsStep({
           <p id="j2-phone-error" className="text-xs text-destructive" aria-live="polite">{phoneError}</p>
         </div>
         <div>
-          <Label htmlFor="j2-dob">Date of birth</Label>
-          <Input id="j2-dob" type="date" value={dob ?? ""} onChange={(e) => setDob(e.target.value)} required />
-          <p className="mt-1 text-[10px] text-muted-foreground">Used to confirm you are 18 or over. No extra checkbox needed.</p>
+          <p id="j2-dob-label" className="text-sm font-medium leading-none">Date of birth</p>
+          <div className="mt-2">
+            <DateOfBirthInput id="j2-dob" value={dob ?? ""} onChange={setDob} describedBy="j2-dob-hint" />
+          </div>
+          <p id="j2-dob-hint" className="mt-1 text-[10px] text-muted-foreground">Used to confirm you are 18 or over. No extra checkbox needed.</p>
         </div>
       </div>
 

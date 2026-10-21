@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { money, type AddonId, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
+import type { OrderSelection } from "@/lib/journey2/selection";
 
 export default function ExtrasStep({
-  catalogue, session, saving, onSave, onBack,
+  catalogue, session, saving, onSave, onBack, onSelectionChange,
 }: {
   catalogue: Catalogue;
   session: Journey2Session;
   saving: boolean;
   onSave: (payload: Record<string, unknown>) => void;
   onBack: () => void;
+  /** Reports the unsaved choice so the order summary can price it live. */
+  onSelectionChange?: (selection: OrderSelection) => void;
 }) {
   const [selected, setSelected] = useState<AddonId[]>(session.selected_addons ?? []);
+  useEffect(() => {
+    onSelectionChange?.({ addons: selected });
+  }, [selected, onSelectionChange]);
   const [voiceAck, setVoiceAck] = useState(!!session.digital_voice_acknowledged);
   const [err, setErr] = useState<string | null>(null);
   const toggle = (id: AddonId) =>

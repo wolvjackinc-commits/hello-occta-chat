@@ -1,19 +1,43 @@
 import { oneOffTotal } from "@/lib/journey2/conversion";
 import { Gift, Info } from "lucide-react";
-import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Journey2Session } from "@/lib/journey2/client";
+import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
+import { planLabel, selectionDiffers, selectionTotals, type OrderSelection } from "@/lib/journey2/selection";
 
 /**
  * Live order summary. Every charge comes from the server-resolved price
  * snapshot. Promotional cash is shown separately and never netted off price.
  */
-export default function OrderSummaryCard({ session, embedded = false }: { session: Journey2Session; embedded?: boolean }) {
+export default function OrderSummaryCard({
+  session,
+  embedded = false,
+  catalogue = null,
+  selection = null,
+}: {
+  session: Journey2Session;
+  embedded?: boolean;
+  catalogue?: Catalogue | null;
+  /** Unsaved choices on the current screen, priced live from the catalogue. */
+  selection?: OrderSelection | null;
+}) {
   const p = session.price_snapshot;
   const campaign = session.campaign_snapshot;
+  const live = selectionTotals(catalogue, session, selection);
+  const liveBox = live && selectionDiffers(live, p, p ? oneOffTotal(p) : 0) ? (
+    <div className="mb-4 border-2 border-foreground bg-primary/15 p-3" aria-live="polite">
+      <p className="font-display uppercase text-xs tracking-widest">Your current selection</p>
+      <p className="mt-1 text-sm font-semibold">{live.planLabel}</p>
+      <div className="mt-1 flex flex-wrap items-baseline justify-between gap-2">
+        <span className="font-display text-2xl leading-none">{money(live.monthly)}<span className="text-sm">/month</span></span>
+        <span className="text-sm">{money(live.oneOff)} one-off</span>
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">Includes VAT. Confirmed when you continue.</p>
+    </div>
+  ) : null;
   if (!p) {
     return (
       <aside id={embedded ? undefined : "order-summary"} tabIndex={-1} className="border-4 border-foreground p-5">
         <h2 className="font-display uppercase text-sm tracking-widest mb-2">Your order</h2>
-        <p className="text-sm text-muted-foreground">Choose a plan and your exact price appears here — no estimates.</p>
+        {liveBox ?? <p className="text-sm text-muted-foreground">Choose a plan and your exact price appears here — no estimates.</p>}
         {session.campaign_code === "SWITCH50" && (
           <div className="mt-4 border-2 border-primary bg-primary/10 p-3 text-xs">
             <p className="font-display uppercase">SWITCH50 detected</p>
@@ -30,6 +54,7 @@ export default function OrderSummaryCard({ session, embedded = false }: { sessio
     <aside id={embedded ? undefined : "order-summary"} tabIndex={-1} className="border-4 border-foreground p-5">
       <h2 className="font-display uppercase text-sm tracking-widest mb-3">Your saved order</h2>
       <p className="mb-3 text-xs text-muted-foreground">Includes choices saved with Continue. Review any changes before accepting your contract.</p>
+      {liveBox}
 
       {campaign?.code === "SWITCH50" && campaign.eligible && (
         <div className="mb-4 border-4 border-primary bg-primary/10 p-4">
@@ -54,7 +79,7 @@ export default function OrderSummaryCard({ session, embedded = false }: { sessio
       <dl className="space-y-2 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Plan</dt>
-          <dd className="text-right font-medium">{p.plan_label ?? p.speed_bucket}</dd>
+          <dd className="text-right font-medium">{planLabel(p, catalogue)}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Term</dt>

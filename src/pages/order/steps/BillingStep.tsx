@@ -9,6 +9,9 @@ import { money, type Journey2Session } from "@/lib/journey2/client";
 
 const DAYS = [1, 5, 10, 15, 20, 25, 28];
 
+/** Shows a sort code as 12-34-56 while the value stays digits only. */
+const formatSortCode = (digits: string) => digits.replace(/(\d{2})(?=\d)/g, "$1-");
+
 /**
  * Journey 2 — billing day and Direct Debit Instruction, collected only after
  * mobile verification and contract acceptance. Card payment is deliberately not offered.
@@ -21,16 +24,22 @@ export default function BillingStep({
   onSave: (payload: Record<string, unknown>) => void;
   onBack?: () => void;
 }) {
+  // Pre-fill from what the customer already told us: the billing address they
+  // gave on Your details if it differs from the service address, otherwise the service address.
+  const details = session.customer_details;
+  const differentBilling = details?.billing_address_same === false ? details.billing_address : null;
   const addr = session.service_address;
+  const prefillAddress = differentBilling
+    ? [differentBilling.address_line_1, differentBilling.address_line_2, differentBilling.town].filter(Boolean).join(", ")
+    : addr ? [addr.address_line_1, addr.address_line_2, addr.town, addr.county].filter(Boolean).join(", ") : "";
+  const prefillPostcode = differentBilling?.postcode ?? addr?.postcode ?? session.postcode ?? "";
   const [day, setDay] = useState(String(session.billing_anchor_day ?? 1));
-  const [holder, setHolder] = useState(session.dd_masked?.account_holder_name ?? session.customer_details?.full_name ?? "");
+  const [holder, setHolder] = useState(session.dd_masked?.account_holder_name ?? details?.full_name ?? "");
   const [sort, setSort] = useState("");
   const [account, setAccount] = useState("");
   const [bank, setBank] = useState(session.dd_masked?.bank_name ?? "");
-  const [billingAddress, setBillingAddress] = useState(
-    addr ? [addr.address_line_1, addr.address_line_2, addr.town, addr.county].filter(Boolean).join(", ") : "",
-  );
-  const [postcode, setPostcode] = useState(addr?.postcode ?? session.postcode ?? "");
+  const [billingAddress, setBillingAddress] = useState(prefillAddress);
+  const [postcode, setPostcode] = useState(prefillPostcode);
   const [ddConfirmed, setDdConfirmed] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -97,10 +106,10 @@ export default function BillingStep({
         </div>
         <div>
           <Label htmlFor="j2-dd-sort">Sort code</Label>
-          <Input id="j2-dd-sort" inputMode="numeric" autoComplete="off" value={sort}
+          <Input id="j2-dd-sort" inputMode="numeric" autoComplete="off" value={formatSortCode(sort)}
             onChange={(e) => setSort(digitsOnly(e.target.value).slice(0, 6))}
-            placeholder="000000" maxLength={6} required />
-          <p className="text-xs text-muted-foreground mt-1">6 digits</p>
+            placeholder="00-00-00" maxLength={8} required />
+          <p className="text-xs text-muted-foreground mt-1">6 digits, as shown on your card or statement</p>
         </div>
         <div>
           <Label htmlFor="j2-dd-acct">Account number</Label>

@@ -322,6 +322,10 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         }).select("id").single();
         if (invErr) throw invErr;
         invoiceId = inv.id;
+        // Link the job to its invoice now, not only on success: the eligibility
+        // check treats any other invoice for this period as a duplicate, so a
+        // job that failed after this point would otherwise never retry.
+        await supabase.from("first_billing_jobs").update({ invoice_id: invoiceId }).eq("id", job.id);
 
         const lineRows = totals.lines.map((l) => ({
           invoice_id: invoiceId,

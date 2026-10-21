@@ -13,6 +13,8 @@ import { isCronSecret } from "../_shared/cronSecret.ts";
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
+  internalEmailHeaders,
+  invokeErrorDetail,
   nextAnchorBillingDate,
   sha256Hex,
   toDisplayPeriodEndIso,
@@ -250,7 +252,7 @@ Deno.serve(async (req) => {
               plan_name: o.plan_name_snapshot,
             },
           },
-          headers: { "idempotency-key": `sim-monthly:${inv.id}` } as any,
+          headers: await internalEmailHeaders(`sim-monthly:${inv.id}`),
         });
         if (sendResp.error) {
           // Leave email_sent_at empty so the invoice shows as not yet emailed.
@@ -258,7 +260,7 @@ Deno.serve(async (req) => {
             .from("invoices")
             .update({
               status: o.payment_method === "direct_debit" ? "awaiting_dd_collection" : "ready_to_send",
-              email_error: String(sendResp.error.message || "send_failed").slice(0, 1000),
+              email_error: await invokeErrorDetail(sendResp.error),
             })
             .eq("id", inv.id);
         } else {
@@ -306,7 +308,7 @@ Deno.serve(async (req) => {
       if (daysUntilDue === 3) { template = "sim-payment-reminder"; key = `sim-reminder-pre:${inv.id}`; }
       else if (daysUntilDue === -3) { template = "sim-overdue-reminder"; key = `sim-overdue-3:${inv.id}`; }
       else if (daysUntilDue === -10) { template = "sim-overdue-reminder"; key = `sim-overdue-10:${inv.id}`; }
-      if (!template) continue;
+      if (!template || !key) continue;
       const payNowUrl = `${appOrigin}/pay-invoice?id=${inv.id}`;
       await supabase.functions.invoke("send-email", {
         body: {
@@ -325,7 +327,7 @@ Deno.serve(async (req) => {
             dashboard_url: `${appOrigin}/dashboard`,
           },
         },
-        headers: { "idempotency-key": key } as any,
+        headers: await internalEmailHeaders(key),
       }).catch(() => null);
       reminders.push({ invoice_id: inv.id, template });
     }

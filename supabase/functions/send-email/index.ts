@@ -1211,6 +1211,12 @@ const handler = async (req: Request): Promise<Response> => {
       const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
       let isServiceRoleAuth = Boolean(serviceRoleKey) && authHeader === `Bearer ${serviceRoleKey}`;
+      // The gateway can replace a non-JWT service key in Authorization with a
+      // short-lived JWT before it reaches us; the apikey header still carries
+      // the key exactly as the caller sent it.
+      if (!isServiceRoleAuth && serviceRoleKey && req.headers.get("apikey") === serviceRoleKey) {
+        isServiceRoleAuth = true;
+      }
       if (!isServiceRoleAuth && bearer && getJwtRole(bearer) === "service_role") {
         isServiceRoleAuth = await verifyServiceRoleKey(bearer);
       }

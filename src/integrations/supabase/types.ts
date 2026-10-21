@@ -3516,6 +3516,27 @@ export type Database = {
           },
         ]
       }
+      cron_call_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       customer_journey_sessions: {
         Row: {
           abandoned_at: string | null
@@ -15015,6 +15036,7 @@ export type Database = {
         }
         Returns: Json
       }
+      consume_cron_token: { Args: { _token: string }; Returns: boolean }
       create_manual_fulfilment_tracker_for_order: {
         Args: { _actor: string; _notes?: string; _order_id: string }
         Returns: Json
@@ -15542,6 +15564,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      invoke_edge_function_from_cron: {
+        Args: { _body?: Json; _fn: string }
+        Returns: number
+      }
       is_admin: { Args: never; Returns: boolean }
       is_outreach_staff: { Args: { _uid: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
@@ -15619,6 +15645,7 @@ export type Database = {
           status: string
         }[]
       }
+      mint_cron_token: { Args: never; Returns: string }
       move_to_dlq: {
         Args: {
           dlq_name: string

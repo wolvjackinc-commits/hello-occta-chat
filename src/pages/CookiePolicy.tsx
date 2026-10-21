@@ -1,5 +1,6 @@
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import PolicyDocument from "@/components/brand/PolicyDocument";
 import { companyConfig } from "@/lib/companyConfig";
 
 const sections = [
@@ -111,36 +112,20 @@ const CookiePolicy = () => {
         description="OCCTA Cookie Policy. How we use cookies on our website. Compliant with UK GDPR and PECR regulations."
         canonical="/cookies"
       />
-      <section className="min-h-[calc(100vh-80px)] py-12 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-10 card-brutal bg-card p-8">
-              <p className="font-display uppercase text-primary text-sm">Cookie Policy</p>
-              <h1 className="text-display-md mt-2">{companyConfig.name} — Cookie Policy</h1>
-              <p className="text-muted-foreground mt-2">Last updated: 18 January 2026</p>
-              <p className="text-muted-foreground mt-4">
-                This Cookie Policy explains how we use cookies and similar technologies to make
-                our website work, to keep it secure, and (with your consent) to measure and
-                improve it. It is written in clear, plain English and follows UK GDPR, PECR,
-                and ICO guidance.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {sections.map((section) => (
-                <div key={section.title} className="card-brutal bg-card p-6">
-                  <h2 className="text-display-sm mb-4">{section.title}</h2>
-                  <div className="space-y-2 text-muted-foreground text-sm">
-                    {section.content.map((line, index) => (
-                      <p key={`${section.title}-${index}`}>{line}</p>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <PolicyDocument
+        kicker="Cookie Policy"
+        title={<>{companyConfig.name} — Cookie Policy</>}
+        meta="Last updated: 18 January 2026"
+        intro={
+          <p>
+            This Cookie Policy explains how we use cookies and similar technologies to make
+            our website work, to keep it secure, and (with your consent) to measure and
+            improve it. It is written in clear, plain English and follows UK GDPR, PECR,
+            and ICO guidance.
+          </p>
+        }
+        sections={sections.map((s) => ({ heading: s.title, lines: s.content }))}
+      />
     </Layout>
   );
 };

@@ -1,5 +1,6 @@
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
+import PolicyDocument from "@/components/brand/PolicyDocument";
 import { companyConfig } from "@/lib/companyConfig";
 
 const sections = [
@@ -134,41 +135,27 @@ const PrivacyPolicy = () => {
         description="OCCTA's Privacy Policy. Learn how we collect, use, and protect your personal data in compliance with UK GDPR and Data Protection Act 2018."
         canonical="/privacy"
       />
-      <section className="min-h-[calc(100vh-80px)] py-12 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-10 card-brutal bg-card p-8">
-              <p className="font-display uppercase text-primary text-sm">Privacy Policy</p>
-              <h1 className="text-display-md mt-2">{companyConfig.name} — Privacy Policy</h1>
-              <p className="text-muted-foreground mt-2">Last updated: 18 January 2026</p>
-              <p className="text-muted-foreground mt-4">
-                {companyConfig.name} ("{companyConfig.tradingName}", "we", "us", or "our") is committed to protecting and
-                respecting your privacy. This Privacy Policy explains how we collect, use,
-                store, share, and protect your personal data when you visit or use our website {companyConfig.website.url}, our services, or communicate with us.
-              </p>
-              <p className="text-muted-foreground mt-4">
-                This policy is designed to comply with UK General Data Protection Regulation
-                (UK GDPR), the Data Protection Act 2018, the Privacy and Electronic
-                Communications Regulations (PECR), and all other applicable UK data protection
-                and telecoms regulations.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {sections.map((section) => (
-                <div key={section.title} className="card-brutal bg-card p-6">
-                  <h2 className="text-display-sm mb-4">{section.title}</h2>
-                  <div className="space-y-2 text-muted-foreground text-sm">
-                    {section.content.map((line, index) => (
-                      <p key={`${section.title}-${index}`}>{line}</p>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <PolicyDocument
+        kicker="Privacy Policy"
+        title={<>{companyConfig.name} — Privacy Policy</>}
+        meta="Last updated: 18 January 2026"
+        intro={
+          <>
+            <p>
+              {companyConfig.name} ("{companyConfig.tradingName}", "we", "us", or "our") is committed to protecting and
+              respecting your privacy. This Privacy Policy explains how we collect, use,
+              store, share, and protect your personal data when you visit or use our website {companyConfig.website.url}, our services, or communicate with us.
+            </p>
+            <p>
+              This policy is designed to comply with UK General Data Protection Regulation
+              (UK GDPR), the Data Protection Act 2018, the Privacy and Electronic
+              Communications Regulations (PECR), and all other applicable UK data protection
+              and telecoms regulations.
+            </p>
+          </>
+        }
+        sections={sections.map((s) => ({ heading: s.title, lines: s.content }))}
+      />
     </Layout>
   );
 };

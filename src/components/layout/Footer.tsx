@@ -81,209 +81,122 @@ const Footer = () => {
     ],
   };
 
+  const columns: { title: string; links: { name: string; path: string }[] }[] = [
+    { title: "Services", links: footerLinks.services },
+    { title: "Business", links: footerLinks.business },
+    { title: "Support", links: footerLinks.support },
+    { title: "Guides", links: footerLinks.guides },
+    { title: "Learn", links: footerLinks.learn },
+    { title: "Legal", links: footerLinks.legal },
+  ];
+
+  const trust = [
+    { icon: Shield, text: "UK communications provider · Ofcom General Conditions apply" },
+    { icon: Lock, text: "Secure payment routes" },
+    { icon: CheckCircle, text: "Charges shown before acceptance" },
+    { icon: Users, text: "UK customer support team" },
+  ];
+
   return (
-    <footer className="bg-foreground text-background border-t-4 border-primary">
+    <footer className="relative overflow-hidden bg-[hsl(0_0%_5%)] text-white">
       {/* Self-Service Support Banner */}
-      <div className="bg-primary/10 border-b border-primary/20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center sm:text-left">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-primary" />
-              <span className="text-primary font-medium">Need help?</span>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-              <Link to="/support" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
-                <Bot className="w-4 h-4" />
-                Get instant help with our AI assistant
-              </Link>
-              <span className="hidden sm:inline text-background/70">•</span>
-              <Link to="/dashboard" aria-label="Manage your OCCTA account" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
-                <LayoutDashboard className="w-4 h-4" />
-                Manage your account
-              </Link>
-              <span className="hidden sm:inline text-background/70">•</span>
-              <Link to="/support#tickets" className="flex items-center gap-1 text-background/80 hover:text-primary transition-colors">
-                <Ticket className="w-4 h-4" />
-                Raise a ticket
-              </Link>
-            </div>
+      <div className="border-y-[3px] border-black bg-primary text-black">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 py-5 sm:px-6 md:flex-row md:items-center md:justify-between md:px-12">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center bg-black text-primary"><Bot className="h-5 w-5" /></span>
+            <span className="font-display text-2xl uppercase leading-none">Need help?</span>
+          </div>
+          <div className="flex flex-wrap gap-2 text-sm font-semibold">
+            <Link to="/support" className="inline-flex items-center gap-1.5 border-2 border-black px-3 py-2 transition-colors hover:bg-black hover:text-primary">
+              <Bot className="h-4 w-4" />
+              Get instant help with our AI assistant
+            </Link>
+            <Link to="/dashboard" aria-label="Manage your OCCTA account" className="inline-flex items-center gap-1.5 border-2 border-black px-3 py-2 transition-colors hover:bg-black hover:text-primary">
+              <LayoutDashboard className="h-4 w-4" />
+              Manage your account
+            </Link>
+            <Link to="/support#tickets" className="inline-flex items-center gap-1.5 border-2 border-black px-3 py-2 transition-colors hover:bg-black hover:text-primary">
+              <Ticket className="h-4 w-4" />
+              Raise a ticket
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Trust Bar */}
-      <div className="border-b border-background/10">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-background/85">
-            <span className="flex items-center gap-1.5">
-              <Shield className="w-3.5 h-3.5" /> UK communications provider · Ofcom General Conditions apply
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Lock className="w-3.5 h-3.5" /> Secure payment routes
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle className="w-3.5 h-3.5" /> Charges shown before acceptance
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" /> UK customer support team
-            </span>
-          </div>
-        </div>
-      </div>
+      <ul className="mx-auto grid w-full max-w-[1440px] grid-cols-1 border-b border-white/10 sm:grid-cols-2 lg:grid-cols-4">
+        {trust.map(({ icon: Icon, text }, i) => (
+          <li key={text} className={`flex items-center gap-3 px-4 py-4 text-xs text-white/75 sm:px-6 md:px-12 lg:px-6 ${i > 0 ? "lg:border-l lg:border-white/10" : ""}`}>
+            <Icon className="h-4 w-4 flex-shrink-0 text-primary" /> {text}
+          </li>
+        ))}
+      </ul>
 
       {/* Main Footer */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-10">
+      <div className="mx-auto w-full max-w-[1440px] px-4 py-16 sm:px-6 md:px-12">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-16">
           {/* Brand */}
-          <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-primary border-4 border-primary flex items-center justify-center">
-                <span className="font-display text-2xl text-primary-foreground">O</span>
+          <div>
+            <Link to="/" className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center border-[3px] border-white bg-primary shadow-[5px_5px_0_0_hsl(var(--primary)/0.35)]">
+                <span className="font-display text-3xl text-black">O</span>
               </div>
               <div>
-                <span className="font-display text-3xl">OCCTA</span>
-                <p className="text-xs text-background/70 uppercase tracking-widest">Limited</p>
+                <span className="font-display text-4xl leading-none">OCCTA</span>
+                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Limited</p>
               </div>
             </Link>
-            <p className="text-background/80 mb-6 max-w-xs">
-              Simple telecom. Clear terms.
+            <p className="mt-6 max-w-xs font-display text-3xl uppercase leading-[0.95] text-white">
+              Simple telecom. <span className="text-primary">Clear terms.</span>
             </p>
-            
+
             {/* Contact Info - De-emphasised phone */}
-            <div className="space-y-3">
-              <Link to="/support" className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
-                <div className="p-2 bg-primary/20">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <span className="font-display">Get Instant Help</span>
+            <div className="mt-8 space-y-3 border-t border-white/10 pt-6">
+              <Link to="/support" className="group flex items-center gap-3 text-white/85 transition-colors hover:text-primary">
+                <span className="inline-flex h-8 w-8 items-center justify-center bg-primary text-black"><Bot className="h-4 w-4" /></span>
+                <span className="font-display text-lg uppercase leading-none">Get Instant Help</span>
               </Link>
-              <a href={`mailto:${companyConfig.email.general}`} className="flex items-center gap-3 text-background/80 hover:text-primary transition-colors">
-                <div className="p-2 bg-primary/20">
-                  <Mail className="w-4 h-4" />
-                </div>
+              <a href={`mailto:${companyConfig.email.general}`} className="flex items-center gap-3 text-white/80 transition-colors hover:text-primary">
+                <span className="inline-flex h-8 w-8 items-center justify-center border border-white/25"><Mail className="h-4 w-4" /></span>
                 <span>{companyConfig.email.general}</span>
               </a>
-              <div className="flex items-center gap-3 text-background/85 text-sm">
-                <div className="p-2 bg-background/10">
-                  <Phone className="w-4 h-4" />
-                </div>
+              <div className="flex items-center gap-3 text-sm text-white/70">
+                <span className="inline-flex h-8 w-8 items-center justify-center border border-white/15"><Phone className="h-4 w-4" /></span>
                 <span>{companyConfig.phone.display} (escalation only)</span>
               </div>
             </div>
           </div>
 
-          {/* Services */}
-          <div>
-            <h4 className="font-display text-xl mb-6 text-primary">SERVICES</h4>
-            <ul className="space-y-3">
-              {footerLinks.services.map((link) => (
-                <li key={link.name}>
-                  <Link 
-                    to={link.path} 
-                    className="text-background/80 hover:text-primary transition-colors font-medium"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Business */}
-          <div>
-            <h4 className="font-display text-xl mb-6 text-primary">BUSINESS</h4>
-            <ul className="space-y-3">
-              {footerLinks.business.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-background/80 hover:text-primary transition-colors font-medium"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div>
-            <h4 className="font-display text-xl mb-6 text-primary">SUPPORT</h4>
-            <ul className="space-y-3">
-              {footerLinks.support.map((link) => (
-                <li key={link.name}>
-                  <Link 
-                    to={link.path} 
-                    className="text-background/80 hover:text-primary transition-colors font-medium"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Guides */}
-          <div>
-            <h4 className="font-display text-xl mb-6 text-primary">GUIDES</h4>
-            <ul className="space-y-3">
-              {footerLinks.guides.map((link) => (
-                <li key={link.name}>
-                  <Link 
-                    to={link.path} 
-                    className="text-background/80 hover:text-primary transition-colors font-medium"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Learn */}
-          <div>
-            <h4 className="font-display text-xl mb-6 text-primary">LEARN</h4>
-            <ul className="space-y-3">
-              {footerLinks.learn.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.path}
-                    className="text-background/80 hover:text-primary transition-colors font-medium"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h4 className="font-display text-xl mb-6 text-primary">LEGAL</h4>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => (
-                <li key={link.name}>
-                  <Link 
-                    to={link.path} 
-                    className="text-background/80 hover:text-primary transition-colors font-medium"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-10 sm:grid-cols-3 xl:grid-cols-6">
+            {columns.map((col, i) => (
+              <nav key={col.title} aria-label={col.title}>
+                <h4 className="flex items-center gap-2 border-b-[3px] border-primary pb-2 font-display text-xl uppercase leading-none">
+                  <span className="font-sans text-[10px] font-bold tracking-[0.2em] text-primary">{String(i + 1).padStart(2, "0")}</span>
+                  {col.title}
+                </h4>
+                <ul className="mt-4 space-y-2.5">
+                  {col.links.map((link) => (
+                    <li key={link.name}>
+                      <Link to={link.path} className="text-sm text-white/70 transition-colors hover:text-primary">
+                        {link.name}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
           </div>
         </div>
 
         {/* Compliance row */}
-        <div className="mt-12 pt-8 border-t border-background/10">
-          <h4 className="font-display text-sm uppercase tracking-wider mb-4 text-primary">
+        <div className="mt-14 border-t border-white/10 pt-8">
+          <h4 className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
             Compliance &amp; Policies
           </h4>
           <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
             {footerLinks.compliance.map((link) => (
               <li key={link.name}>
-                <Link to={link.path} className="text-background/70 hover:text-primary transition-colors">
+                <Link to={link.path} className="text-white/60 transition-colors hover:text-primary">
                   {link.name}
                 </Link>
               </li>
@@ -292,28 +205,33 @@ const Footer = () => {
         </div>
       </div>
 
+      {/* Oversized wordmark */}
+      <div aria-hidden className="pointer-events-none select-none overflow-hidden border-t border-white/10">
+        <p className="footer-wordmark mx-auto w-full max-w-[1440px] px-4 pt-6 font-display leading-[0.75] sm:px-6 md:px-12">OCCTA</p>
+      </div>
+
       {/* Bottom Bar */}
-      <div className="border-t-4 border-primary/20">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-background/70 text-sm">
+      <div className="border-t-[3px] border-primary bg-black">
+        <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 md:px-12">
+          <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
+            <p className="text-sm text-white/65">
               © {currentYear} {companyConfig.name}. All rights reserved.
             </p>
-            <div className="flex items-center gap-6 text-sm text-background/70">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/65">
               <span>Company No. {companyConfig.companyNumber}</span>
-              <span>•</span>
+              <span aria-hidden className="text-primary">/</span>
               <span>VAT No. {companyConfig.vatNumber}</span>
-              <span>•</span>
+              <span aria-hidden className="text-primary">/</span>
               <span>UK Registered</span>
             </div>
           </div>
-          <div className="mt-2 text-xs text-background/85 text-center md:text-left">
+          <div className="mt-2 text-xs text-white/60">
             Registered address: {companyConfig.address.full}.
           </div>
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-background/85">
-            <Shield className="w-4 h-4" />
+          <div className="mt-4 flex items-start gap-2 text-xs text-white/60">
+            <Shield className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <p>
-              {companyConfig.compliance} Self-service support ensures faster resolution and data protection.
+              {companyConfig.compliance} Self-service support is designed to help resolve issues quickly and protect your data.
             </p>
           </div>
         </div>

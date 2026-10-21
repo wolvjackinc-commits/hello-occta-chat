@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage } from "@/components/brand/kit";
+import ReadingProgress from "./ReadingProgress";
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
@@ -21,6 +22,7 @@ export default function PolicyDocument({
 }) {
   return (
     <article>
+      <ReadingProgress />
       <PosterStage>
         <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: kicker }]} />
         <div className="max-w-4xl">

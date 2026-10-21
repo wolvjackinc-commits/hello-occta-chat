@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ArrowRight, MessageCircle, PhoneCall, Mail } from "lucide-react";
 import { companyConfig } from "@/lib/companyConfig";
 import { breadcrumbLabel } from "@/lib/seo/breadcrumbLabel";
+import ReadingProgress from "@/components/brand/ReadingProgress";
 import {
   BrandSection,
   HeroTitle,
@@ -104,6 +105,7 @@ export default function SeoContentLayout({
       {faqSchema && <JsonLd data={faqSchema} />}
 
       <MotionConfig reducedMotion="user">
+        <ReadingProgress />
         <article>
           <PosterStage>
             <div className={`grid items-end gap-10 ${shortAnswer ? "lg:grid-cols-[minmax(0,1fr)_420px] xl:gap-16" : ""}`}>

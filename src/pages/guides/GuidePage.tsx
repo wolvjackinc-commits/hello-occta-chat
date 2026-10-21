@@ -9,6 +9,7 @@ import { getGuideBySlug, getRelatedGuides } from "@/data/guides";
 import NotFound from "@/pages/NotFound";
 import { EmergencyCallNote } from "@/components/legal/EmergencyCallNote";
 import { ArticleCard, BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, SectionTitle } from "@/components/brand/kit";
+import ReadingProgress from "@/components/brand/ReadingProgress";
 import { revealItem } from "@/components/brand/motion";
 
 const GuidePage = () => {
@@ -90,6 +91,7 @@ const GuidePage = () => {
       <StructuredData customOnly customSchema={combinedSchema} />
 
       <MotionConfig reducedMotion="user">
+        <ReadingProgress />
         {/* Hero */}
         <PosterStage>
           <PosterBreadcrumb

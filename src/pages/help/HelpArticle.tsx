@@ -6,6 +6,7 @@ import { SEO, StructuredData, createBreadcrumbSchema } from "@/components/seo";
 import { getHelpArticle, helpArticles } from "@/data/helpArticles";
 import NotFound from "@/pages/NotFound";
 import { ArticleCard, BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
+import ReadingProgress from "@/components/brand/ReadingProgress";
 import { revealItem } from "@/components/brand/motion";
 
 const HelpArticlePage = () => {
@@ -29,6 +30,7 @@ const HelpArticlePage = () => {
       <StructuredData customOnly customSchema={breadcrumb} />
 
       <MotionConfig reducedMotion="user">
+        <ReadingProgress />
         <article>
           <PosterStage>
             <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Help Centre", to: "/help" }, { label: article.title }]} />

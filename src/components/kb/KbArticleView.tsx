@@ -8,6 +8,7 @@ import Layout from "@/components/layout/Layout";
 import FeedbackWidget from "@/components/kb/FeedbackWidget";
 import { companyConfig } from "@/lib/companyConfig";
 import { breadcrumbLabel } from "@/lib/seo/breadcrumbLabel";
+import ReadingProgress from "@/components/brand/ReadingProgress";
 import {
   BrandSection,
   HeroKicker,
@@ -111,6 +112,7 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
       {faqSchema && <JsonLd data={faqSchema} />}
       {article.structured_data && <JsonLd data={article.structured_data as object} />}
 
+      <ReadingProgress />
       <article>
         <PosterStage>
           <PosterBreadcrumb

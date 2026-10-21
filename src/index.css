@@ -530,3 +530,12 @@
   .occta-fact-fade { animation: none; }
   .occta-skeleton::after { display: none; }
 }
+
+/* Footer: oversized outlined wordmark that fills the width. */
+.footer-wordmark {
+  font-size: clamp(6rem, 24vw, 22rem);
+  color: transparent;
+  -webkit-text-stroke: 2px hsl(0 0% 100% / 0.14);
+  letter-spacing: -0.01em;
+  margin-bottom: -0.08em;
+}

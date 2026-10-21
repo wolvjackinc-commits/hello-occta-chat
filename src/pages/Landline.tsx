@@ -97,7 +97,7 @@ const Landline = () => {
     {
       icon: Router,
       title: "OCCTA Router",
-      description: "Your broadband plan includes a Wi-Fi router with a phone port built in.",
+      description: "Use your own compatible router or get one from us with your broadband order — Digital Voice needs a router with a phone port.",
     },
     {
       icon: Phone,

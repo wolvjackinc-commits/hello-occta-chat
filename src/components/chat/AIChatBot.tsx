@@ -311,11 +311,11 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
 
     let welcomeContent: string;
     if (isAdmin) {
-      welcomeContent = "🔐 Admin mode active.\nHi! I'm IRA, ready to help with customers, services, tickets, or system checks.";
+      welcomeContent = "🔐 Admin mode active.\nHi! I'm Ollie, ready to help with customers, services, tickets, or system checks.";
     } else if (user) {
-      welcomeContent = `Welcome back! 😊\nI'm IRA — want help with your services, billing, or something else today?`;
+      welcomeContent = `Welcome back! 😊\nI'm Ollie — want help with your services, billing, or something else today?`;
     } else {
-      welcomeContent = "👋 Hey! I'm IRA, your Intelligent Reliable Assistant.\nI can help you compare broadband & SIM plans, explain Flex 30 and Price Lock 24, switching, billing and contract terms 🙂";
+      welcomeContent = "👋 Hey! I'm Ollie, OCCTA's assistant.\nI can help you compare broadband & SIM plans, explain Flex 30 and Price Lock 24, switching, billing and contract terms 🙂";
     }
 
     setMessages([
@@ -548,7 +548,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     setStatusAnnouncement("Preparing transcript…");
     const header = `OCCTA chat transcript\nGenerated: ${new Date().toLocaleString("en-GB")}\n${user?.email ? `Account: ${user.email}\n` : ""}\n`;
     const body = messages
-      .map((m) => `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${m.role === "user" ? "You" : "IRA"}: ${m.content}`)
+      .map((m) => `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${m.role === "user" ? "You" : "Ollie"}: ${m.content}`)
       .join("\n\n");
     const blob = new Blob([header + body], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -571,7 +571,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
     const recent = messages.slice(-12).filter((m) => m.id !== "welcome");
     if (recent.length === 0) return "";
     const body = recent
-      .map((m) => `${m.role === "user" ? "Me" : "IRA"}: ${m.content.replace(/\s+/g, " ").trim()}`)
+      .map((m) => `${m.role === "user" ? "Me" : "Ollie"}: ${m.content.replace(/\s+/g, " ").trim()}`)
       .join("\n\n");
     return `Conversation summary from chat on ${new Date().toLocaleString("en-GB")}:\n\n${body}`.slice(0, 1800);
   }, [messages]);
@@ -584,7 +584,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
       .map(
         (m) =>
           `[${new Date(m.createdAt).toLocaleString("en-GB")}] ${
-            m.role === "user" ? "Me" : "IRA"
+            m.role === "user" ? "Me" : "Ollie"
           }: ${m.content.trim()}`
       )
       .join("\n\n");
@@ -611,7 +611,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         : /nuisance|slow|intermittent/.test(text) ? "normal"
         : "normal";
     const firstUser = messages.find((m) => m.role === "user")?.content ?? "";
-    const subject = firstUser.replace(/\s+/g, " ").slice(0, 80) || "Follow-up from chat with IRA";
+    const subject = firstUser.replace(/\s+/g, " ").slice(0, 80) || "Follow-up from chat with Ollie";
     return {
       category,
       priority,
@@ -801,7 +801,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
             id: crypto.randomUUID(),
             role: "assistant",
             content:
-              "👤 **You're now speaking with a human advisor** from the OCCTA support team. IRA has shared your conversation so far, so you don't need to repeat yourself.",
+              "👤 **You're now speaking with a human advisor** from the OCCTA support team. Ollie has shared your conversation so far, so you don't need to repeat yourself.",
             createdAt: new Date().toISOString(),
             agent: "human",
           },
@@ -949,7 +949,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                 setIsOpen(true);
               }}
               className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-all"
-              aria-label="Open chat with IRA support assistant"
+              aria-label="Open chat with Ollie support assistant"
               aria-haspopup="dialog"
               aria-expanded={isOpen}
             >
@@ -995,7 +995,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                       id="ira-chat-heading"
                       className="block font-display text-primary-foreground uppercase text-sm leading-none"
                     >
-                      {liveAgent ? "OCCTA Advisor" : isAdmin ? "IRA Admin" : "IRA"}
+                      {liveAgent ? "OCCTA Advisor" : isAdmin ? "Ollie Admin" : "Ollie"}
                     </span>
                     <span className="block text-[10px] uppercase text-primary-foreground/80 mt-1 truncate">
                       {liveAgent
@@ -1089,7 +1089,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                           </h3>
                           <p className="text-sm text-muted-foreground">
                             {isAdmin 
-                              ? "I'm IRA, ready to help with customers, services, or tickets."
+                              ? "I'm Ollie, ready to help with customers, services, or tickets."
                               : user ? "You're signed in, so I can check your linked orders, invoices, services and tickets without asking you to verify again."
                               : "Ask about plans, switching, setup or support. Simple telecom, clear terms — just straight answers."}
                           </p>
@@ -1137,7 +1137,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
                                 className={`w-7 h-7 flex items-center justify-center shrink-0 border-2 border-foreground ${
                                   message.agent === "human" ? "bg-success" : "bg-primary"
                                 }`}
-                                title={message.agent === "human" ? "Human advisor" : "IRA (AI assistant)"}
+                                title={message.agent === "human" ? "Human advisor" : "Ollie (AI assistant)"}
                               >
                                 {message.agent === "human" ? (
                                   <UserIcon className="w-4 h-4 text-background" />
@@ -1343,7 +1343,7 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-primary-foreground" />
           <span className="font-display text-primary-foreground uppercase text-sm">
-            {isAdmin ? "IRA Admin" : "IRA"}
+            {isAdmin ? "Ollie Admin" : "Ollie"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -1372,8 +1372,8 @@ const AIChatBot = forwardRef<HTMLDivElement, AIChatBotProps>(
               <Bot className="w-10 h-10 mx-auto mb-2 text-primary" />
               <p className="text-sm text-muted-foreground">
                 {isAdmin 
-                  ? "I'm IRA, ready to help with customers, services, or tickets."
-                  : "I'm IRA — ask about plans, switching, or your account. Happy to help 🙂"}
+                  ? "I'm Ollie, ready to help with customers, services, or tickets."
+                  : "I'm Ollie — ask about plans, switching, or your account. Happy to help 🙂"}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">

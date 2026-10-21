@@ -243,7 +243,7 @@ const Support = () => {
     <Layout>
       <SEO 
         title="Help & Support - OCCTA Customer Service"
-        description="OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs, ticket system. Fast resolution guaranteed."
+        description="OCCTA Support Hub – UK-based help for broadband, SIM and home phone. AI chat, FAQs and a ticket system, with UK-based help when you need it."
         canonical="/support"
         keywords="OCCTA support, broadband help, SIM support UK, customer service telecom, internet support, home phone help"
       />
@@ -289,7 +289,7 @@ const Support = () => {
                 <span className="flex h-10 w-10 items-center justify-center bg-black">
                   <Bot className="h-5 w-5 text-primary" />
                 </span>
-                <h2 className="font-display text-2xl uppercase leading-none">Instant Help (IRA)</h2>
+                <h2 className="font-display text-2xl uppercase leading-none">Instant Help (Ollie)</h2>
               </div>
               <div className="p-5 sm:p-6">
                 <SupportChatArt />
@@ -573,7 +573,7 @@ const Support = () => {
                 <span className="font-display text-lg uppercase leading-none">Trusted & Compliant</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                This support model ensures faster resolution, full audit trails, and consistent service quality while protecting customer data.
+                This support model is designed to help resolve issues quickly, keep a full audit trail and deliver consistent service quality while protecting customer data.
                 OCCTA complies with UK telecom regulations and GDPR requirements.
               </p>
             </div>

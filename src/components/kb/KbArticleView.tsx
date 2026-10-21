@@ -233,7 +233,7 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
                 <Link to="/support">Contact support</Link>
               </Button>
               <Button type="button" variant="ghost" size="lg" className="font-display uppercase text-black hover:bg-black/10" onClick={openChat}>
-                <MessageCircle className="mr-2 h-4 w-4" /> Ask Ira
+                <MessageCircle className="mr-2 h-4 w-4" /> Ask Ollie
               </Button>
             </div>
           </Reveal>

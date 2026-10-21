@@ -239,7 +239,7 @@ export function RaiseTicketDialog({ open, onOpenChange, onSubmitted, prefill }: 
                       id="ticket-attach-transcript-desc"
                       className="text-xs text-muted-foreground block"
                     >
-                      We'll include the recent conversation with IRA so the
+                      We'll include the recent conversation with Ollie so the
                       support team has full context.
                     </span>
                     <span className="text-[11px] text-muted-foreground block">

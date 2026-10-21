@@ -122,7 +122,7 @@ export const helpArticles: HelpArticle[] = [
       { heading: "Step 2 — Test over Ethernet", paragraphs: ["Plug a laptop into a LAN port. If that works, your broadband is fine — see the slow Wi-Fi guide."] },
       { heading: "Step 3 — Reboot the router", paragraphs: ["Power off, wait 30 seconds, power on. Wait 5 minutes."] },
       { heading: "Step 4 — Check for known outages", paragraphs: ["Open occta.co.uk/service-status from mobile data. If there's an incident, ETA is posted there."] },
-      { heading: "Step 5 — Contact us", paragraphs: ["Email hello@occta.co.uk or chat with Ira (bottom-right). Include your account number and what the lights are doing."] },
+      { heading: "Step 5 — Contact us", paragraphs: ["Email hello@occta.co.uk or chat with Ollie (bottom-right). Include your account number and what the lights are doing."] },
     ],
     faqs: [
       { question: "Will I get compensated for an outage?", answer: "For qualifying outages over 2 working days, automatic compensation is credited under Ofcom's scheme. No claim needed." },

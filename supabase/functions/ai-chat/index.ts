@@ -63,7 +63,7 @@ const businessInfo = {
     { name: "ULTRAFAST", speed: "Up to 550Mbps public band", price: "Price Lock 24 from £49.99 / Flex 30 from £52.99", description: "Subject to address and supplier availability" },
     { name: "GIGABIT", speed: "Up to 1000Mbps public band", price: "Price Lock 24 from £49.99 / Flex 30 from £52.99", description: "Subject to address and supplier availability" },
   ],
-  // SIM plans are catalogue-driven — Ira must not invent them. See the SIM
+  // SIM plans are catalogue-driven — Ollie must not invent them. See the SIM
   // PLANS section of the system prompt and the SIM-only guardrail. She should
   // direct customers to /sim (live consumer + business catalogue) rather than
   // quote from a static list.
@@ -80,7 +80,7 @@ const businessInfo = {
   ],
 };
 
-// Self-service knowledge base — feeds Ira so she can link customers to the
+// Self-service knowledge base — feeds Ollie so it can link customers to the
 // right help article or guide instead of inventing answers.
 const helpKnowledgeBase = {
   helpCentre: "https://www.occta.co.uk/help",
@@ -1649,7 +1649,7 @@ async function runClaudeChat(
   tools: OpenAiTool[],
   runTool: ToolRunner,
 ): Promise<ProviderReply> {
-  // The widget history opens with IRA's welcome; the API conversation must start with the user.
+  // The widget history opens with Ollie's welcome; the API conversation must start with the user.
   const conversation: Anthropic.Beta.BetaMessageParam[] = messages
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
@@ -2013,17 +2013,17 @@ Rules:
 - The OPTIONS token must be the very last thing in your reply, on its own line.
 - Do NOT also write a numbered list of the same options in prose — just the token.
 
-(Legacy IRA brand context retained below for product/plan answers.)
+(Brand context for product and plan answers. Always introduce yourself as Ollie.)
 
 ## IDENTITY & PERSONALITY
-IRA is:
+Ollie is:
 - Friendly, witty, calm, reassuring
 - Slightly humorous (UK-style, polite, never sarcastic)
 - Honest, transparent, non-pushy
 - Cost-focused and customer-first
 - Never salesy, never aggressive
 
-IRA must NEVER invent prices, NEVER promise coverage, and NEVER give legal advice.
+Ollie must NEVER invent prices, NEVER promise coverage, and NEVER give legal advice.
 
 ## BRAND & BUSINESS CONTEXT (CRITICAL)
 OCCTA operates across the entire United Kingdom.
@@ -2162,14 +2162,14 @@ Quick router admin reference (use only when asked):
 ## ADMIN-ONLY BEHAVIOUR
 When user has admin role:
 
-IRA CAN:
+Ollie CAN:
 - Search customers by account number (OCCxxxx) or email
 - Explain admin workflows
 - Guide through adding services
 - Explain errors in simple terms
 - Suggest next steps (not execute actions)
 
-IRA CANNOT:
+Ollie CANNOT:
 - Modify database records
 - Insert / delete services
 - Expose secrets, tokens, or credentials
@@ -2198,14 +2198,14 @@ Admin tone: Clear, Direct, Fewer emojis, No humour unless appropriate.
 6. When displaying bill information, format it nicely with clear sections for the plan, add-ons, and totals.
 
 ## UX GOAL
-After chatting with IRA, users should feel:
+After chatting with Ollie, users should feel:
 - Relieved
 - In control
 - Confident
 - Not pressured
 - Comfortable switching or staying
 
-IRA's success is clarity + trust, not conversion at all costs.`;
+Ollie's success is clarity + trust, not conversion at all costs.`;
 
     // Runs one tool call with the caller's verified identity; shared by both providers.
     const runTool: ToolRunner = async (toolName, toolArgs) => {

@@ -21,7 +21,7 @@ export default function SwitchBroadbandSeo() {
         { question: "What if I'm still in contract?", answer: "Your existing provider should tell you any charge that applies to leaving. OCCTA only contributes toward that charge where a current promotion explicitly says so and the credit is recorded in your order or written quote." },
         { question: "Do I need to cancel with my old provider?", answer: "No — OTS forbids that. If you cancel yourself you break the process. Just order with us." },
         { question: "Can I keep my email address?", answer: "Only if your old provider offers a paid mailbox add-on. Most ISP email addresses stop working after the switch — we recommend Gmail/Outlook well before you move." },
-        { question: "What about my router?", answer: "Send-back rules vary by ISP. BT and Sky ask for the router back; TalkTalk and Vodafone rarely do. We include a new Wi-Fi 6 router free." },
+        { question: "What about my router?", answer: "Send-back rules vary by ISP. BT and Sky ask for the router back; TalkTalk and Vodafone rarely do. With OCCTA you can use your own compatible router or get a Wi-Fi 6 router from us — any charge is shown before you accept." },
       ]}
       relatedLinks={[
         { label: "How to switch (full guide)", to: "/learn/how-to-switch-broadband", description: "Step-by-step OTS walkthrough." },

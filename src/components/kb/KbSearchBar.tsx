@@ -50,7 +50,7 @@ export default function KbSearchBar({ placeholder = "Search help, guides and blo
       {open && q.trim().length >= 2 && (
         <div className="absolute z-40 left-0 right-0 mt-1 border-2 border-foreground bg-background max-h-80 overflow-auto shadow-lg">
           {results.length === 0 ? (
-            <p className="p-3 text-sm text-muted-foreground">No matches. Try a different term or open the chat bubble to ask Ira.</p>
+            <p className="p-3 text-sm text-muted-foreground">No matches. Try a different term or open the chat bubble to ask Ollie.</p>
           ) : (
             <ul>
               {results.map((r) => (

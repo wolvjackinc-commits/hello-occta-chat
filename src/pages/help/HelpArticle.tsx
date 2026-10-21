@@ -83,7 +83,7 @@ const HelpArticlePage = () => {
                 )}
                 <div className="flex items-start gap-3 border-[3px] border-foreground bg-[hsl(0_0%_5%)] p-5 text-white">
                   <MessageCircle className="mt-0.5 h-6 w-6 flex-shrink-0 text-primary" />
-                  <p className="text-sm leading-relaxed">Still stuck? Open the chat bubble (bottom-right) and Ira will help.</p>
+                  <p className="text-sm leading-relaxed">Still stuck? Open the chat bubble (bottom-right) and Ollie will help.</p>
                 </div>
               </aside>
             </div>

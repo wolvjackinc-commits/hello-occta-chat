@@ -27,7 +27,7 @@ describe("RaiseTicketDialog", () => {
           subject: "Question about my invoice this month",
           message: "Please help me understand the charges on my recent bill.",
           transcript:
-            "Me: I got charged twice.\n\nIRA: Let me check that for you.",
+            "Me: I got charged twice.\n\nOllie: Let me check that for you.",
         }}
       />
     );

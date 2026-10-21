@@ -100,7 +100,7 @@ const HelpCenter = () => {
             <div>
               <SectionEyebrow index={pad(categories.length + 1 + offset)} label="Talk to us" tone="dark" />
               <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Still stuck?</h2>
-              <p className="mt-4 max-w-xl text-lg text-white/70">Chat with Ira (bottom-right) or email hello@occta.co.uk — we reply within a few hours, no scripts.</p>
+              <p className="mt-4 max-w-xl text-lg text-white/70">Chat with Ollie (bottom-right) or email hello@occta.co.uk — we reply within a few hours, no scripts.</p>
               <Link to="/guides" className="mt-7 inline-flex items-center gap-2 border-[3px] border-white px-5 py-3 font-display text-lg uppercase text-white transition-colors hover:border-primary hover:bg-primary hover:text-black">
                 <BookOpen className="w-5 h-5" /> Browse guides
               </Link>

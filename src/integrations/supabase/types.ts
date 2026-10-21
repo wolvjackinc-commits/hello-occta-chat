@@ -11328,6 +11328,8 @@ export type Database = {
           id: string
           identifiers: Json
           journey_id: string | null
+          legacy_billing_approved_at: string | null
+          legacy_billing_note: string | null
           minimum_term_end_date: string | null
           minimum_term_months: number | null
           next_billing_date: string | null
@@ -11365,6 +11367,8 @@ export type Database = {
           id?: string
           identifiers?: Json
           journey_id?: string | null
+          legacy_billing_approved_at?: string | null
+          legacy_billing_note?: string | null
           minimum_term_end_date?: string | null
           minimum_term_months?: number | null
           next_billing_date?: string | null
@@ -11402,6 +11406,8 @@ export type Database = {
           id?: string
           identifiers?: Json
           journey_id?: string | null
+          legacy_billing_approved_at?: string | null
+          legacy_billing_note?: string | null
           minimum_term_end_date?: string | null
           minimum_term_months?: number | null
           next_billing_date?: string | null

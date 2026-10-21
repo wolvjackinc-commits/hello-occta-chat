@@ -57,6 +57,13 @@
       "when": 1792586921522,
       "tag": "0007_admin_profile_update_and_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792616648133,
+      "tag": "0008_legacy_dd_billing",
+      "breakpoints": true
     }
   ]
 }

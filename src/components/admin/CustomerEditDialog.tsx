@@ -69,7 +69,7 @@ export const CustomerEditDialog = ({ customer, onSaved, trigger }: CustomerEditD
   const onSubmit = async (data: FormData) => {
     setSaving(true);
     try {
-      const { error } = await supabase
+      const { data: saved, error } = await supabase
         .from("profiles")
         .update({
           full_name: data.full_name || null,
@@ -81,9 +81,12 @@ export const CustomerEditDialog = ({ customer, onSaved, trigger }: CustomerEditD
           admin_notes: data.admin_notes || null,
           date_of_birth: data.date_of_birth || null,
         })
-        .eq("id", customer.id);
+        .eq("id", customer.id)
+        .select("id");
 
       if (error) throw error;
+      // Row-level security rejects an update by matching no rows, not by erroring.
+      if (!saved?.length) throw new Error("Nothing was saved — you may not have permission to edit this customer.");
 
       await logAudit({
         action: "update",

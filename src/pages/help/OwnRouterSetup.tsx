@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowLeft,
-  Router,
   Cable,
   Wifi,
   AlertTriangle,
@@ -14,6 +12,8 @@ import {
   Copy,
 } from "lucide-react";
 import Layout from "@/components/layout/Layout";
+import { HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, TicketSlab } from "@/components/brand/kit";
+import { RouterArt } from "@/components/brand/illustrations";
 import { SEO, StructuredData, createBreadcrumbSchema } from "@/components/seo";
 import {
   Accordion,
@@ -127,45 +127,43 @@ const OwnRouterSetup = () => {
       />
       <StructuredData customOnly customSchema={[breadcrumb, howTo, faqSchema]} />
 
-      <article className="container mx-auto px-4 py-10 max-w-4xl print:py-4 print:max-w-none">
-        <Link
-          to="/help"
-          className="inline-flex items-center gap-1 text-sm font-display uppercase text-muted-foreground hover:text-foreground mb-6 print:hidden"
-        >
-          <ArrowLeft className="w-3 h-3" /> Help Centre
-        </Link>
-
-        {/* Header */}
-        <header className="border-4 border-foreground p-6 mb-6 bg-card">
-          <span className="text-xs font-display uppercase text-primary inline-flex items-center gap-1">
-            <Router className="w-3 h-3" /> Self-help guide
-          </span>
-          <h1 className="font-display uppercase text-3xl md:text-4xl mt-2 leading-tight">
-            Set Up Your Own Router with OCCTA Broadband
-          </h1>
-          <p className="text-base text-muted-foreground mt-3">
-            Your OCCTA broadband service is now live. If you're using your own router, you'll need to enter your OCCTA PPPoE
-            username and password in your router's internet/WAN settings. This guide walks you through it — no support call needed.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2 print:hidden">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.print()}
-              className="border-2 border-foreground"
-            >
-              <Printer className="w-4 h-4 mr-1" /> Print this guide
-            </Button>
-            <Button asChild size="sm" className="border-2 border-foreground">
-              <Link to="/support">
-                <LifeBuoy className="w-4 h-4 mr-1" /> Still need help?
-              </Link>
-            </Button>
+      <div className="print:hidden">
+        <PosterStage>
+          <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Help Centre", to: "/help" }, { label: "Own router setup" }]} />
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_340px] xl:gap-20">
+            <div>
+              <HeroKicker>Self-help guide</HeroKicker>
+              <HeroTitle size="sm">Set Up Your Own Router with OCCTA Broadband</HeroTitle>
+              <p className="mt-6 max-w-3xl text-lg leading-relaxed text-white/70">
+                Your OCCTA broadband service is now live. If you're using your own router, you'll need to enter your OCCTA PPPoE
+                username and password in your router's internet/WAN settings. This guide walks you through it — no support call needed.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button variant="outline" size="lg" onClick={() => window.print()}>
+                  <Printer className="w-4 h-4 mr-1" /> Print this guide
+                </Button>
+                <Button asChild variant="hero" size="lg">
+                  <Link to="/support">
+                    <LifeBuoy className="w-4 h-4 mr-1" /> Still need help?
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <TicketSlab className="mr-3 mb-3 hidden lg:block">
+              <div className="border-[3px] border-white bg-white p-8">
+                <RouterArt className="mx-auto h-auto w-full max-w-[240px]" />
+              </div>
+            </TicketSlab>
           </div>
-        </header>
+        </PosterStage>
+      </div>
+
+      <div className="bg-secondary print:bg-white">
+      <article className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 md:py-16 print:max-w-none print:py-4">
+        <p className="hidden font-display text-3xl uppercase print:block">Set Up Your Own Router with OCCTA Broadband</p>
 
         {/* Security callout */}
-        <section className="border-4 border-primary bg-primary/5 p-5 mb-6 flex gap-3">
+        <section className="border-[3px] border-foreground bg-white p-5 mb-6 flex gap-3 shadow-[8px_8px_0_0_hsl(var(--primary))]">
           <ShieldCheck className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-display uppercase mb-1">Where to find your PPPoE details</p>
@@ -178,8 +176,8 @@ const OwnRouterSetup = () => {
         </section>
 
         {/* Before you start */}
-        <section className="border-4 border-foreground p-6 mb-5 bg-background">
-          <h2 className="font-display uppercase text-lg mb-3 flex items-center gap-2">
+        <section className="border-[3px] border-foreground bg-card p-6 mb-6 sm:p-8">
+          <h2 className="font-display uppercase text-3xl leading-none mb-5 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary" /> Before you start
           </h2>
           <ul className="list-disc pl-5 space-y-1 text-sm">
@@ -192,8 +190,8 @@ const OwnRouterSetup = () => {
         </section>
 
         {/* Physical connection */}
-        <section className="border-4 border-foreground p-6 mb-5 bg-background">
-          <h2 className="font-display uppercase text-lg mb-4 flex items-center gap-2">
+        <section className="border-[3px] border-foreground bg-card p-6 mb-6 sm:p-8">
+          <h2 className="font-display uppercase text-3xl leading-none mb-5 flex items-center gap-3">
             <Cable className="w-5 h-5 text-primary" /> Physical connection
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
@@ -223,8 +221,8 @@ const OwnRouterSetup = () => {
         </section>
 
         {/* PPPoE setup steps */}
-        <section className="border-4 border-foreground p-6 mb-5 bg-background">
-          <h2 className="font-display uppercase text-lg mb-3 flex items-center gap-2">
+        <section className="border-[3px] border-foreground bg-card p-6 mb-6 sm:p-8">
+          <h2 className="font-display uppercase text-3xl leading-none mb-5 flex items-center gap-3">
             <Wifi className="w-5 h-5 text-primary" /> Main PPPoE setup
           </h2>
           <ol className="list-decimal pl-5 space-y-2 text-sm">
@@ -271,9 +269,9 @@ const OwnRouterSetup = () => {
         </section>
 
         {/* Router brand table */}
-        <section className="border-4 border-foreground p-6 mb-5 bg-background">
+        <section className="border-[3px] border-foreground bg-card p-6 mb-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-            <h2 className="font-display uppercase text-lg">Router brand quick reference</h2>
+            <h2 className="font-display uppercase text-3xl leading-none">Router brand quick reference</h2>
             <div className="relative w-full sm:w-64 print:hidden">
               <Search className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -317,37 +315,38 @@ const OwnRouterSetup = () => {
         </section>
 
         {/* Troubleshooting / FAQ */}
-        <section className="border-4 border-foreground p-6 mb-5 bg-secondary">
-          <h2 className="font-display uppercase text-lg mb-3">Troubleshooting & FAQs</h2>
+        <section className="border-[3px] border-foreground bg-[hsl(0_0%_5%)] p-6 mb-6 text-white sm:p-8">
+          <h2 className="font-display uppercase text-3xl leading-none mb-5">Troubleshooting & FAQs</h2>
           <Accordion type="single" collapsible className="w-full">
             {FAQS.map((f, i) => (
-              <AccordionItem key={i} value={`faq-${i}`} className="border-b-2 border-foreground/30 last:border-b-0">
-                <AccordionTrigger className="font-display text-sm uppercase text-left">{f.q}</AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground">{f.a}</AccordionContent>
+              <AccordionItem key={i} value={`faq-${i}`} className="border-b border-white/20 last:border-b-0">
+                <AccordionTrigger className="font-display text-lg uppercase text-left text-white hover:text-primary hover:no-underline">{f.q}</AccordionTrigger>
+                <AccordionContent className="text-sm text-white/70">{f.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </section>
 
         {/* Support block */}
-        <section className="border-4 border-foreground p-6 mb-5 bg-card">
-          <h2 className="font-display uppercase text-lg mb-3 flex items-center gap-2">
-            <LifeBuoy className="w-5 h-5 text-primary" /> Need help?
+        <section className="border-[3px] border-black bg-primary p-6 mb-6 text-black sm:p-8">
+          <h2 className="font-display uppercase text-3xl leading-none mb-5 flex items-center gap-3">
+            <LifeBuoy className="w-6 h-6" /> Need help?
           </h2>
           <p className="text-sm mb-3">
             If you're unable to connect your router, please contact OCCTA Support.
           </p>
           <dl className="text-sm space-y-1">
             <div className="flex gap-2"><dt className="font-display uppercase w-20">Company</dt><dd>OCCTA LIMITED</dd></div>
-            <div className="flex gap-2"><dt className="font-display uppercase w-20">Website</dt><dd><a href="https://www.occta.co.uk" className="text-primary underline">www.occta.co.uk</a></dd></div>
-            <div className="flex gap-2"><dt className="font-display uppercase w-20">Email</dt><dd><a href={`mailto:${SUPPORT_EMAIL}`} className="text-primary underline">{SUPPORT_EMAIL}</a></dd></div>
-            <div className="flex gap-2"><dt className="font-display uppercase w-20">Phone</dt><dd><a href={`tel:${SUPPORT_PHONE.replace(/\s/g, "")}`} className="text-primary underline">{SUPPORT_PHONE}</a></dd></div>
+            <div className="flex gap-2"><dt className="font-display uppercase w-20">Website</dt><dd><a href="https://www.occta.co.uk" className="font-semibold underline decoration-2 underline-offset-4">www.occta.co.uk</a></dd></div>
+            <div className="flex gap-2"><dt className="font-display uppercase w-20">Email</dt><dd><a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold underline decoration-2 underline-offset-4">{SUPPORT_EMAIL}</a></dd></div>
+            <div className="flex gap-2"><dt className="font-display uppercase w-20">Phone</dt><dd><a href={`tel:${SUPPORT_PHONE.replace(/\s/g, "")}`} className="font-semibold underline decoration-2 underline-offset-4">{SUPPORT_PHONE}</a></dd></div>
           </dl>
-          <p className="text-xs text-muted-foreground mt-3">
+          <p className="text-xs text-black/70 mt-3">
             When contacting us, please include your account name, service address, router brand/model, and a screenshot or photo of your router's internet/WAN settings if possible.
           </p>
         </section>
       </article>
+      </div>
     </Layout>
   );
 };

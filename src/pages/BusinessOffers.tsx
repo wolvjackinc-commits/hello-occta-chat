@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { MotionConfig, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import AppLayout from "@/components/app/AppLayout";
 import ServicePageSkeleton from "@/components/loading/ServicePageSkeleton";
 import { Button } from "@/components/ui/button";
-import { Check, Cloud, Globe, Phone, Server, ShieldCheck, Wifi } from "lucide-react";
+import { Cloud, Globe, Phone, Server, ShieldCheck, Wifi } from "lucide-react";
 import { useAppMode } from "@/hooks/useAppMode";
 import { businessPlans, businessServices } from "@/lib/businessData";
 import { SEO } from "@/components/seo";
+import { BusinessProductCard } from "@/components/business/BusinessKit";
+import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow, TicketSlab } from "@/components/brand/kit";
+import { revealItem } from "@/components/brand/motion";
+import { BuildingArt } from "@/components/brand/illustrations";
 
 const serviceIcons: Record<string, typeof Wifi> = {
   "hosted-voip": Phone,
@@ -60,152 +64,143 @@ const BusinessOffers = () => {
         description="Explore OCCTA business plans, stacked services and current offers. Prices, terms and any promotional credits are confirmed in a written quote before you order."
         canonical="/business-offers"
       />
-      <section className="min-h-[calc(100vh-80px)] flex items-center py-12 grid-pattern">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="space-y-6"
-            >
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-display uppercase leading-[0.9]">
-                BUSINESS
-                <br />
-                PLAN BUILDER
-              </h1>
-              <p className="text-lg text-muted-foreground">
+      <MotionConfig reducedMotion="user">
+        <PosterStage>
+          <PosterBreadcrumb items={[{ label: "Home", to: "/" }, { label: "Business", to: "/business" }, { label: "Plan builder" }]} />
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_360px] xl:gap-20">
+            <div>
+              <HeroKicker>For business</HeroKicker>
+              <HeroTitle>
+                Business
+                {" "}<span className="block text-primary">plan builder</span>
+              </HeroTitle>
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">
                 Explore our business plans, stacked services, and limited offers. Prices, service levels, contract terms and any promotional credits are confirmed in a written business quote before order.
               </p>
-              <div className="flex flex-wrap gap-3">
-                <Link to="/business">
-                  <Button variant="outline">Back to Business Overview</Button>
-                </Link>
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Link to="/business-sales">
-                  <Button variant="hero">Talk to Sales</Button>
+                  <Button variant="hero" size="lg">Talk to Sales</Button>
+                </Link>
+                <Link to="/business">
+                  <Button variant="outline" size="lg">Back to Business Overview</Button>
                 </Link>
               </div>
-            </motion.div>
+            </div>
+            <TicketSlab className="mr-3 mb-3 hidden lg:block">
+              <div className="border-[3px] border-white bg-white p-6">
+                <BuildingArt className="h-auto w-full" />
+              </div>
+            </TicketSlab>
           </div>
-        </div>
-      </section>
+        </PosterStage>
 
-      <section className="py-16 bg-secondary stripes">
-        <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <h2 className="text-display-md mb-2">CORE CONNECTIVITY PLANS</h2>
-            <p className="text-muted-foreground">
+        <BrandSection tone="paper">
+          <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-end">
+            <div>
+              <SectionEyebrow index="01" label="Connectivity" />
+              <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Core connectivity plans</h2>
+            </div>
+            <p className="text-base text-foreground/70">
               Choose the speed tier that fits your team today, then add services below.
               Prices shown are ex VAT.
             </p>
-          </div>
-          <div className="grid lg:grid-cols-3 gap-6">
-            {businessPlans.map((plan) => (
-              <div key={plan.id} className="card-brutal bg-card p-6 flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="font-display text-2xl uppercase">{plan.name}</h3>
-                    <p className="text-sm text-muted-foreground">Up to {plan.speed}</p>
+          </Reveal>
+          <Reveal stagger className="mt-10 grid gap-6 lg:grid-cols-3">
+            {businessPlans.map((plan, i) => (
+              <BusinessProductCard
+                key={plan.id}
+                eyebrow={<>Up to {plan.speed}</>}
+                name={plan.name}
+                summary={plan.summary}
+                price={
+                  <div className="flex items-end gap-2">
+                    <span className="font-display text-5xl leading-none">{plan.price}</span>
+                    <span className="text-sm text-muted-foreground">/mo</span>
                   </div>
-                  <Wifi className="w-6 h-6 text-primary" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">{plan.summary}</p>
-                <div className="flex items-end gap-2 mb-4">
-                  <span className="font-display text-4xl text-primary">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground">/mo</span>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {plan.inclusions.map((item) => (
-                    <span
-                      key={item}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-secondary text-xs border border-foreground/10"
-                    >
-                      <Check className="w-3 h-3 text-primary" />
-                      {item}
-                    </span>
-                  ))}
-                </div>
-                <Link to={`/business-checkout?plan=${plan.id}`} className="mt-auto">
-                  <Button variant="outline" className="w-full">
-                    Create This Plan
-                  </Button>
-                </Link>
-              </div>
+                }
+                features={plan.inclusions}
+                ctaTo={`/business-checkout?plan=${plan.id}`}
+                ctaLabel="Create This Plan"
+                featured={i === 1}
+              />
             ))}
-          </div>
-        </div>
-      </section>
+          </Reveal>
+        </BrandSection>
 
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <h2 className="text-display-md mb-2">STACKABLE SERVICES</h2>
-            <p className="text-muted-foreground">
-              Combine any service with your plan. Pricing is set below typical market
-              ranges while maintaining SLA-backed support.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {businessServices.map((service) => (
-              <div key={service.id} className="card-brutal bg-card p-6 flex flex-col">
-                <div className="flex items-center gap-3 mb-3">
-                  {(() => {
-                    const Icon = serviceIcons[service.id] || Wifi;
-                    return <Icon className="w-6 h-6 text-primary" />;
-                  })()}
-                  <h3 className="font-display text-lg uppercase">{service.title}</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">{service.typical}</p>
-                <p className="font-display text-2xl text-primary mb-4">{service.price}</p>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  {service.details.map((detail) => (
-                    <li key={detail} className="flex gap-2">
-                      <Check className="w-4 h-4 text-primary" />
-                      <span>{detail}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/business-checkout" className="mt-auto pt-6">
-                  <Button variant="outline" className="w-full">
-                    Add to Plan
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-secondary">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
+        <BrandSection tone="dark">
+          <Reveal className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] lg:items-end">
             <div>
-              <h2 className="text-display-md mb-4">LIMITED-TIME OFFERS</h2>
-              <div className="grid gap-4">
-                {offers.map((offer) => (
-                  <div key={offer.title} className="card-brutal bg-card p-5">
-                    <h3 className="font-display text-lg uppercase mb-2">{offer.title}</h3>
-                    <p className="text-sm text-muted-foreground">{offer.detail}</p>
+              <SectionEyebrow index="02" label="Add-ons" tone="dark" />
+              <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Stackable services</h2>
+            </div>
+            <p className="text-base text-white/70">
+              Combine any service with your plan. Pricing and support levels are confirmed in your written quote.
+            </p>
+          </Reveal>
+          <Reveal stagger className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {businessServices.map((service) => {
+              const Icon = serviceIcons[service.id] || Wifi;
+              return (
+                <motion.div key={service.id} variants={revealItem} className="flex flex-col border-[3px] border-white/25 p-6">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center bg-primary text-black"><Icon className="h-5 w-5" /></span>
+                    <h3 className="font-display text-2xl uppercase leading-none text-white">{service.title}</h3>
                   </div>
+                  <p className="mt-4 text-sm text-white/60">{service.typical}</p>
+                  <p className="mt-3 font-display text-3xl leading-none text-primary">{service.price}</p>
+                  <ul className="mt-4 space-y-2 border-t border-white/15 pt-4 text-sm text-white/80">
+                    {service.details.map((detail) => (
+                      <li key={detail} className="flex gap-2">
+                        <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 bg-primary" />
+                        <span>{detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/business-checkout" className="mt-auto pt-6">
+                    <Button variant="outline" className="w-full">
+                      Add to Plan
+                    </Button>
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </Reveal>
+        </BrandSection>
+
+        <BrandSection tone="yellow" className="border-t-[3px] border-black">
+          <div className="grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+            <div>
+              <Reveal>
+                <SectionEyebrow index="03" label="Offers" tone="yellow" />
+                <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Limited-time offers</h2>
+              </Reveal>
+              <Reveal stagger as="ul" className="mt-8 border-t-[3px] border-black">
+                {offers.map((offer) => (
+                  <motion.li key={offer.title} variants={revealItem} className="border-b-[3px] border-black py-5">
+                    <h3 className="font-display text-2xl uppercase leading-none">{offer.title}</h3>
+                    <p className="mt-2 text-sm text-black/75">{offer.detail}</p>
+                  </motion.li>
                 ))}
+              </Reveal>
+            </div>
+            <div className="relative mr-3 mb-3">
+              <div aria-hidden className="absolute inset-0 translate-x-3 translate-y-3 bg-black" />
+              <div className="relative border-[3px] border-black bg-white p-7 text-black">
+                <h3 className="font-display text-3xl uppercase leading-none">Need a custom bundle?</h3>
+                <p className="mt-3 mb-6 text-sm text-black/70">
+                  Tell us your locations, headcount, and uptime requirements. We’ll design a plan around them and
+                  confirm the price and service levels in a written quote.
+                </p>
+                <Link to="/business-sales">
+                  <Button className="w-full border-[3px] border-black bg-black text-primary hover:bg-primary hover:text-black">
+                    Build a Custom Quote
+                  </Button>
+                </Link>
               </div>
             </div>
-            <div className="card-brutal bg-card p-6">
-              <h3 className="font-display text-xl mb-3">Need a custom bundle?</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Tell us your locations, headcount, and uptime requirements. We’ll
-                design a plan that keeps you £1 ahead of market pricing without
-                sacrificing performance.
-              </p>
-              <Link to="/business-sales">
-                <Button variant="hero" className="w-full">
-                  Build a Custom Quote
-                </Button>
-              </Link>
-            </div>
           </div>
-        </div>
-      </section>
+        </BrandSection>
+      </MotionConfig>
     </LayoutComponent>
   );
 };

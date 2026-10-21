@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
 import { renderBrandedEmail, escapeEmailHtml } from "../_shared/brandedEmailShell.ts";
@@ -115,9 +116,11 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const cronSecret = req.headers.get("x-cron-secret");
-  const expectedSecret = Deno.env.get("CRON_JOB_SECRET");
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader && cronSecret !== expectedSecret) {
+  // Only the scheduler (cron secret) or a service-role caller. Previously any
+  // Authorization header at all, including the public anon key, got through.
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const isServiceRole = authHeader === `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`;
+  if (!isServiceRole && !(await isCronSecret(cronSecret))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -207,7 +210,7 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-internal-secret": Deno.env.get("CRON_JOB_SECRET") ?? "",
+          "x-internal-secret": (await getCronSecret()) ?? "",
         },
         body: JSON.stringify({
           type: "service_live_welcome",

@@ -19,7 +19,7 @@ const BUCKET = "acceptance-certificates";
 const SIGNED_TTL = 60 * 60 * 24 * 7;
 
 async function sha256HexFromBytes(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
@@ -274,7 +274,7 @@ Deno.serve(perfServe("generate-acceptance-certificate", async (req) => {
     _title: `Certificate ${insert.data.certificate_number} for CS ${cs.cs_number}`,
     _details: { acceptance_id: acc.id, sha256: sha },
     _source_module: "contract_acceptance", _quote_id: acc.quote_id, _contract_summary_id: acc.contract_summary_id,
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return jsonResponse({
     ok: true,

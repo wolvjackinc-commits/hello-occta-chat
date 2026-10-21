@@ -173,7 +173,7 @@ Deno.serve(perfServe("journey-state", async (req) => {
     if (!unified_for_this_quote) {
       await supabase.rpc("customer_proceed_with_quote_by_token", {
         _token_hash: hash, _ip: ip, _ua: ua,
-      }).then(() => {}).catch(() => {});
+      }).then(() => {}, () => {});
     }
 
     await supabase.rpc("log_event", {
@@ -182,7 +182,7 @@ Deno.serve(perfServe("journey-state", async (req) => {
       _title: `Journey continued for ${q.quote_number}`,
       _details: { quote_id: q.id, journey_id: journey?.id },
       _source_module: "journey",
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
   } else {
     // GET: best-effort mark quote viewed (idempotent).
     if (q.status === "sent") {

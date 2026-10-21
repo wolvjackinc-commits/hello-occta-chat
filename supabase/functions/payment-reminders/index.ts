@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
@@ -6,7 +7,6 @@ import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const resend = new Resend(resendApiKey);
 
-const CRON_SECRET = Deno.env.get("CRON_JOB_SECRET");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,7 +60,7 @@ const getStandardFooter = (accentColor: string = '#facc15') => {
             Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
           </p>
           <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
-            Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
+            Lines open Monday–Friday, 8am–6pm
           </p>
         </div>
         
@@ -234,7 +234,7 @@ serve(async (req) => {
 
   // Verify cron job secret for protection
   const cronSecret = req.headers.get("x-cron-secret");
-  if (CRON_SECRET && cronSecret !== CRON_SECRET) {
+  if (!(await isCronSecret(cronSecret))) {
     console.log("SECURITY: Unauthorized cron job request - invalid or missing secret");
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
@@ -291,10 +291,12 @@ serve(async (req) => {
           total,
           due_date,
           status,
-          user_id
+          user_id,
+          reminder_count
         `)
         .eq('due_date', dateStr)
-        .in('status', ['sent', 'draft', 'overdue']);
+        // Drafts were never sent to the customer, so there is nothing to chase.
+        .in('status', ['sent', 'overdue']);
 
       if (invError) {
         console.error(`Error fetching invoices for ${dateStr}:`, invError);
@@ -327,6 +329,8 @@ serve(async (req) => {
           .select('id')
           .eq('invoice_id', invoice.id)
           .eq('template_name', template)
+          // A failed attempt must not block the retry on the next run.
+          .eq('status', 'sent')
           .limit(1)
           .maybeSingle();
 
@@ -414,12 +418,14 @@ serve(async (req) => {
 
         try {
           const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "billing@occta.co.uk";
-          const emailResponse = await resend.emails.send({
+          // resend@2 reports API failures in `error` rather than throwing.
+          const { data: emailData, error: emailError } = await resend.emails.send({
             from: `OCCTA <${fromEmail}>`,
             to: [profile.email],
             subject,
             html: htmlWithHelp,
           });
+          if (emailError) throw new Error(emailError.message || 'resend_send_failed');
 
           // Log to communications_log
           await supabase.from('communications_log').insert({
@@ -429,7 +435,7 @@ serve(async (req) => {
             template_name: template,
             recipient_email: profile.email,
             status: 'sent',
-            provider_message_id: (emailResponse as { id?: string })?.id || null,
+            provider_message_id: emailData?.id || null,
             sent_at: new Date().toISOString(),
             metadata: { subject, pay_url: payUrl },
           });
@@ -442,7 +448,7 @@ serve(async (req) => {
             .from('invoices')
             .update({
               last_reminder_sent_at: new Date().toISOString(),
-              reminder_count: (((invoice as unknown as { reminder_count?: number }).reminder_count) || 0) + 1,
+              reminder_count: (invoice.reminder_count || 0) + 1,
             })
             .eq('id', invoice.id);
         } catch (emailErr) {

@@ -41,7 +41,14 @@ export async function sha256Hex(input: string): Promise<string> {
 }
 
 /** Verify caller has a valid JWT and (optionally) belongs to allowed roles. */
-export async function requireStaff(req: Request, allowed: string[] = ["admin", "super_admin", "sales_agent"]) {
+export type StaffAuth =
+  | { readonly userId: string }
+  | { readonly error: "missing_jwt" | "invalid_jwt" | "forbidden"; readonly status: 401 | 403 };
+
+export async function requireStaff(
+  req: Request,
+  allowed: string[] = ["admin", "super_admin", "sales_agent"],
+): Promise<StaffAuth> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return { error: "missing_jwt", status: 401 } as const;
   const supabase = getServiceClient();
@@ -356,7 +363,7 @@ export function brutalistEmailShell(title: string, body: string, cta?: { label: 
                     <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Talk to us</strong><br/>
                     <a href="mailto:hello@occta.co.uk" style="color:#444;text-decoration:none;">hello@occta.co.uk</a><br/>
                     <a href="tel:08002606626" style="color:#444;text-decoration:none;">0800 260 6626</a><br/>
-                    Mon–Fri · 9am–6pm UK
+                    Mon–Fri · 8am–6pm UK
                   </td>
                   <td style="padding-right:18px;vertical-align:top;">
                     <strong style="color:#111;text-transform:uppercase;letter-spacing:0.06em;font-size:10px;">Self-serve</strong><br/>

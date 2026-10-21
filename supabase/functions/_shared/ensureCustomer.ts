@@ -289,7 +289,7 @@ async function reactivateArchivedProfileForAcceptedContract(
     },
     _source_module: "journey2",
     _severity: "info",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return { ok: true };
 }

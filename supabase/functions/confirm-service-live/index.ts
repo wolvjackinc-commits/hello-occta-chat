@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
 
@@ -129,7 +130,7 @@ Deno.serve(async (req) => {
   // Non-blocking: cron will retry any job that we don't process here.
   if (!alreadyLive) {
     try {
-      const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
+      const cronSecret = (await getCronSecret()) ?? "";
       const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/process-first-billing`;
       // Fire-and-forget-ish: we await briefly but ignore errors so activation
       // still returns 200 (the job row already exists and cron will retry).
@@ -147,7 +148,7 @@ Deno.serve(async (req) => {
   // Fire-and-forget — never blocks activation response.
   if (serviceId && !alreadyLive) {
     try {
-      const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
+      const cronSecret = (await getCronSecret()) ?? "";
       const url = `${Deno.env.get("SUPABASE_URL")}/functions/v1/verify-live-billing-chain`;
       await fetch(url, {
         method: "POST",

@@ -657,7 +657,7 @@ export default function Pay() {
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
             <p>Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>
-            <p>Lines open Mon–Fri 9am–6pm, Sat 9am–1pm</p>
+            <p>Lines open Mon–Fri, 8am–6pm</p>
             <p className="mt-2">
               Amount shown is the total payable (VAT included at {companyConfig.defaultVatRate}% where applicable).
               {companyConfig.vatRegistered && <> VAT No. {companyConfig.vatNumber}.</>}

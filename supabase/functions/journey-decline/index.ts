@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
     title: `Customer declined quote (${reason_code})`,
     actor_type: "public",
     details: { reason_code, reason_text },
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   await supabase.rpc("log_event", {
     _actor_type: "public",
@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
     _title: `Quote declined: ${q.quote_number}`,
     _details: { quote_id: q.id, journey_id: journey.id, reason_code },
     _source_module: "journey",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   // Internal admin notification (best-effort, non-blocking).
   try {

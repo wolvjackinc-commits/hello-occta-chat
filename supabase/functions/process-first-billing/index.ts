@@ -1,14 +1,21 @@
+import { isCronSecret } from "../_shared/cronSecret.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
 import {
   itemiseInvoice,
   buildInvoicePdfBytes,
   computeProRataMinor,
+  customerPdfExtras,
+  DD_MANDATE_PDF_COLUMNS,
+  mandatePdfExtras,
+  PROFILE_PDF_COLUMNS,
   sha256Hex,
   type RawLine,
   type VatMode,
 } from "../_shared/billingHelpers.ts";
 import { assertServiceLive } from "../_shared/billingGate.ts";
+import { buildContractMonthlyLines } from "../_shared/contractMonthlyLines.ts";
+import { firstBillingPeriod } from "../_shared/billingCycle.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,8 +26,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const cronSecret = req.headers.get("x-cron-secret");
-  const expected = Deno.env.get("CRON_JOB_SECRET");
-  if (!expected || cronSecret !== expected) {
+  if (!(await isCronSecret(cronSecret))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -103,7 +109,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       }
 
       const { data: svc } = await supabase.from("services")
-        .select("id, status, plan_name, service_type, price_monthly, user_id")
+        .select("id, status, plan_name, service_type, price_monthly, user_id, service_address")
         .eq("id", job.service_id).maybeSingle();
       if (!svc || svc.status !== "active") throw new Error("service_not_active");
 
@@ -123,9 +129,17 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         .eq("id", ord.payment_method_id!).maybeSingle();
       if (!pm) throw new Error("payment_method_missing");
 
+      // Only an active mandate with DD set up means we collect. Never call the
+      // DD provider from this worker.
+      const { data: activeMandate } = pm.method === "direct_debit"
+        ? await supabase.from("dd_mandates").select(DD_MANDATE_PDF_COLUMNS)
+          .eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle()
+        : { data: null };
+      const ddActive = !!activeMandate && pm.dd_setup_status === "active";
+
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email, account_number")
+        .select(PROFILE_PDF_COLUMNS)
         .eq("id", ord.customer_id!).maybeSingle();
       const recipientEmail = profile?.email ?? "";
       const customerName = profile?.full_name ?? "Customer";
@@ -136,56 +150,42 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       const vatMode: VatMode = (job.vat_mode as VatMode) ?? "inclusive";
       const vatRate = Number(job.vat_rate ?? 20);
 
-      const proRataMinor = computeProRataMinor(
-        Number(job.amount_minor),
-        Number(job.billable_days),
-        Number(job.full_cycle_days),
-        !!job.is_pro_rata,
+      // The job snapshot measured pro-rata against the cycle *after* the
+      // live date. Recompute against the cycle the live date falls in.
+      const anchorDay = Number(job.billing_anchor_day);
+      const period = anchorDay >= 1
+        ? firstBillingPeriod(job.period_start, job.period_end, anchorDay)
+        : {
+          billable_days: Number(job.billable_days),
+          full_cycle_days: Number(job.full_cycle_days),
+          is_pro_rata: !!job.is_pro_rata,
+        };
+      const prorate = (monthlyMinor: number) => computeProRataMinor(
+        monthlyMinor,
+        period.billable_days,
+        period.full_cycle_days,
+        period.is_pro_rata,
       );
+      const proRataMinor = prorate(Number(job.amount_minor));
 
-      const rawLines: RawLine[] = [];
-      const billingPeriodLabel = job.is_pro_rata
-        ? `${fmtInclusivePeriod(job.period_start, job.period_end)} · ${job.billable_days} of ${job.full_cycle_days} days`
+      const billingPeriodLabel = period.is_pro_rata
+        ? `${fmtInclusivePeriod(job.period_start, job.period_end)} · ${period.billable_days} of ${period.full_cycle_days} days`
         : `${fmtInclusivePeriod(job.period_start, job.period_end)}`;
 
-      if (proRataMinor > 0) {
-        rawLines.push({
-          description: `${svc.plan_name ?? svc.service_type} — ${job.is_pro_rata ? "pro-rata service" : "monthly service"}`,
-          amount_minor: proRataMinor,
-          period_label: billingPeriodLabel,
-        });
-      }
-
-      // Contract-selected monthly add-ons must follow the same first-period
-      // pro-rata rule as the base service. The accepted CS is authoritative.
-      const contractAddons = Array.isArray(acceptedCs?.selected_addons)
-        ? acceptedCs!.selected_addons as Array<{ id?: string; label?: string; monthly?: number }>
-        : [];
-      const contractAddonSnapshot: Array<{ id: string | null; label: string; monthly_minor: number; amount_minor: number }> = [];
-      for (const addon of contractAddons) {
-        const monthly = Number(addon?.monthly ?? 0);
-        if (!Number.isFinite(monthly) || monthly <= 0) continue;
-        const monthlyMinor = Math.round(monthly * 100);
-        const amountMinor = computeProRataMinor(
-          monthlyMinor,
-          Number(job.billable_days),
-          Number(job.full_cycle_days),
-          !!job.is_pro_rata,
-        );
-        if (amountMinor <= 0) continue;
-        const label = String(addon?.label ?? addon?.id ?? "Monthly add-on");
-        rawLines.push({
-          description: label,
-          amount_minor: amountMinor,
-          period_label: billingPeriodLabel,
-        });
-        contractAddonSnapshot.push({
-          id: addon?.id ? String(addon.id) : null,
-          label,
-          monthly_minor: monthlyMinor,
-          amount_minor: amountMinor,
-        });
-      }
+      // job.amount_minor is the accepted CS monthly price, which already
+      // includes the contract-selected add-ons. They are itemised out of it
+      // under the same pro-rata rule — never added on top.
+      const monthlyLines = buildContractMonthlyLines({
+        serviceDescription: `${svc.plan_name ?? svc.service_type} — ${period.is_pro_rata ? "pro-rata service" : "monthly service"}`,
+        contractMonthlyMinor: Number(job.amount_minor),
+        addons: acceptedCs?.selected_addons,
+        periodLabel: billingPeriodLabel,
+        vatMode,
+        vatRate,
+        prorate,
+      });
+      const rawLines: RawLine[] = [...monthlyLines.lines];
+      const contractAddonSnapshot = monthlyLines.addons;
 
       // One-off charges: prefer the itemised `one_off_lines` snapshot when
       // present, otherwise fall back to a single `activation_fee_minor` line.
@@ -215,18 +215,39 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       const totalMinor = totals.total_gross_minor;
       const total = totalMinor / 100;
 
-      // Idempotency: unique per (service, period, invoice_type).
-      const invoiceType = job.is_pro_rata ? "first_pro_rata" : "monthly";
-      const { data: existingInv } = await supabase
+      // Idempotency: one first invoice per (service, period). Match either
+      // type so a job retried after the pro-rata fix can't issue a second
+      // invoice for a period that was already invoiced under the other type.
+      const invoiceType = period.is_pro_rata ? "first_pro_rata" : "monthly";
+      const existingCols = "id, invoice_number, status, total, issue_date, due_date, pdf_storage_key, pdf_hash, email_sent_at, email_attempts";
+      let { data: existingInv } = await supabase
         .from("invoices")
-        .select("id, invoice_number, status, pdf_storage_key, pdf_hash, email_sent_at, email_attempts")
+        .select(existingCols)
         .eq("service_id", job.service_id)
         .eq("billing_period_start", job.period_start)
         .eq("billing_period_end", job.period_end)
-        .eq("invoice_type", invoiceType)
+        .in("invoice_type", ["first_pro_rata", "monthly"])
+        .neq("status", "cancelled")
+        .limit(1)
         .maybeSingle();
+      if (!existingInv && job.invoice_id) {
+        ({ data: existingInv } = await supabase
+          .from("invoices").select(existingCols).eq("id", job.invoice_id).maybeSingle());
+      }
 
-      let invoiceId = existingInv?.id ?? job.invoice_id ?? null;
+      // An invoice already issued for this period keeps its own amounts; never
+      // email totals that differ from what was stored on it.
+      if (existingInv && !existingInv.email_sent_at &&
+          Math.round(Number(existingInv.total) * 100) !== totalMinor) {
+        throw new Error(`existing_invoice_total_mismatch:${existingInv.invoice_number}`);
+      }
+
+      let invoiceId = existingInv?.id ?? null;
+      // Issue/due dates are fixed when the invoice is created; retries on a
+      // later day must render the same dates on the PDF and email.
+      let issueDate: string = existingInv?.issue_date ?? today;
+      let dueDateIso: string = existingInv?.due_date ??
+        new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
       let invoiceNumber = existingInv?.invoice_number ?? null;
       let invoiceStatus = existingInv?.status ?? null;
       let pdfStorageKey: string | null = existingInv?.pdf_storage_key ?? null;
@@ -238,7 +259,8 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         invoiceNumber = invNumData || `INV-${Date.now().toString(36).toUpperCase()}`;
 
         invoiceStatus = "draft";
-        const dueDate = new Date(); dueDate.setDate(dueDate.getDate() + 14);
+        issueDate = today;
+        dueDateIso = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
 
         const { data: inv, error: invErr } = await supabase.from("invoices").insert({
           user_id: svc.user_id,
@@ -246,8 +268,8 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           order_id: job.order_id,
           invoice_number: invoiceNumber,
           status: invoiceStatus,
-          issue_date: today,
-          due_date: dueDate.toISOString().slice(0, 10),
+          issue_date: issueDate,
+          due_date: dueDateIso,
           billing_period_start: job.period_start,
           billing_period_end: job.period_end,
           invoice_type: invoiceType,
@@ -261,10 +283,16 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
             monthly_minor: job.amount_minor,
             contract_addons: contractAddonSnapshot,
             contract_addons_minor: contractAddonSnapshot.reduce((sum, a) => sum + a.amount_minor, 0),
-            billable_days: job.billable_days,
-            full_cycle_days: job.full_cycle_days,
-            is_pro_rata: job.is_pro_rata,
-            calc_method: job.calc_method,
+            billable_days: period.billable_days,
+            full_cycle_days: period.full_cycle_days,
+            is_pro_rata: period.is_pro_rata,
+            calc_method: "anchor_v3_current_cycle",
+            job_snapshot: {
+              billable_days: job.billable_days,
+              full_cycle_days: job.full_cycle_days,
+              is_pro_rata: job.is_pro_rata,
+              calc_method: job.calc_method,
+            },
             activation_fee_minor: job.activation_fee_minor ?? 0,
             one_off_charges_minor: job.one_off_charges_minor ?? 0,
             vat_mode: vatMode,
@@ -273,8 +301,8 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
             vat_total_minor: totals.vat_total_minor,
             total_gross_minor: totals.total_gross_minor,
           },
-          notes: job.is_pro_rata
-            ? `First (pro-rata) invoice: ${job.billable_days} of ${job.full_cycle_days} days`
+          notes: period.is_pro_rata
+            ? `First (pro-rata) invoice: ${period.billable_days} of ${period.full_cycle_days} days`
             : `First monthly invoice`,
         }).select("id").single();
         if (invErr) throw invErr;
@@ -297,12 +325,17 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       if (!pdfStorageKey) {
         const pdfBytes = buildInvoicePdfBytes({
           invoiceNumber: invoiceNumber!, accountNumber, customerName,
-          issueDate: today,
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+          issueDate,
+          dueDate: dueDateIso,
           periodStart: job.period_start,
           periodEndExclusive: job.period_end,
           totals,
           isFirstInvoice: true,
+          ...customerPdfExtras(profile),
+          planName: svc.plan_name ?? null,
+          serviceAddress: svc.service_address ?? null,
+          paymentMethod: pm.method,
+          ...mandatePdfExtras(activeMandate, ddActive),
         });
         const buf = pdfBytes instanceof Uint8Array ? pdfBytes : new Uint8Array(pdfBytes as any);
         pdfHash = await sha256Hex(buf);
@@ -327,7 +360,8 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         if (!prId) {
           const { data: existingPR } = await supabase
             .from("payment_requests").select("id, provider_checkout_url")
-            .eq("invoice_id", invoiceId).maybeSingle();
+            .eq("invoice_id", invoiceId).neq("status", "cancelled")
+            .order("created_at", { ascending: false }).limit(1).maybeSingle();
           if (existingPR) {
             prId = existingPR.id;
             payNowUrl = (existingPR as any).provider_checkout_url ?? null;
@@ -356,10 +390,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
         }
       } else if (pm.method === "direct_debit") {
         // Only mark as awaiting_dd_collection if a confirmed active mandate exists.
-        // Never call the DD provider from this worker.
-        const { data: activeMandate } = await supabase.from("dd_mandates")
-          .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
-        if (activeMandate && pm.dd_setup_status === "active") {
+        if (ddActive) {
           await supabase.from("invoices").update({
             status: "awaiting_dd_collection",
           }).eq("id", invoiceId);
@@ -390,7 +421,6 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
             .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
           pdfSignedUrl = signed?.signedUrl ?? null;
         }
-        const dueDateStr = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
         const emailLines = totals.lines.map((l) => ({
           description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
           qty: 1,
@@ -408,8 +438,8 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
               account_number: accountNumber,
               invoice_number: invoiceNumber,
               invoice_id: invoiceId,
-              issue_date: fmtDate(today),
-              due_date: fmtDate(dueDateStr),
+              issue_date: fmtDate(issueDate),
+              due_date: fmtDate(dueDateIso),
               billing_period: fmtInclusivePeriod(job.period_start, job.period_end),
               lines: emailLines,
               subtotal: totals.subtotal_net_minor / 100,
@@ -418,6 +448,10 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
               pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
               invoice_pdf_url: pdfSignedUrl,
               dashboard_url: dashboardUrl,
+              payment_method: pm.method,
+              dd_active: ddActive,
+              vat_rate: totals.vat_rate,
+              plan_name: svc.plan_name ?? null,
             },
           },
           headers: { "idempotency-key": `invoice-first:${invoiceId}` } as any,
@@ -449,7 +483,7 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
           status: "sent",
           provider_message_id: emailMessageId,
           sent_at: new Date().toISOString(),
-          metadata: { invoice_number: invoiceNumber, total, is_pro_rata: !!job.is_pro_rata },
+          metadata: { invoice_number: invoiceNumber, total, is_pro_rata: period.is_pro_rata },
         });
       }
 

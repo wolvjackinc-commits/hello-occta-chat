@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { corsHeaders, jsonResponse, getServiceClient } from "../_shared/quoteHelpers.ts";
 
 /**
@@ -15,8 +16,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
   const provided = req.headers.get("x-cron-secret");
-  const expected = Deno.env.get("CRON_JOB_SECRET") || Deno.env.get("CRON_SECRET");
-  if (!expected || !provided || provided !== expected) {
+  if (!(await isCronSecret(provided))) {
     return jsonResponse({ error: "forbidden" }, 403);
   }
 
@@ -139,13 +139,14 @@ Deno.serve(async (req) => {
       push("failed", `${(res as any).status}: ${raw.slice(0, 200)}`);
     }
 
+    // Best-effort audit row: a log_event failure must not fail the resend.
     await supabase.rpc("log_event", {
       _actor_type: "admin", _event_type: "quote_bulk_resend",
       _title: `Bulk quote resend ${q.quote_number} → ${(res as any).ok ? "sent" : "failed"}`,
       _details: { quote_id: q.id, email, expired_extended: expired, margin_overridden: needsOverride },
       _quote_id: q.id, _source_module: "quote",
       _severity: (res as any).ok ? "info" : "warn",
-    }).catch?.(() => {});
+    }).then(() => {}, () => {});
   }
 
   console.log(`[bulk-resend] sent=${sent} failed=${failed} skipped=${skipped} overridden=${overridden}`);

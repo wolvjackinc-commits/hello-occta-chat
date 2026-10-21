@@ -200,7 +200,7 @@ export function QuoteFollowUps({
       lines.push(`We'll be in touch again on ${formatLondonLong(f.next_followup_at)} (UK time).`);
     }
     lines.push("");
-    lines.push("If anything above needs correcting, or you'd like to talk it through, reply to this email or call us on 0800 260 6626 (Mon–Fri 9am–6pm, Sat 9am–1pm).");
+    lines.push("If anything above needs correcting, or you'd like to talk it through, reply to this email or call us on 0800 260 6626 (Mon–Fri, 8am–6pm).");
     lines.push("");
     lines.push("Kind regards,");
     lines.push("The OCCTA Team");

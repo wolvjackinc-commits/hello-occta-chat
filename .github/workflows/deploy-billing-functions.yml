@@ -8,6 +8,9 @@ on:
       - 'supabase/functions/process-recurring-billing/**'
       - 'supabase/functions/_shared/billingHelpers.ts'
       - 'supabase/functions/_shared/billingGate.ts'
+      - 'supabase/functions/_shared/contractMonthlyLines.ts'
+      - 'supabase/functions/_shared/billingCycle.ts'
+      - 'supabase/functions/_shared/billingDocument.ts'
       - '.github/workflows/deploy-billing-functions.yml'
   workflow_dispatch:
 
@@ -22,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.98.0
       - name: Confirm deployment credential exists
         shell: bash
         run: |

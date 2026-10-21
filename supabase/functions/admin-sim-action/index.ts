@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { nextAnchorBillingDate, sha256Hex } from "../_shared/billingHelpers.ts";
+import { nextAnchorBillingDate, sha256Hex, vatRatePercent } from "../_shared/billingHelpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +11,7 @@ const APP_ORIGIN = Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk
 
 /** Fire-and-forget SIM lifecycle email via existing send-email pipeline. */
 async function sendSimEmail(
-  supabase: ReturnType<typeof createClient>,
+  supabase: ReturnType<typeof createClient<any>>,
   order: Record<string, unknown>,
   template: string,
   extra: Record<string, unknown> = {},
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
             subtotal: proRataMinor / 100,
             total: balanceDueMinor / 100,
             vat_enabled: false,
-            vat_rate: Number(order.vat_rate_snapshot ?? 0.2),
+            vat_rate: vatRatePercent(order.vat_rate_snapshot),
             vat_total: 0,
             notes: `SIM first live period — ${order.plan_name_snapshot} (${liveDate} → ${firstAnchor})${creditApplied > 0 ? ` — credit applied £${(creditApplied / 100).toFixed(2)}` : ""}`,
           }).select("id").single();

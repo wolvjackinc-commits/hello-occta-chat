@@ -518,7 +518,7 @@ function buildEmailHtml(opts: { firstName: string; journeyUrl: string; accountNu
     <p style="font-size:12px;color:#555;">${escapeHtml(USAGE_WORDING)}</p>
     <p style="font-size:12px;color:#555;"><strong>Because this is a 24-month Contract Saver plan, early termination charges may apply if the service is cancelled before the end of the minimum term.</strong></p>
 
-    <p style="font-size:11px;color:#777;margin-top:16px;">If you have any questions before signing, reply to this email or call 0800 260 6626 (Mon–Fri, 9am–6pm).</p>
+    <p style="font-size:11px;color:#777;margin-top:16px;">If you have any questions before signing, reply to this email or call 0800 260 6626 (Mon–Fri, 8am–6pm).</p>
     <p style="font-size:11px;color:#777;margin-top:8px;">OCCTA Limited · VAT No. 520 6072 30</p>
   `;
   return brutalistEmailShell(

@@ -103,6 +103,8 @@ Deno.serve(async (req) => {
       .select("id, status, assigned_admin_id, customer_email, customer_name, user_id")
       .eq("session_id", sessionId)
       .maybeSingle();
+    // Polling before any handoff is normal, not an error.
+    if (!conv && body.mode === "poll") return jsonOut(200, { ok: false, status: null, messages: [] });
     if (!conv) return jsonOut(404, { error: "conversation_not_found" });
 
     // A signed-in customer's thread requires the same authenticated user.

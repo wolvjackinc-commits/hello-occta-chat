@@ -330,7 +330,7 @@ Deno.serve(async (req) => {
     _details: { failures: result.failures },
     _source_module: "journey2",
     _severity: result.ok ? "info" : "warning",
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   return jsonResponse({ ok: true, result });
 });

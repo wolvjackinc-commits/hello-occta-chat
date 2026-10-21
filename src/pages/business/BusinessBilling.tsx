@@ -11,7 +11,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Download, FileText, Loader2, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { generateInvoicePdf } from "@/lib/generateInvoicePdf";
+import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
 
 type Invoice = {
   id: string;
@@ -91,29 +91,7 @@ const BusinessBilling = () => {
       const inv: any = invRes.data;
       const profile: any = profileRes.data ?? {};
       const lines = (linesRes.data as any[]) ?? [];
-      generateInvoicePdf({
-        invoiceNumber: inv.invoice_number,
-        customerName: profile.full_name || profile.business_company_name || "Customer",
-        customerEmail: profile.email || "",
-        accountNumber: profile.account_number || "",
-        postcode: profile.postcode || "",
-        issueDate: inv.issue_date,
-        dueDate: inv.due_date ?? undefined,
-        status: inv.status,
-        lines: lines.map((l) => ({
-          description: l.description ?? "",
-          qty: Number(l.qty ?? 1),
-          unit_price: Number(l.unit_price ?? 0),
-          line_total: Number(l.line_total ?? 0),
-          vat_rate: l.vat_rate != null ? Number(l.vat_rate) : undefined,
-        })),
-        subtotal: Number(inv.subtotal ?? 0),
-        vatTotal: Number(inv.vat_total ?? 0),
-        total: Number(inv.total ?? 0),
-        notes: inv.notes ?? undefined,
-        vatEnabled: inv.vat_enabled !== false,
-        vatRate: inv.vat_rate != null ? Number(inv.vat_rate) : 20,
-      });
+      await generateInvoicePdf(invoiceDataFromRows(inv, lines, profile));
     } catch (e: any) {
       toast({ title: "Download failed", description: e?.message, variant: "destructive" });
     }

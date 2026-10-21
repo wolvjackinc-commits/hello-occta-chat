@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
         _details: { session_id: session.id, chosen: chosenStart, applied: startDateToApply },
         _source_module: "journey2",
         _severity: "warning",
-      }).then(() => {}).catch(() => {});
+      }).then(() => {}, () => {});
     }
   }
 
@@ -203,7 +203,7 @@ Deno.serve(async (req) => {
       priority: "high",
       status: "open",
       related_quote_id: journey.quote_id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
     await supabase.rpc("log_event", {
       _actor_type: "public",
       _event_type: "journey2_post_contract_failed",
@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
       _source_module: "journey2",
       _severity: "error",
       _quote_id: journey.quote_id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
     return jsonResponse({
       ok: false,
       retryable: true,

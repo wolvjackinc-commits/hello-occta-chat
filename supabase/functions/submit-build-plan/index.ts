@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
     ? await supabase.from("quote_requests").insert(requestPayload).select("id, reference").single()
     : await saveQuoteSubmission(supabase, 'submit-build-plan', i, requestPayload);
   if (qrErr || !qr) return jsonResponse({ error: "create_failed" }, 500);
-  if (qr.replayed) return jsonResponse({ ok: true, mode: "quote_only", reference: qr.reference, quote_request_id: qr.id });
+  if ((qr as { replayed?: boolean }).replayed) return jsonResponse({ ok: true, mode: "quote_only", reference: qr.reference, quote_request_id: qr.id });
 
   if (customer_id && i.date_of_birth) {
     try { await supabase.from("profiles").update({ date_of_birth: i.date_of_birth }).eq("id", customer_id); } catch (_e) { /* non-fatal */ }

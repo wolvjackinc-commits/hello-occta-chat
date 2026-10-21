@@ -294,7 +294,7 @@ Deno.serve(async (req) => {
       _title: "Journey 2 session started",
       _details: { reason: assignment.reason, step: "address", test_session: insert.data.test_session },
       _source_module: "journey2",
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
 
     return jsonResponse({ ok: true, journey_version: "v2", token: raw, session: insert.data, reason: assignment.reason });
   }
@@ -544,7 +544,7 @@ Deno.serve(async (req) => {
         _details: { session_id: session.id, step: body.step, speed_bucket: merged.speed_bucket, plan_term: merged.plan_term },
         _source_module: "journey2",
         _severity: "warning",
-      }).then(() => {}).catch(() => {});
+      }).then(() => {}, () => {});
       return jsonResponse({
         error: "price_unavailable",
         message: "We can only show exact prices, and this option isn't priced right now. Your order is saved — please choose another option or try again shortly.",
@@ -585,7 +585,7 @@ Deno.serve(async (req) => {
       _details: { session_id: session.id, step: body.step },
       _source_module: "journey2",
       _severity: "warning",
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
   }
 
   const upd = await supabase

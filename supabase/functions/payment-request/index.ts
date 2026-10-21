@@ -39,6 +39,25 @@ async function hashToken(token: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+const SETTLED_INVOICE_STATUSES = ['paid', 'completed', 'cancelled'];
+
+// A payment link must not take money for an invoice that has already been
+// settled some other way (phone payment, Direct Debit, a newer link).
+async function settledInvoiceStatus(supabase: any, invoiceId: string | null): Promise<string | null> {
+  if (!invoiceId) return null;
+  const { data } = await supabase.from('invoices').select('status').eq('id', invoiceId).maybeSingle();
+  return data && SETTLED_INVOICE_STATUSES.includes(String(data.status)) ? String(data.status) : null;
+}
+
+// Once an invoice is paid, retire its other open payment links.
+async function cancelOpenInvoicePaymentRequests(supabase: any, invoiceId: string): Promise<void> {
+  await supabase
+    .from('payment_requests')
+    .update({ status: 'cancelled' })
+    .eq('invoice_id', invoiceId)
+    .in('status', ['sent', 'opened']);
+}
+
 // Check rate limit for token validation attempts
 async function checkRateLimit(supabase: any, identifier: string): Promise<{ allowed: boolean; locked: boolean }> {
   const action = 'payment_token_validation';
@@ -420,6 +439,17 @@ serve(async (req) => {
           });
         }
 
+        const settledStatus = await settledInvoiceStatus(supabase, request.invoice_id);
+        if (settledStatus) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: settledStatus === 'cancelled' ? 'This invoice has been cancelled' : 'This invoice has already been paid',
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
         // Update to opened status and last_opened_at
         await supabase
           .from('payment_requests')
@@ -514,6 +544,13 @@ serve(async (req) => {
         // SECURITY: Only allow sent/opened status
         if (!['sent', 'opened'].includes(request.status)) {
           return new Response(JSON.stringify({ success: false, error: 'Request not active' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (await settledInvoiceStatus(supabase, request.invoice_id)) {
+          return new Response(JSON.stringify({ success: false, error: 'This invoice has already been settled' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
@@ -980,7 +1017,8 @@ serve(async (req) => {
         const { invoiceId, amount, reference, notes } = data;
         const adminUserId = verifiedAdminUserId;
 
-        if (!invoiceId || !amount) {
+        const amountNum = Number(amount);
+        if (!invoiceId || !Number.isFinite(amountNum) || amountNum <= 0) {
           return new Response(JSON.stringify({ success: false, error: 'Missing required data' }), {
             status: 400,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1007,6 +1045,12 @@ serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
+        if (invoice.status === 'cancelled') {
+          return new Response(JSON.stringify({ success: false, error: 'Invoice is cancelled' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
 
         const receiptRef = reference || `TEL-${Date.now().toString(36).toUpperCase()}`;
 
@@ -1016,7 +1060,7 @@ serve(async (req) => {
           .insert({
             invoice_id: invoiceId,
             user_id: invoice.user_id,
-            amount: parseFloat(amount),
+            amount: amountNum,
             method: 'phone',
             reference: receiptRef,
             paid_at: new Date().toISOString(),
@@ -1032,17 +1076,30 @@ serve(async (req) => {
           });
         }
 
-        // Mark invoice as paid
-        await supabase
-          .from('invoices')
-          .update({ status: 'paid', updated_at: new Date().toISOString() })
-          .eq('id', invoiceId);
+        // Only a payment that covers the balance settles the invoice. A part
+        // payment is receipted but leaves the invoice open for the remainder.
+        const { data: allReceipts } = await supabase
+          .from('receipts')
+          .select('amount')
+          .eq('invoice_id', invoiceId);
+        const paidMinor = (allReceipts ?? []).reduce((sum: number, r: any) => sum + Math.round(Number(r.amount || 0) * 100), 0);
+        const totalMinor = Math.round(Number(invoice.total || 0) * 100);
+        const fullyPaid = paidMinor >= totalMinor;
+        const balanceRemaining = Math.max(0, totalMinor - paidMinor) / 100;
+
+        if (fullyPaid) {
+          await supabase
+            .from('invoices')
+            .update({ status: 'paid', updated_at: new Date().toISOString() })
+            .eq('id', invoiceId);
+          await cancelOpenInvoicePaymentRequests(supabase, invoiceId);
+        }
 
         // Create payment attempt record
         await supabase.from('payment_attempts').insert({
           user_id: invoice.user_id,
           invoice_id: invoiceId,
-          amount: parseFloat(amount),
+          amount: amountNum,
           status: 'success',
           provider: 'phone',
           provider_ref: receiptRef,
@@ -1062,6 +1119,8 @@ serve(async (req) => {
             receipt_ref: receiptRef,
             invoice_number: invoice.invoice_number,
             notes,
+            fully_paid: fullyPaid,
+            balance_remaining: balanceRemaining,
           },
         });
 
@@ -1072,6 +1131,8 @@ serve(async (req) => {
             reference: receiptRef,
             amount,
           },
+          fully_paid: fullyPaid,
+          balance_remaining: balanceRemaining,
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -1792,7 +1853,7 @@ function getCardPaymentEmail(data: {
         </div>
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon–Fri, 8am–6pm).
         </p>
       </div>
       <div class="footer">
@@ -1823,7 +1884,7 @@ This link expires on ${expiryDate}.
 DIDN'T REQUEST THIS?
 If you didn't expect this payment request, please ignore this email or contact us immediately on 0800 260 6626.
 
-Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon–Fri, 8am–6pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
@@ -1899,7 +1960,7 @@ function getDDSetupEmail(data: {
         </div>
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you have any questions, call us on <strong>0800 260 6626</strong> (Mon–Fri, 8am–6pm).
         </p>
       </div>
       <div class="footer">
@@ -1932,7 +1993,7 @@ This link expires on ${expiryDate}.
 DIDN'T REQUEST THIS?
 If you didn't expect this Direct Debit setup request, please ignore this email or contact us immediately on 0800 260 6626.
 
-Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon–Fri, 8am–6pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
@@ -2008,7 +2069,7 @@ function getPaymentConfirmationEmail(data: {
         </div>
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you have any questions about this payment, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you have any questions about this payment, call us on <strong>0800 260 6626</strong> (Mon–Fri, 8am–6pm).
         </p>
       </div>
       <div class="footer">
@@ -2036,7 +2097,7 @@ ${data.invoiceNumber ? `Invoice: ${data.invoiceNumber}` : ''}
 Receipt: ${data.receiptReference}
 Paid: ${paidDate}
 
-Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon–Fri, 8am–6pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.
@@ -2117,7 +2178,7 @@ function getPaymentCancelledEmail(data: {
         ` : ''}
         
         <p class="text" style="font-size: 13px; color: #666;">
-          If you need assistance or would like to make a payment over the phone, call us on <strong>0800 260 6626</strong> (Mon-Fri 9am-6pm, Sat 9am-1pm).
+          If you need assistance or would like to make a payment over the phone, call us on <strong>0800 260 6626</strong> (Mon–Fri, 8am–6pm).
         </p>
       </div>
       <div class="footer">
@@ -2146,7 +2207,7 @@ ${!isCancelled ? `What you can do:
 - Call us on 0800 260 6626 for alternative payment options
 ` : ''}
 
-Questions? Call us on 0800 260 6626 (Mon-Fri 9am-6pm, Sat 9am-1pm).
+Questions? Call us on 0800 260 6626 (Mon–Fri, 8am–6pm).
 
 ---
 © ${new Date().getFullYear()} OCCTA Limited. All rights reserved.

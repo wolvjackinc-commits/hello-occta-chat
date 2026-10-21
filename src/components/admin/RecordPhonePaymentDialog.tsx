@@ -153,7 +153,12 @@ export function RecordPhonePaymentDialog({
         throw new Error(data?.error || "Failed to record payment");
       }
 
-      toast({ title: "Payment recorded successfully", description: "Receipt has been created." });
+      toast(data.fully_paid === false
+        ? {
+          title: "Part payment recorded",
+          description: `Receipt created. £${Number(data.balance_remaining ?? 0).toFixed(2)} is still outstanding on this invoice.`,
+        }
+        : { title: "Payment recorded successfully", description: "Receipt has been created." });
       onSuccess();
       onOpenChange(false);
     } catch (err) {

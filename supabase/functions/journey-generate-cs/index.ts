@@ -156,7 +156,7 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
         _title: `Contract Information generation failed for journey ${journey.id}`,
         _details: { quote_id: q.id, contract_summary_id: existing.id, error: ci.error, details: ci.details ?? null },
         _source_module: "journey", _severity: "error", _quote_id: q.id,
-      }).then(() => {}).catch(() => {});
+      }).then(() => {}, () => {});
       return jsonResponse({ error: ci.error ?? "contract_information_not_ready", details: ci.details }, 502);
     }
     return jsonResponse({
@@ -213,7 +213,7 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
       _title: `CS generation failed for journey ${journey.id}`,
       _details: { quote_id: q.id, status: r.status, detail },
       _source_module: "journey", _severity: "error", _quote_id: q.id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
     return jsonResponse({ error: "generation_failed", details: detail, status: r.status }, 502);
   }
 
@@ -240,7 +240,7 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
       _title: `Contract Information generation failed for journey ${journey.id}`,
       _details: { quote_id: q.id, contract_summary_id: csId, error: ci.error, details: ci.details ?? null },
       _source_module: "journey", _severity: "error", _quote_id: q.id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
     return jsonResponse({ error: ci.error ?? "contract_information_not_ready", details: ci.details }, 502);
   }
 

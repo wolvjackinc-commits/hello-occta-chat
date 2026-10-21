@@ -558,7 +558,7 @@ const Support = () => {
               </div>
               <div className="flex items-center gap-4 border-b-2 border-foreground/15 py-4">
                 <dt><Clock className="w-5 h-5" aria-label="Opening hours" /></dt>
-                <dd className="text-base">Mon-Fri 9am-6pm, Sat 10am-4pm</dd>
+                <dd className="text-base">Mon–Fri, 8am–6pm</dd>
               </div>
               <div className="flex items-center gap-4 py-4">
                 <dt><Mail className="w-5 h-5" aria-label="Email" /></dt>

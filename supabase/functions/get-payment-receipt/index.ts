@@ -9,7 +9,7 @@ import { perfServe } from "../_shared/perfLog.ts";
 
 const STAFF_ROLES = ["admin", "super_admin", "finance_admin", "support_agent", "sales_agent"];
 
-function sanitize(pr: any, cs: any | null, profile: any | null) {
+function sanitize(pr: any, cs: any | null, profile: any | null, invoice: any | null = null) {
   return {
     receipt_ref: `RCPT-${pr.payment_request_number}`,
     payment_request_number: pr.payment_request_number,
@@ -23,6 +23,7 @@ function sanitize(pr: any, cs: any | null, profile: any | null) {
     customer_name: pr.customer_name,
     customer_email: pr.customer_email,
     account_number: profile?.account_number ?? pr.account_number ?? null,
+    invoice_number: invoice?.invoice_number ?? null,
     contract_summary: cs ? {
       id: cs.id,
       cs_number: cs.cs_number,
@@ -65,15 +66,18 @@ Deno.serve(perfServe("get-payment-receipt", async (req) => {
     if (!paidMs || Date.now() - paidMs > 60 * 24 * 60 * 60 * 1000) {
       return jsonResponse({ error: "expired" }, 410);
     }
-    const [{ data: cs }, { data: profile }] = await Promise.all([
+    const [{ data: cs }, { data: profile }, { data: invoice }] = await Promise.all([
       pr.contract_summary_id
         ? supabase.from("contract_summaries").select("id,cs_number,plan_name,monthly_price_incl_vat").eq("id", pr.contract_summary_id).maybeSingle()
         : Promise.resolve({ data: null }),
       pr.user_id
         ? supabase.from("profiles").select("account_number").eq("id", pr.user_id).maybeSingle()
         : Promise.resolve({ data: null }),
+      pr.invoice_id
+        ? supabase.from("invoices").select("invoice_number").eq("id", pr.invoice_id).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
-    return jsonResponse({ ok: true, receipt: sanitize(pr, cs, profile) });
+    return jsonResponse({ ok: true, receipt: sanitize(pr, cs, profile, invoice) });
   }
 
   // ----- Auth path -----
@@ -104,14 +108,17 @@ Deno.serve(perfServe("get-payment-receipt", async (req) => {
     return jsonResponse({ error: "not_paid" }, 409);
   }
 
-  const [{ data: cs }, { data: profile }] = await Promise.all([
+  const [{ data: cs }, { data: profile }, { data: invoice }] = await Promise.all([
     pr.contract_summary_id
       ? supabase.from("contract_summaries").select("id,cs_number,plan_name,monthly_price_incl_vat").eq("id", pr.contract_summary_id).maybeSingle()
       : Promise.resolve({ data: null }),
     pr.user_id
       ? supabase.from("profiles").select("account_number").eq("id", pr.user_id).maybeSingle()
       : Promise.resolve({ data: null }),
+    pr.invoice_id
+      ? supabase.from("invoices").select("invoice_number").eq("id", pr.invoice_id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
-  return jsonResponse({ ok: true, receipt: sanitize(pr, cs, profile) });
+  return jsonResponse({ ok: true, receipt: sanitize(pr, cs, profile, invoice) });
 }));

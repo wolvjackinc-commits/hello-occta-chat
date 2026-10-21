@@ -358,7 +358,7 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
     },
     _source_module: "journey",
     _quote_id: quote.id,
-  }).then(() => {}).catch(() => {});
+  }).then(() => {}, () => {});
 
   // Consolidated onboarding email (best-effort, idempotent on consolidated_email_sent_at).
   if (!journey.consolidated_email_sent_at) {

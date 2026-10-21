@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       _details: { session_id: session.id, order_id: order?.id ?? null, occta_order_number: order?.occta_order_number ?? null },
       _source_module: "journey2",
       _quote_id: session.quote_id,
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
   }
 
   return jsonResponse({

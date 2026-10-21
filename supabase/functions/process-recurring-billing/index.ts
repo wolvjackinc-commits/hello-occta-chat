@@ -1,8 +1,13 @@
+import { isCronSecret } from "../_shared/cronSecret.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
 import {
   itemiseInvoice,
   buildInvoicePdfBytes,
+  customerPdfExtras,
+  DD_MANDATE_PDF_COLUMNS,
+  mandatePdfExtras,
+  PROFILE_PDF_COLUMNS,
   sha256Hex,
   nextAnchorBillingDate,
   poundsToMinor,
@@ -10,6 +15,7 @@ import {
   type VatMode,
 } from "../_shared/billingHelpers.ts";
 import { assertServiceLive } from "../_shared/billingGate.ts";
+import { buildContractMonthlyLines } from "../_shared/contractMonthlyLines.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,8 +37,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const cronSecret = req.headers.get("x-cron-secret");
-  const expected = Deno.env.get("CRON_JOB_SECRET");
-  if (!expected || cronSecret !== expected) {
+  if (!(await isCronSecret(cronSecret))) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -62,7 +67,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
   // Pull due active services. Limit per run to keep the function bounded.
   const { data: services, error } = await supabase
     .from("services")
-    .select("id, user_id, order_id, service_type, plan_name, price_monthly, billing_anchor_day, next_billing_date, contract_summary_id, status, billing_enabled")
+    .select("id, user_id, order_id, service_type, plan_name, price_monthly, billing_anchor_day, next_billing_date, contract_summary_id, status, billing_enabled, service_address")
     .eq("status", "active")
     .eq("billing_enabled", true)
     .lte("next_billing_date", today)
@@ -127,7 +132,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       const invoiceType = "monthly";
       const { data: existingInv } = await supabase
         .from("invoices")
-        .select("id, invoice_number, status, pdf_storage_key, email_sent_at")
+        .select("id, invoice_number, status, total, issue_date, due_date, pdf_storage_key, email_sent_at")
         .eq("service_id", svc.id)
         .eq("billing_period_start", periodStart)
         .eq("billing_period_end", periodEnd)
@@ -138,7 +143,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       // Load customer + payment method context.
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, email, account_number")
+        .select(PROFILE_PDF_COLUMNS)
         .eq("id", svc.user_id).maybeSingle();
       const recipientEmail = profile?.email ?? "";
       const customerName = profile?.full_name ?? "Customer";
@@ -158,32 +163,40 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           ddStatus = pm?.dd_setup_status ?? null;
         }
       }
+      const { data: activeMandate } = pmMethod === "direct_debit"
+        ? await supabase.from("dd_mandates").select(DD_MANDATE_PDF_COLUMNS)
+          .eq("user_id", svc.user_id).eq("status", "active").limit(1).maybeSingle()
+        : { data: null };
+      const ddActive = !!activeMandate && ddStatus === "active";
 
       const periodLabel = `${fmtInclusivePeriod(periodStart, periodEnd)} (billed in advance)`;
-      const rawLines: RawLine[] = [
-        {
-          description: `${svc.plan_name ?? svc.service_type} — monthly service`,
-          amount_minor: monthlyMinor,
-          period_label: periodLabel,
-        },
-      ];
-
-      // Contract-selected monthly add-ons are separately itemised and billed.
-      // The accepted Contract Summary is the immutable source of truth.
-      for (const addon of contractAddons) {
-        const monthly = Number(addon?.monthly ?? 0);
-        if (!Number.isFinite(monthly) || monthly <= 0) continue;
-        rawLines.push({
-          description: String(addon?.label ?? addon?.id ?? "Monthly add-on"),
-          amount_minor: poundsToMinor(monthly),
-          period_label: periodLabel,
-        });
-      }
+      // Contract-selected monthly add-ons are itemised out of the contracted
+      // monthly price, which already includes them — never added on top.
+      const rawLines: RawLine[] = buildContractMonthlyLines({
+        serviceDescription: `${svc.plan_name ?? svc.service_type} — monthly service`,
+        contractMonthlyMinor: monthlyMinor,
+        addons: contractAddons,
+        periodLabel,
+        vatMode,
+        vatRate: 20,
+      }).lines;
 
       const totals = itemiseInvoice(rawLines, vatMode, 20);
       const total = totals.total_gross_minor / 100;
 
+      // An invoice already issued for this period keeps its own amounts; never
+      // email totals that differ from what was stored on it.
+      if (existingInv && !existingInv.email_sent_at &&
+          Math.round(Number(existingInv.total) * 100) !== totals.total_gross_minor) {
+        throw new Error(`existing_invoice_total_mismatch:${existingInv.invoice_number}`);
+      }
+
       let invoiceId = existingInv?.id ?? null;
+      // Issue/due dates are fixed when the invoice is created; a retry on a
+      // later day must render the same dates on the PDF and email.
+      const issueDate: string = existingInv?.issue_date ?? today;
+      const dueDateIso: string = existingInv?.due_date ??
+        new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
       let invoiceNumber = existingInv?.invoice_number ?? null;
       let invoiceStatus = existingInv?.status ?? null;
       let pdfStorageKey: string | null = existingInv?.pdf_storage_key ?? null;
@@ -192,7 +205,6 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       if (!invoiceId) {
         const { data: invNumData } = await supabase.rpc("generate_invoice_number");
         invoiceNumber = invNumData || `INV-${Date.now().toString(36).toUpperCase()}`;
-        const dueDate = new Date(); dueDate.setDate(dueDate.getDate() + 14);
         invoiceStatus = "draft";
 
         const { data: inv, error: invErr } = await supabase.from("invoices").insert({
@@ -201,8 +213,8 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           order_id: svc.order_id,
           invoice_number: invoiceNumber,
           status: invoiceStatus,
-          issue_date: today,
-          due_date: dueDate.toISOString().slice(0, 10),
+          issue_date: issueDate,
+          due_date: dueDateIso,
           billing_period_start: periodStart,
           billing_period_end: periodEnd,
           invoice_type: invoiceType,
@@ -232,10 +244,15 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       if (!pdfStorageKey) {
         const pdfBytes = buildInvoicePdfBytes({
           invoiceNumber: invoiceNumber!, accountNumber, customerName,
-          issueDate: today,
-          dueDate: new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+          issueDate,
+          dueDate: dueDateIso,
           periodStart, periodEndExclusive: periodEnd, totals,
           isFirstInvoice: false,
+          ...customerPdfExtras(profile),
+          planName: svc.plan_name ?? null,
+          serviceAddress: svc.service_address ?? null,
+          paymentMethod: pmMethod,
+          ...mandatePdfExtras(activeMandate, ddActive),
         });
         const buf = pdfBytes instanceof Uint8Array ? pdfBytes : new Uint8Array(pdfBytes as any);
         const pdfHash = await sha256Hex(buf);
@@ -256,7 +273,8 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       if (pmMethod === "invoice_link") {
         const { data: existingPR } = await supabase
           .from("payment_requests").select("id, provider_checkout_url")
-          .eq("invoice_id", invoiceId).maybeSingle();
+          .eq("invoice_id", invoiceId).neq("status", "cancelled")
+          .order("created_at", { ascending: false }).limit(1).maybeSingle();
         if (existingPR) {
           payNowUrl = (existingPR as any).provider_checkout_url ?? null;
         } else {
@@ -281,14 +299,14 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           payNowUrl = (pr as any)?.provider_checkout_url ?? `${appOrigin}/pay?token=${token}`;
         }
       } else if (pmMethod === "direct_debit") {
-        const { data: activeMandate } = await supabase.from("dd_mandates")
-          .select("id, status").eq("user_id", svc.user_id).eq("status", "active").maybeSingle();
-        if (activeMandate && ddStatus === "active") {
+        if (ddActive) {
           await supabase.from("invoices").update({
             status: "awaiting_dd_collection",
           }).eq("id", invoiceId);
           invoiceStatus = "awaiting_dd_collection";
-        } else {
+        } else if (!existingInv) {
+          // Once per invoice — retries (e.g. after an email failure) must not
+          // open a fresh task every day.
           await supabase.from("admin_tasks").insert({
             title: `DD not active for monthly invoice ${invoiceNumber}`,
             description: `Customer's Direct Debit mandate is not active. Monthly invoice ${invoiceNumber} has been generated but no collection has been attempted. Issue a Worldpay fallback link if appropriate.`,
@@ -313,7 +331,6 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
             .from("invoice-pdfs").createSignedUrl(pdfStorageKey, 60 * 60 * 24 * 14);
           pdfSignedUrl = signed?.signedUrl ?? null;
         }
-        const dueDateStr = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
         const emailLines = totals.lines.map((l) => ({
           description: l.period_label ? `${l.description} (${l.period_label})` : l.description,
           qty: 1,
@@ -331,8 +348,8 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
               account_number: accountNumber,
               invoice_number: invoiceNumber,
               invoice_id: invoiceId,
-              issue_date: fmtDate(today),
-              due_date: fmtDate(dueDateStr),
+              issue_date: fmtDate(issueDate),
+              due_date: fmtDate(dueDateIso),
               billing_period: fmtInclusivePeriod(periodStart, periodEnd),
               lines: emailLines,
               subtotal: totals.subtotal_net_minor / 100,
@@ -341,6 +358,10 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
               pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${invoiceId}`,
               invoice_pdf_url: pdfSignedUrl,
               dashboard_url: dashboardUrl,
+              payment_method: pmMethod,
+              dd_active: ddActive,
+              vat_rate: totals.vat_rate,
+              plan_name: svc.plan_name ?? null,
             },
           },
           headers: { "idempotency-key": `invoice-monthly:${invoiceId}` } as any,

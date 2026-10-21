@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 // Internal one-shot helper to create a CS-linked INTERNAL TEST payment request
 // at a fixed small amount and open a Worldpay HPP session. Guarded by CRON_JOB_SECRET.
 // DO NOT use for any production flow. Safe to delete after Phase E verification.
@@ -24,12 +25,11 @@ serve(async (req) => {
     // Guarded by CRON_JOB_SECRET as the header comment claims. Without this
     // check, anyone on the internet could create real Worldpay HPP sessions
     // and payment_requests rows tied to the allowlisted internal-test CS.
-    const cronSecret = Deno.env.get('CRON_JOB_SECRET');
     const providedSecret =
       req.headers.get('x-cron-secret') ||
       req.headers.get('X-Cron-Secret') ||
       req.headers.get('x-internal-secret');
-    if (!cronSecret || !providedSecret || providedSecret !== cronSecret) {
+    if (!(await isCronSecret(providedSecret))) {
       return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

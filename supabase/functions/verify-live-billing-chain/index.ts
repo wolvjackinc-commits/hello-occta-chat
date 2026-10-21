@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 // verify-live-billing-chain
 //
 // Idempotent post-activation safety net. Runs in three modes:
@@ -90,8 +91,8 @@ Deno.serve(async (req) => {
 
   // Auth: either admin JWT OR cron secret OR internal service kickoff.
   const cronSecret = req.headers.get("x-cron-secret");
-  const isCron = !!cronSecret && cronSecret === Deno.env.get("CRON_JOB_SECRET");
-  const isInternal = req.headers.get("x-internal-kickoff") === (Deno.env.get("CRON_JOB_SECRET") ?? "__none__");
+  const isCron = await isCronSecret(cronSecret);
+  const isInternal = await isCronSecret(req.headers.get("x-internal-kickoff"));
 
   const svc = getServiceClient();
 

@@ -1,3 +1,4 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 // One-off production remediation task for account OCC69244673 (invoice INV-2607-0005).
 //
 // The recurring billing job failed on 25 July 2026, so the July invoice was
@@ -31,11 +32,11 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const auth = req.headers.get("Authorization") ?? "";
   const internal = req.headers.get("x-internal-secret") ?? "";
-  const cronSecret = Deno.env.get("CRON_JOB_SECRET") ?? "";
+  const internalOk = await isCronSecret(internal);
   const taskSecret = Deno.env.get("TASK_HUTT_RESTORE_SECRET") ?? "";
   const okAuth =
     auth === `Bearer ${serviceKey}` ||
-    (cronSecret && internal === cronSecret) ||
+    internalOk ||
     (taskSecret && req.headers.get("x-task-secret") === taskSecret);
   let jwtRole: string | null = null;
   try {

@@ -1,7 +1,9 @@
+import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { buildInvoiceSentEmailHtml, invoiceEmailSubject } from "../_shared/invoiceEmail.ts";
 
 // Maps send-email `type` values to the template_key used in
 // email_template_help_links so the correct KB articles are appended.
@@ -87,7 +89,7 @@ const getStandardFooter = (options?: { showUnsubscribe?: boolean; accentColor?: 
             Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
           </p>
           <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
-            Lines open Monday–Friday 9am–6pm, Saturday 9am–1pm
+            Lines open Monday–Friday, 8am–6pm
           </p>
         </div>
         
@@ -605,118 +607,11 @@ const getPasswordResetHtml = (data: Record<string, unknown>) => `
 </html>
 `;
 
-const getInvoiceSentHtml = (data: Record<string, unknown>) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
-  const lines = (data.lines as Array<{ description: string; qty: number; line_total: number }>) || [];
-  
-  const linesHtml = lines.map(line => `
-    <tr>
-      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; font-size: 14px;">${escapeHtml(line.description)}</td>
-      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: center; font-size: 14px;">${line.qty}</td>
-      <td style="padding: 10px 16px; border-bottom: 1px solid #eee; text-align: right; font-size: 14px; font-weight: 600;">£${sanitizeNumber(line.line_total)}</td>
-    </tr>
-  `).join('');
-  
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light">
-  <title>Invoice ${escapeHtml(data.invoice_number)} - OCCTA</title>
-  <style>
-    ${getCommonStyles()}
-    
-    .title-banner { background: #3b82f6; padding: 16px 32px; border-bottom: 4px solid #0d0d0d; }
-    .title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; text-transform: uppercase; margin: 0; color: #ffffff; }
-    
-    .invoice-card { background: #f5f4ef; border: 3px solid #0d0d0d; margin: 24px 0; }
-    .invoice-header { background: #0d0d0d; color: #fff; padding: 12px 20px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 2px; }
-    .invoice-body { padding: 0; }
-    .invoice-table { width: 100%; border-collapse: collapse; }
-    .invoice-table th { background: #f5f4ef; font-size: 11px; text-transform: uppercase; padding: 12px 16px; text-align: left; letter-spacing: 1px; color: #666; }
-    .totals-row { display: flex; justify-content: space-between; padding: 12px 16px; font-size: 14px; }
-    .totals-row.grand { background: #0d0d0d; color: #fff; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; }
-    .meta-row { display: flex; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #eee; }
-    .meta-label { font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 1px; }
-    .meta-value { font-weight: 600; font-size: 14px; }
-    
-    .payment-note { background: #fef3c7; border: 2px solid #facc15; padding: 16px; margin: 24px 0; font-size: 13px; }
-  </style>
-</head>
-<body>
-  <div class="preheader">Invoice ${escapeHtml(data.invoice_number)} — £${sanitizeNumber(data.total)} due ${data.due_date ? `by ${escapeHtml(data.due_date)}` : 'upon receipt'}</div>
-  
-  <div class="wrapper">
-    <div class="container">
-      <div class="header">
-        <div class="logo">OCCTA</div>
-        <div class="tagline">Brilliant Made Simple</div>
-      </div>
-      
-      <div class="title-banner">
-        <h1 class="title">📄 Invoice ${escapeHtml(data.invoice_number)}</h1>
-      </div>
-      
-      <div class="content">
-        <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
-        <p class="text">Please find your invoice below. Payment is due ${data.due_date ? `by <strong>${escapeHtml(data.due_date)}</strong>` : 'upon receipt'}.</p>
-        
-        <div class="invoice-card">
-          <div class="invoice-header">Invoice Details</div>
-          <div class="invoice-body">
-            <div class="meta-row"><span class="meta-label">Invoice Number</span><span class="meta-value">${escapeHtml(data.invoice_number)}</span></div>
-            <div class="meta-row"><span class="meta-label">Account Number</span><span class="meta-value">${escapeHtml(data.account_number)}</span></div>
-            <div class="meta-row"><span class="meta-label">Issue Date</span><span class="meta-value">${escapeHtml(data.issue_date)}</span></div>
-            ${data.due_date ? `<div class="meta-row"><span class="meta-label">Due Date</span><span class="meta-value" style="color: #ef4444; font-weight: 700;">${escapeHtml(data.due_date)}</span></div>` : ''}
-            ${data.billing_period ? `<div class="meta-row"><span class="meta-label">Billing Period</span><span class="meta-value">${escapeHtml(data.billing_period)}</span></div>` : ''}
-          </div>
-        </div>
-        
-        ${lines.length > 0 ? `
-        <div class="invoice-card">
-          <div class="invoice-header">Line Items</div>
-          <table class="invoice-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th style="text-align: center;">Qty</th>
-                <th style="text-align: right;">Amount</th>
-              </tr>
-            </thead>
-            <tbody>${linesHtml}</tbody>
-          </table>
-        </div>
-        ` : ''}
-        
-        <div class="invoice-card">
-          <div class="totals-row"><span>Subtotal</span><span>£${sanitizeNumber(data.subtotal)}</span></div>
-          <div class="totals-row"><span>VAT (20%)</span><span>£${sanitizeNumber(data.vat_total)}</span></div>
-          <div class="totals-row grand"><span>TOTAL DUE</span><span>£${sanitizeNumber(data.total)}</span></div>
-        </div>
-        
-        <div class="payment-note">
-          <strong>💳 Payment Methods:</strong> Pay online via your dashboard, or call 0800 260 6626 to pay by card. Bank transfers accepted to OCCTA Ltd.
-        </div>
-        
-        <div class="cta-wrap">
-          <a href="${data.pay_now_url ? escapeHtml(data.pay_now_url) : `${siteUrl}/pay-invoice?id=${escapeHtml(data.invoice_id)}`}" class="cta" style="box-shadow: 4px 4px 0 0 #3b82f6;">Pay Now →</a>
-          ${data.invoice_pdf_url ? `<div style="margin-top:12px;"><a href="${escapeHtml(data.invoice_pdf_url)}" style="color:#0d0d0d;text-decoration:underline;font-size:13px;">Download PDF invoice</a></div>` : ''}
-          ${data.dashboard_url ? `<div style="margin-top:8px;"><a href="${escapeHtml(data.dashboard_url)}" style="color:#666;text-decoration:underline;font-size:12px;">View in your dashboard</a></div>` : ''}
-        </div>
-        
-        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
-          Questions about your invoice? Contact hello@occta.co.uk
-        </p>
-      </div>
-      
-      ${getStandardFooter({ accentColor: '#3b82f6' })}
-    </div>
-  </div>
-</body>
-</html>`;
-};
+const getInvoiceSentHtml = (data: Record<string, unknown>) =>
+  buildInvoiceSentEmailHtml(data, {
+    siteUrl: Deno.env.get("SITE_URL") || "https://www.occta.co.uk",
+    footerHtml: getStandardFooter({ accentColor: "#ffde00" }),
+  });
 
 const getPaymentLinkHtml = (data: Record<string, unknown>) => {
   const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
@@ -796,7 +691,7 @@ const getPaymentLinkHtml = (data: Record<string, unknown>) => {
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
           Prefer to pay by phone? Call us on <strong>0800 260 6626</strong><br>
-          Lines open Monday–Friday 9am–6pm
+          Lines open Monday–Friday, 8am–6pm
         </p>
       </div>
       
@@ -1322,8 +1217,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Check for internal secret authentication (for programmatic/cron calls)
       const internalSecret = req.headers.get("x-internal-secret");
-      const cronJobSecret = Deno.env.get("CRON_JOB_SECRET");
-      const isInternalAuth = internalSecret && cronJobSecret && internalSecret === cronJobSecret;
+      const isInternalAuth = await isCronSecret(internalSecret);
 
       if (isServiceRoleAuth || isInternalAuth) {
 
@@ -1427,7 +1321,7 @@ const handler = async (req: Request): Promise<Response> => {
         break;
       case "invoice_sent":
         html = getInvoiceSentHtml(data);
-        subject = `Invoice ${escapeHtml(data.invoice_number)} - £${sanitizeNumber(data.total)} Due`;
+        subject = invoiceEmailSubject(data);
         break;
       case "invoice_paid":
         html = getInvoicePaidHtml(data);

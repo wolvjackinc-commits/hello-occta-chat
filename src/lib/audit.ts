@@ -51,15 +51,16 @@ interface LogAuditParams {
 
 /**
  * Log an audit action to the audit_logs table.
- * Should be called after every admin mutation.
+ * Should be called after every admin mutation. audit_logs has no insert
+ * policy: writes go through log_audit_action(), which checks the caller is staff.
  */
 export async function logAudit({ action, entity, entityId, metadata = {} }: LogAuditParams): Promise<void> {
   try {
-    const { error } = await supabase.from("audit_logs" as any).insert({
-      action,
-      entity,
-      entity_id: entityId || null,
-      metadata,
+    const { error } = await supabase.rpc("log_audit_action", {
+      _action: action,
+      _entity: entity,
+      _entity_id: entityId || undefined,
+      _metadata: metadata as any,
     });
     
     if (error) {

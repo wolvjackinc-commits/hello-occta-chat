@@ -43,6 +43,13 @@
       "when": 1792520082046,
       "tag": "0005_reschedule_invoice_and_reminder_cron_from_template",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792571089477,
+      "tag": "0006_first_billing_jobs_link_invoice",
+      "breakpoints": true
     }
   ]
 }

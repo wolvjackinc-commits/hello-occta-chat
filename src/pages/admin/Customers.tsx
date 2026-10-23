@@ -425,7 +425,9 @@ export const AdminCustomers = () => {
         {data?.customers?.map((customer) => {
           const accountNumber = formatAccountNumber(customer.account_number);
           const signal = accountSignals?.[customer.id];
-          const light = signalsError\n            ? { colour: "grey" as const, label: "Status unavailable", reason: "Could not read live service, order or invoice records. Retrying automatically." }\n            : getCustomerTrafficLight({
+          const light = signalsError
+            ? { colour: "grey" as const, label: "Status unavailable", reason: "Could not read live service, order or invoice records. Retrying automatically." }
+            : getCustomerTrafficLight({
             sourceReady: Boolean(signal) && !signalsError,
             hasSubmittedOrder: customer.has_submitted_order,
             hasService: customer.has_service,

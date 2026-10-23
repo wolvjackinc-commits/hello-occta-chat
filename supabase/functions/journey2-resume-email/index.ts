@@ -66,6 +66,36 @@ function copyFor(n: number, fact: string, firstName: string, switch50?: Record<s
   };
 }
 
+/**
+ * True when this email already belongs to someone who has ordered or signed a
+ * contract with OCCTA. A stray earlier/later checkout session for the same
+ * person must never trigger "you didn't finish your order" emails.
+ */
+async function hasPlacedOrder(supabase: ReturnType<typeof getServiceClient>, rawEmail: string): Promise<boolean> {
+  // ilike treats _ and % as wildcards; match the address literally.
+  const email = rawEmail.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const { data: guest } = await supabase
+    .from("guest_orders").select("id").ilike("email", email).limit(1);
+  if (guest && guest.length) return true;
+
+  const { data: signed } = await supabase
+    .from("contract_summaries").select("id")
+    .ilike("customer_email_snapshot", email)
+    .eq("status", "accepted").limit(1);
+  if (signed && signed.length) return true;
+
+  const { data: profiles } = await supabase
+    .from("profiles").select("id").ilike("email", email).limit(5);
+  const ids = (profiles ?? []).map((p: { id: string }) => p.id);
+  if (!ids.length) return false;
+  const { data: orders } = await supabase
+    .from("orders").select("id").in("user_id", ids).limit(1);
+  if (orders && orders.length) return true;
+  const { data: services } = await supabase
+    .from("services").select("id").in("user_id", ids).limit(1);
+  return !!(services && services.length);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
@@ -103,7 +133,13 @@ Deno.serve(async (req) => {
     .not("abandoned_at", "is", null)
     .is("completed_at", null)
     .is("submitted_at", null)
-    .in("status", ["active", "contract_prepared", "contract_accepted"])
+    // A signed contract is a customer, not an abandoned cart: once the
+    // agreement is accepted the customer has committed and set up payment, so
+    // "your order is incomplete / no Direct Debit set up" is wrong and alarming
+    // (seen Oct 2026). Those orders are surfaced to admins instead.
+    .in("status", ["active", "contract_prepared"])
+    .is("contract_acceptance_id", null)
+    .is("post_contract_applied_at", null)
     .or("test_session.is.null,test_session.eq.false")
     .gt("expires_at", nowIso)
     .lt("last_activity_at", stage1Cutoff)
@@ -144,6 +180,17 @@ Deno.serve(async (req) => {
     const email = (s.customer_details?.email ?? "").trim().toLowerCase();
     if (!email) { skip("no_email"); continue; }
 
+    if (await hasPlacedOrder(supabase, email)) {
+      // Close the session's reminder sequence so it stops occupying the batch.
+      await supabase
+        .from("customer_journey_sessions")
+        .update({ reminder_count: MAX_REMINDERS })
+        .eq("id", s.id)
+        .eq("reminder_count", count);
+      skip("existing_customer_order");
+      continue;
+    }
+
     const { data: suppressed } = await supabase
       .from("suppressed_emails")
       .select("email")
@@ -170,6 +217,7 @@ Deno.serve(async (req) => {
       .update({ public_token_hash: hash, reminder_last_queued_at: new Date().toISOString() })
       .eq("id", s.id)
       .eq("reminder_count", count)
+      .is("contract_acceptance_id", null)
       .not("abandoned_at", "is", null)
       .is("completed_at", null)
       .is("submitted_at", null)

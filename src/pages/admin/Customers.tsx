@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Loader2, MapPin, Search, User, Calendar, Mail, Phone } from "lucide-react";
+import { Eye, EyeOff, Loader2, MapPin, Search, User, Calendar, Mail, Phone, ShoppingCart, AlertTriangle } from "lucide-react";
+import { ContractSnapshotInline, snapshotFromViewRow } from "@/components/admin/ContractSnapshot";
 import { formatAccountNumber } from "@/lib/account";
 import { normalizePostcode } from "@/lib/utils";
 import { logAudit } from "@/lib/audit";
@@ -38,7 +39,18 @@ type CustomerRow = {
   latest_postcode_normalized: string | null;
   created_at: string;
   latest_activity_at: string | null;
+  // Added 2026-10-23 (may be absent until the view migration is applied).
+  latest_order_at?: string | null;
+  has_submitted_order?: boolean | null;
+  has_service?: boolean | null;
+  cs_id?: string | null;
+  cs_status?: string | null;
+  [key: string]: unknown;
 };
+
+/** Signed the contract but the final "Submit order" step never happened. */
+const isSignedNotSubmitted = (c: CustomerRow) =>
+  c.cs_status === "accepted" && c.has_submitted_order === false && c.has_service === false;
 
 const defaultFilters: AdvancedSearchFilters = {
   name: "",
@@ -106,12 +118,23 @@ export const AdminCustomers = () => {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      // Use the view for customer search
-      let query = supabase
+      // Newest orders first (when the order came in, not when the profile was
+      // last edited). Falls back to the old activity sort if the view hasn't
+      // got the new column yet.
+      const run = async (sortByOrder: boolean) => {
+      let query = (supabase as any)
         .from("admin_customer_search_view")
-        .select("*", { count: "exact" })
-        .order("latest_activity_at", { ascending: false })
-        .range(from, to);
+        .select("*", { count: "exact" });
+      query = sortByOrder
+        ? query
+            .order("latest_order_at", { ascending: false, nullsFirst: false })
+            .order("created_at", { ascending: false })
+        : query.order("latest_activity_at", { ascending: false });
+      query = query.range(from, to);
+
+      if (filter === "signed_not_submitted" && sortByOrder) {
+        query = query.eq("cs_status", "accepted").eq("has_submitted_order", false).eq("has_service", false);
+      }
 
       // Quick search with smart detection
       if (quickSearch.trim() && !hasAdvancedFilters) {
@@ -179,12 +202,19 @@ export const AdminCustomers = () => {
           .in("status", ["open", "in_progress"]);
         const ids = ticketUsers?.map((ticket) => ticket.user_id) ?? [];
         if (!ids.length) {
-          return { customers: [] as CustomerRow[], count: 0 };
+          return { data: [] as CustomerRow[], error: null, count: 0 };
         }
         query = query.in("id", ids);
       }
 
-      const { data: customers, error, count } = await query;
+      return await query;
+      };
+
+      let res = await run(true);
+      if (res.error && /latest_order_at|has_submitted_order|cs_status|has_service|column/i.test(res.error.message ?? "")) {
+        res = await run(false);
+      }
+      const { data: customers, error, count } = res;
       if (error) throw error;
       return { customers: (customers || []) as CustomerRow[], count: count ?? 0 };
     },
@@ -279,6 +309,7 @@ export const AdminCustomers = () => {
             <SelectContent>
               <SelectItem value="all">All customers</SelectItem>
               <SelectItem value="open_tickets">With open tickets</SelectItem>
+              <SelectItem value="signed_not_submitted">Signed, order not submitted</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -351,6 +382,24 @@ export const AdminCustomers = () => {
                       {customer.full_name || "Unknown customer"}
                     </div>
 
+                    {/* When the order came in */}
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <ShoppingCart className="h-3 w-3" />
+                        {customer.latest_order_at
+                          ? `Order ${format(new Date(customer.latest_order_at), "dd MMM yyyy, HH:mm")}`
+                          : customer.latest_order_at === null
+                            ? "No order yet"
+                            : `Joined ${format(new Date(customer.created_at), "dd MMM yyyy")}`}
+                      </span>
+                      {isSignedNotSubmitted(customer) && (
+                        <span className="flex items-center gap-1 border border-warning px-1.5 py-0.5 text-warning">
+                          <AlertTriangle className="h-3 w-3" />
+                          Signed &amp; DD given — final submit missing
+                        </span>
+                      )}
+                    </div>
+
                     {/* Contact info row */}
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                       {customer.email && (
@@ -366,6 +415,12 @@ export const AdminCustomers = () => {
                         </span>
                       )}
                     </div>
+
+                    {/* What they signed for */}
+                    {(() => {
+                      const snap = snapshotFromViewRow(customer as Record<string, any>);
+                      return snap ? <ContractSnapshotInline cs={snap} /> : null;
+                    })()}
 
                     {/* Location + DOB row */}
                     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

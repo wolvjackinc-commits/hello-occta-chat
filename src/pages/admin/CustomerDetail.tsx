@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ContractSnapshotCard, snapshotFromContractRow } from "@/components/admin/ContractSnapshot";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -151,7 +152,7 @@ const CustomerDetailContent = ({
 
       const { data: contractSummaries } = await supabase
         .from("contract_summaries")
-        .select("id, cs_number, status, version, quote_id, plan_name, monthly_price_incl_vat, emailed_at, accepted_at, pdf_storage_key, pdf_sha256, is_information_update, supersedes_id, created_at, updated_at")
+        .select("id, cs_number, status, version, quote_id, plan_name, monthly_price_incl_vat, emailed_at, accepted_at, pdf_storage_key, pdf_sha256, is_information_update, supersedes_id, created_at, updated_at, plan_term, minimum_term_months, router_option, router_charge, setup_option, setup_charge, installation_charge, delivery_charge, one_off_charges_snapshot, one_off_charges_json, selected_addons, digital_voice_addon_snapshot, likely_service_date, archived_at")
         .eq("customer_id", userId)
         .order("created_at", { ascending: false });
 
@@ -436,6 +437,16 @@ const CustomerDetailContent = ({
               altPostcode={altPostcode}
               altDob={altDob}
             />
+            {(() => {
+              // What they ordered: router, services, one-time fees, price —
+              // straight from the latest signed (else latest issued) Contract Summary.
+              const list = (data?.contractSummaries ?? []).filter(
+                (c: any) => c?.is_information_update !== true && !c?.archived_at && c?.status !== "superseded",
+              );
+              const latest = list.find((c: any) => c.status === "accepted") ?? list[0] ?? null;
+              const snap = snapshotFromContractRow(latest);
+              return snap ? <ContractSnapshotCard cs={snap} /> : null;
+            })()}
             <CustomerActionsCard
               customer={{
                 id: overview.id,

@@ -72,7 +72,7 @@ export default function ContactPage() {
               <ul className="list-disc pl-5 space-y-2">
                 <li>Availability and quotes for broadband, Digital Voice / Home Phone and SIM.</li>
                 <li>Order, activation and switching questions.</li>
-                <li>Billing, Direct Debit and pay-by-card queries.</li>
+                <li>Billing, Direct Debit and bank transfer queries.</li>
                 <li>Faults, service status and complaints.</li>
               </ul>
             ),

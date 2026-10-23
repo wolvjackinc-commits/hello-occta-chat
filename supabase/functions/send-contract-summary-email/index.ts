@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
        <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Service address</td><td style="padding:6px 0;font-size:13px;">${escapeHtml(cs.service_address ?? "")}</td></tr>
      </table>
      <p><strong>What you need to do:</strong> open the Contract Summary, read it, then tick the box and accept if you're happy. If anything looks off, just reply to this email and we'll sort it.</p>
-     <p><strong>What happens after acceptance:</strong> we send a secure payment link from OCCTA — we never take card details over email — then arrange your install / activation.</p>
+     <p><strong>What happens after acceptance:</strong> we arrange your install / activation. Bills are collected by Direct Debit, or paid by bank transfer to OCCTA. We never take card payments.</p>
      <p style="font-size:12px;color:#555;">This link is private to you and expires in ${daysValid} days. Sending a new copy disables old links.</p>
      <p style="font-size:12px;color:#555;">Questions? Reply to this email or contact <a href="mailto:hello@occta.co.uk" style="color:#555;">hello@occta.co.uk</a>.</p>
      ${await fetchHelpfulLinksHtml(supabase, "contract_summary_ready")}`,

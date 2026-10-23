@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import {
-  CreditCard,
+  Landmark,
   Download,
   Loader2,
   Receipt,
@@ -24,6 +24,7 @@ import { logClientEvent } from "@/lib/activityLog";
 import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
 import { toast } from "sonner";
 import { logError } from "@/lib/logger";
+import { BankTransferDetails } from "@/components/payment/BankTransferDetails";
 
 type Invoice = { id: string; invoice_number: string; total: number; status: string; due_date: string | null; issue_date: string };
 type CreditNote = { id: string; invoice_id: string; amount: number; reason: string | null; created_at: string };
@@ -39,6 +40,7 @@ export function InvoicesTab({ userId }: { userId: string }) {
   const [unpaid, setUnpaid] = useState<Invoice[]>([]);
   const [paid, setPaid] = useState<Invoice[]>([]);
   const [credits, setCredits] = useState<CreditNote[]>([]);
+  const [accountNumber, setAccountNumber] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all"); // all | unpaid | paid | overdue
@@ -157,11 +159,13 @@ export function InvoicesTab({ userId }: { userId: string }) {
   useEffect(() => {
     logClientEvent({ event_type: "tab_view", title: "dashboard:invoices", source_module: "dashboard" });
     (async () => {
-      const [u, p, c] = await Promise.all([
+      const [u, p, c, prof] = await Promise.all([
         supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).not("status", "in", "(paid,cancelled,void,written_off)").order("due_date", { ascending: true }),
         supabase.from("invoices").select("id,invoice_number,total,status,due_date,issue_date").eq("user_id", userId).eq("status", "paid").order("issue_date", { ascending: false }).limit(100),
         supabase.from("credit_notes").select("id,invoice_id,amount,reason,created_at").eq("user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("customer_profile" as any).select("account_number").eq("id", userId).maybeSingle(),
       ]);
+      setAccountNumber(((prof.data as any)?.account_number as string | undefined) ?? null);
       setUnpaid((u.data as Invoice[]) || []);
       setPaid((p.data as Invoice[]) || []);
       setCredits((c.data as CreditNote[]) || []);
@@ -413,10 +417,14 @@ export function InvoicesTab({ userId }: { userId: string }) {
           that, your monthly service is billed in advance on your selected billing date.
         </p>
         <p className="text-muted-foreground mt-2">
-          <strong>Invoice link customers:</strong> You are not automatically charged. We send you an
-          invoice with a secure payment link, and you pay manually.
+          <strong>How to pay:</strong> invoices are collected by Direct Debit once your mandate is active.
+          Any invoice not collected by Direct Debit is paid by bank transfer to OCCTA using the details
+          below. We do not take card payments or payments over the phone.
         </p>
       </div>
+      {unpaid.some((i) => i.status !== "awaiting_dd_collection" && i.status !== "draft") && (
+        <BankTransferDetails accountNumber={accountNumber} />
+      )}
       {showUnpaid && (
       <section>
         <h3 className="font-display uppercase mb-3">Unpaid invoices</h3>
@@ -456,9 +464,13 @@ export function InvoicesTab({ userId }: { userId: string }) {
                     >
                       {downloadingId === inv.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                     </Button>
-                    <Link to={`/pay-invoice?id=${inv.id}`} onClick={() => logClientEvent({ event_type: "invoice_view_from_dashboard", title: "invoice.pay", source_module: "dashboard" })}>
-                      <Button size="sm" variant="hero"><CreditCard className="w-4 h-4 mr-1" /> Pay now</Button>
-                    </Link>
+                    {inv.status === "awaiting_dd_collection" ? (
+                      <Badge variant="outline" className="border-2 border-foreground">Direct Debit</Badge>
+                    ) : (
+                      <Link to={`/pay-invoice?id=${inv.id}`} onClick={() => logClientEvent({ event_type: "invoice_view_from_dashboard", title: "invoice.pay", source_module: "dashboard" })}>
+                        <Button size="sm" variant="hero"><Landmark className="w-4 h-4 mr-1" /> How to pay</Button>
+                      </Link>
+                    )}
                   </div>
                 </div>
               );

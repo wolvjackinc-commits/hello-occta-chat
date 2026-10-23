@@ -593,7 +593,7 @@ function approvedPublicReply(intent: string): string | null {
       );
     case "direct_debit":
       return withOptions(
-        `Direct Debit mandates are set up securely and processed through OCCTA's approved payment providers. Never send bank details in chat. Use the secure Direct Debit setup route or contact the billing team if a mandate is pending or rejected. [Direct Debit help](${BASE_URL}/help/direct-debit-setup-help).`,
+        `Direct Debit mandates are set up securely and processed through OCCTA's approved payment providers. Never send bank details in chat. Use the secure Direct Debit setup route or contact the billing team if a mandate is pending or rejected. Until your Direct Debit is active, pay invoices by bank transfer to OCCTA LIMITED (Lloyds Bank, sort code 30-98-97, account 61499362) quoting your OCCTA account number. OCCTA does not take card or phone payments. [How to pay](${BASE_URL}/pay-by-card) · [Direct Debit help](${BASE_URL}/help/direct-debit-setup-help).`,
         ["Set up Direct Debit", "Check my invoice", "Raise a billing ticket"],
       );
     case "first_invoice":

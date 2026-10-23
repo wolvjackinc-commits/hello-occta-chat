@@ -43,6 +43,8 @@ interface InvoiceData {
   vatEnabled?: boolean;
   vatRate?: number;
   paymentMethod?: string | null;
+  /** True when an active Direct Debit will collect this invoice. */
+  ddActive?: boolean;
   planName?: string | null;
   serviceAddress?: string | null;
   /** Kept for existing callers; payment links are never printed on a PDF. */
@@ -85,7 +87,7 @@ export async function generateInvoicePdf(invoice: InvoiceData): Promise<void> {
     totalMinor: toMinor(invoice.total),
     vatRate,
     amountPaidMinor: toMinor(invoice.amountPaid),
-    payment: { method: invoice.paymentMethod ?? null },
+    payment: { method: invoice.paymentMethod ?? "bank_transfer", ddActive: !!invoice.ddActive },
     notes: invoice.notes && !AUTO_NOTE.test(invoice.notes.trim()) ? invoice.notes : null,
   });
   doc.save(`OCCTA-invoice-${invoice.invoiceNumber}.pdf`);
@@ -126,6 +128,11 @@ export function invoiceDataFromRows(inv: any, lines: any[], profile: any): Invoi
     notes: inv.notes ?? undefined,
     vatEnabled: inv.vat_enabled !== false,
     vatRate: inv.vat_rate != null ? Number(inv.vat_rate) : 20,
+    // OCCTA takes Direct Debit or bank transfer only. An invoice the billing
+    // worker handed to Direct Debit is marked awaiting_dd_collection; every
+    // other unpaid invoice is paid by bank transfer.
+    paymentMethod: inv.status === "awaiting_dd_collection" ? "direct_debit" : "bank_transfer",
+    ddActive: inv.status === "awaiting_dd_collection",
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

@@ -199,7 +199,7 @@ export function nextStepCopy(milestones: Milestone[]): string {
     case "cs_accepted":
       return "Next: please review and accept your Contract Summary when ready — no rush.";
     case "payment_request_created":
-      return "Next: we'll send your secure payment link.";
+      return "Next: we'll send your invoice with OCCTA's bank details.";
     case "awaiting_payment":
       return "Next: complete your one-off setup payment using the secure link we sent.";
     case "payment_being_confirmed":

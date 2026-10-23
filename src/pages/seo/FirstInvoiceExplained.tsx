@@ -32,7 +32,7 @@ export default function FirstInvoiceExplainedPage() {
         {
           heading: "How to pay",
           body: (
-            <p>By Direct Debit (if your mandate is confirmed) or by card via a secure Worldpay payment link from your dashboard.</p>
+            <p>By Direct Debit (if your mandate is confirmed) or by bank transfer using the OCCTA bank details on the invoice. We don't take card payments.</p>
           ),
         },
       ]}
@@ -48,7 +48,7 @@ export default function FirstInvoiceExplainedPage() {
       relatedLinks={[
         { label: "Billing explained", to: "/billing-explained" },
         { label: "Direct Debit setup", to: "/direct-debit-setup" },
-        { label: "Pay by card", to: "/pay-by-card" },
+        { label: "How to pay your bill", to: "/pay-by-card" },
         { label: "Pricing", to: "/pricing" },
         { label: "Contact support", to: "/contact" },
       ]}

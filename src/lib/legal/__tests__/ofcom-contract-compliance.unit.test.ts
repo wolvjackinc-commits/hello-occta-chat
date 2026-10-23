@@ -153,8 +153,8 @@ describe("legal text cleanup (new documents only)", () => {
     });
   }
   it("both copies stay in sync on the cleaned sections and version", () => {
-    expect(read(TERMS_APP)).toMatch(/FULL_CONTRACT_TERMS_VERSION = "2026-08-a"/);
-    expect(read(TERMS_EDGE)).toMatch(/FULL_CONTRACT_TERMS_VERSION = "2026-08-a"/);
+    expect(read(TERMS_APP)).toMatch(/FULL_CONTRACT_TERMS_VERSION = "2026-10-a"/);
+    expect(read(TERMS_EDGE)).toMatch(/FULL_CONTRACT_TERMS_VERSION = "2026-10-a"/);
   });
 });
 

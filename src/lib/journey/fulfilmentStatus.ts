@@ -25,7 +25,7 @@ const STAGE_LABEL: Record<CustomerFulfilmentStage, string> = {
 };
 
 const STAGE_HINT: Record<CustomerFulfilmentStage, string> = {
-  payment_pending: "Use your secure payment link to complete your one-off setup payment.",
+  payment_pending: "Please pay your one-off setup charge by bank transfer using the details on your invoice.",
   payment_confirming: "We've received your payment and we're waiting on the bank to confirm it. No action needed.",
   payment_received: "Your setup is being prepared. Our team will contact you with the next steps.",
   preparing_setup: "Our team is preparing your order and will be in touch about installation.",

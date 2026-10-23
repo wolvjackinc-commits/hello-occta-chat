@@ -56,7 +56,7 @@ export const helpArticles: HelpArticle[] = [
       { heading: "When you'll be billed", paragraphs: ["Residential plans are billed monthly in advance from your activation date. Your first invoice is raised on the activation date itself; from then on it lands on the same day each month."] },
       { heading: "VAT", paragraphs: ["Residential prices already include VAT. Business prices are shown excluding VAT with the VAT line itemised separately on the invoice."] },
       { heading: "Direct Debit", paragraphs: ["Direct Debit is collected automatically 7 days after the invoice is raised. You're fully protected by the Direct Debit Guarantee — refunds are immediate if money is taken in error."] },
-      { heading: "Invoice with secure link", paragraphs: ["If you chose card payments instead, every invoice comes with a one-tap Worldpay link. Cards aren't stored on our servers — only secure tokens."] },
+      { heading: "Paying by bank transfer", paragraphs: ["If your bill isn't collected by Direct Debit, pay it by bank transfer to OCCTA LIMITED, Lloyds Bank, sort code 30-98-97, account number 61499362, quoting your OCCTA account number as the reference. We do not take card payments or payments over the phone."] },
       { heading: "Late fees & suspension", paragraphs: ["A £5 late fee applies after 7 days past due. After 30 days the service can be suspended. We always email you well before either happens."] },
       { heading: "Refunds", paragraphs: ["Refunds (overpayments, mid-month cancellations) are processed back to the original payment method within 5 working days."] },
     ],
@@ -161,7 +161,7 @@ export const helpArticles: HelpArticle[] = [
     sections: [
       { heading: "Setting one up", paragraphs: ["From your dashboard, go to Billing → Payment method → Set up Direct Debit. You'll need the account holder's name, sort code and account number. It takes 60 seconds."] },
       { heading: "Changing bank details", paragraphs: ["Same place — set up a new mandate and the old one is cancelled automatically."] },
-      { heading: "Cancelling", paragraphs: ["You can cancel at your bank at any time. Please give us a heads-up so we can offer a card payment link for your next invoice — otherwise the bill becomes overdue."] },
+      { heading: "Cancelling", paragraphs: ["You can cancel at your bank at any time. Please give us a heads-up first: after that, each invoice must be paid by bank transfer using the details on the invoice, otherwise the bill becomes overdue."] },
       { heading: "The Direct Debit Guarantee", paragraphs: ["If we ever take an incorrect amount, your bank refunds it immediately — no questions. Full protection is on the BACS Direct Debit Guarantee."] },
     ],
     faqs: [

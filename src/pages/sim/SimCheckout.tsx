@@ -43,7 +43,7 @@ const SimCheckout = () => {
   const [businessName, setBusinessName] = useState("");
   const [companyNumber, setCompanyNumber] = useState("");
   const [vatNumber, setVatNumber] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "direct_debit">("card");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "direct_debit">("direct_debit");
   const [consentDetails, setConsentDetails] = useState(false);
   const [consentTerms, setConsentTerms] = useState(false);
   const [consentDd, setConsentDd] = useState(false);
@@ -350,14 +350,8 @@ const SimCheckout = () => {
           {step === 5 && (
             <div>
               <h2 className="font-display text-xl uppercase mb-3">Payment method</h2>
+              <p className="text-xs text-muted-foreground mb-3">OCCTA takes payment by Direct Debit or bank transfer only. We do not take card payments.</p>
               <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "card" | "direct_debit")}>
-                <label className="flex items-start gap-3 border-2 border-foreground p-3 cursor-pointer">
-                  <RadioGroupItem value="card" />
-                  <div>
-                    <p className="font-display">Card now (Worldpay Hosted Payment)</p>
-                    <p className="text-xs text-muted-foreground">First payment {formatGbp(firstPayment)} taken now. Card details are handled by Worldpay — we never store them.</p>
-                  </div>
-                </label>
                 {settings.direct_debit_enabled && (
                   <label className="flex items-start gap-3 border-2 border-foreground p-3 cursor-pointer">
                     <RadioGroupItem value="direct_debit" />

@@ -99,7 +99,7 @@ const navSections: NavSection[] = [
   {
     label: "Billing", icon: BadgeDollarSign, children: [
       { label: "Invoices",      to: "/admin/billing" },
-      { label: "Payment Links", to: "/admin/payment-requests" },
+      { label: "DD Setup Requests", to: "/admin/payment-requests" },
       { label: "Direct Debit",  to: "/admin/payments-dd" },
       { label: "Reconciliation", to: "/admin/billing/reconciliation" },
       { label: "Payment reconciliation", to: "/admin/billing/payment-reconciliation" },
@@ -593,7 +593,7 @@ export const AdminLayout = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel>Navigate</DropdownMenuLabel>
                   <DropdownMenuItem asChild>
-                    <Link to="/admin/payment-requests"><Receipt className="mr-2 h-3.5 w-3.5" /> Create payment link</Link>
+                    <Link to="/admin/payment-requests"><Receipt className="mr-2 h-3.5 w-3.5" /> DD setup request</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/admin/billing"><BadgeDollarSign className="mr-2 h-3.5 w-3.5" /> Create invoice</Link>

@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 import { buildInvoiceSentEmailHtml, invoiceEmailSubject } from "../_shared/invoiceEmail.ts";
+import { bankTransferBoxHtml, bankTransferReference } from "../_shared/paymentOptions.ts";
 import { parseAttachmentRefs, resolveAttachments, type ResolvedAttachment } from "../_shared/emailAttachments.ts";
 
 // Maps send-email `type` values to the template_key used in
@@ -617,8 +618,6 @@ const getInvoiceSentHtml = (data: Record<string, unknown>) =>
   });
 
 const getPaymentLinkHtml = (data: Record<string, unknown>) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
-  const expiresAt = data.expires_at ? new Date(data.expires_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
   
   return `
 <!DOCTYPE html>
@@ -660,12 +659,12 @@ const getPaymentLinkHtml = (data: Record<string, unknown>) => {
       </div>
       
       <div class="title-banner">
-        <h1 class="title">💳 Payment Request</h1>
+        <h1 class="title">Payment Request</h1>
       </div>
       
       <div class="content">
         <p class="greeting">Hi ${escapeHtml(data.customer_name) || "there"},</p>
-        <p class="text">We've prepared a secure payment link for you. Click the button below to complete your payment online.</p>
+        <p class="text">Please pay the amount below by bank transfer using the OCCTA bank details in this email. If you have an active Direct Debit with us, please let us know before paying so we don't collect it twice.</p>
         
         <div class="amount-highlight">
           <div class="amount-label">Amount Due</div>
@@ -682,20 +681,12 @@ const getPaymentLinkHtml = (data: Record<string, unknown>) => {
           </div>
         </div>
         
-        ${expiresAt ? `
-        <div class="expiry-note">
-          ⏰ This payment link expires on <strong>${expiresAt}</strong>
+        <div style="margin: 24px 0;">
+          ${bankTransferBoxHtml({
+            reference: bankTransferReference(String(data.account_number ?? ""), String(data.invoice_number ?? "")),
+            amount: `£${sanitizeNumber(data.amount)}`,
+          })}
         </div>
-        ` : ''}
-        
-        <div class="cta-wrap">
-          <a href="${siteUrl}/pay?token=${escapeHtml(data.token)}" class="cta">Pay Now — £${sanitizeNumber(data.amount)} →</a>
-        </div>
-        
-        <p class="text" style="text-align: center; color: #666; font-size: 13px;">
-          Prefer to pay by phone? Call us on <strong>0800 260 6626</strong><br>
-          Lines open Monday–Friday, 8am–6pm
-        </p>
       </div>
       
       ${getStandardFooter()}
@@ -705,7 +696,8 @@ const getPaymentLinkHtml = (data: Record<string, unknown>) => {
 </html>`;
 };
 
-// NEW: Invoice with external payment link and QR code (for Worldpay hosted links)
+// Invoice email with OCCTA bank-transfer details (legacy type name kept for
+// existing callers; card links are no longer offered).
 const getInvoiceExternalPaymentHtml = (data: Record<string, unknown>) => {
   const lines = (data.lines as Array<{ description: string; qty: number; line_total: number }>) || [];
   
@@ -804,40 +796,21 @@ const getInvoiceExternalPaymentHtml = (data: Record<string, unknown>) => {
           <div class="totals-row grand"><span>TOTAL DUE</span><span>£${sanitizeNumber(data.total)}</span></div>
         </div>
         
-        <div class="payment-section">
-          <h3 style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; margin-bottom: 16px;">💳 PAY YOUR INVOICE</h3>
-          <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Click the button below or scan the QR code to pay securely online.</p>
-          
-          <a href="${escapeHtml(data.payment_url)}" style="display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border: 3px solid #0d0d0d; box-shadow: 4px 4px 0 0 #facc15;">Pay Now — £${sanitizeNumber(data.total)} →</a>
-          
-          ${data.qr_code_url ? `
-          <div class="qr-container">
-            <p style="font-size: 12px; color: #666; margin: 16px 0 8px;">Or scan this QR code:</p>
-            <img src="${escapeHtml(data.qr_code_url)}" alt="Payment QR Code" />
-          </div>
-          ` : ''}
-          
-          <p style="font-size: 12px; color: #888; margin-top: 16px;">
-            Payment URL: <a href="${escapeHtml(data.payment_url)}" style="color: #3b82f6;">${escapeHtml(data.payment_url)}</a>
-          </p>
+        <div style="margin: 24px 0;">
+          ${bankTransferBoxHtml({
+            reference: String(data.payment_reference || "") || bankTransferReference(String(data.account_number ?? ""), String(data.invoice_number ?? "")),
+            amount: `£${sanitizeNumber(data.total)}`,
+            title: "Pay your invoice by bank transfer",
+            note: "OCCTA takes payment by Direct Debit or bank transfer only. Please quote the reference so we can match your payment. We do not take card or phone payments.",
+          })}
         </div>
-        
-        ${data.show_bank_details ? `
-        <div class="bank-details">
-          <div class="bank-title">Alternative: Pay by Bank Transfer</div>
-          <div class="bank-row"><span>Account Name:</span><span><strong>OCCTA LIMITED</strong></span></div>
-          <div class="bank-row"><span>Sort Code:</span><span><strong>30-98-97</strong></span></div>
-          <div class="bank-row"><span>Account Number:</span><span><strong>61499362</strong></span></div>
-          <div class="bank-row"><span>Reference:</span><span><strong>${escapeHtml(data.payment_reference) || escapeHtml(data.account_number)}</strong></span></div>
-        </div>
-        ` : ''}
         
         <div class="payment-note">
           <strong>📋 Payment Terms:</strong> ${escapeHtml(data.payment_terms) || 'Payment is due within 14 days of the invoice date.'}
         </div>
         
         <p class="text" style="text-align: center; color: #666; font-size: 13px;">
-          Questions about your invoice? Contact <a href="mailto:${escapeHtml(data.support_email) || 'support@occtatele.com'}" style="color: #3b82f6;">${escapeHtml(data.support_email) || 'support@occtatele.com'}</a><br>
+          Questions about your invoice? Contact <a href="mailto:${escapeHtml(data.support_email) || 'hello@occta.co.uk'}" style="color: #3b82f6;">${escapeHtml(data.support_email) || 'hello@occta.co.uk'}</a><br>
           Or call <strong>${escapeHtml(data.support_phone) || '0800 260 6626'}</strong>
         </p>
       </div>
@@ -1073,36 +1046,36 @@ const SIM_TEMPLATES: Record<string, { subject: string; heading: string; body: (d
       const carry = String(d.credit_carry_amount || "0.00");
       return `<p>Hi ${escapeHtml(d.customer_name || "there")}, your service for order <b>#${escapeHtml(d.order_number)}</b> went live on <b>${escapeHtml(d.service_live_date || "")}</b>.</p>
       <p>First service period: <b>${escapeHtml(d.first_period_start || "")}</b> → <b>${escapeHtml(d.first_period_end || "")}</b>. Pro-rata charge: <b>£${escapeHtml(d.pro_rata_amount || "0.00")}</b>. Credit applied from your checkout payment: <b>£${escapeHtml(credit)}</b>.</p>
-      ${Number(balance) > 0 ? `<p>Balance due: <b>£${escapeHtml(balance)}</b>. Please settle it using the button below.</p>` : `<p>Your first live period is fully covered. Nothing further to pay right now.</p>`}
+      ${Number(balance) > 0 ? `<p>Balance due: <b>£${escapeHtml(balance)}</b>. Please pay it by bank transfer using the details below.</p>` : `<p>Your first live period is fully covered. Nothing further to pay right now.</p>`}
       ${Number(carry) > 0 ? `<p>Remaining credit of <b>£${escapeHtml(carry)}</b> will be applied to your next invoice on <b>${escapeHtml(d.next_billing_date || "")}</b>.</p>` : `<p>Your next invoice will be issued on <b>${escapeHtml(d.next_billing_date || "")}</b>.</p>`}`;
     },
     cta: (d) => Number(String(d.balance_due_amount || "0")) > 0 && d.balance_pay_now_url
-      ? { label: "Pay balance", url: String(d.balance_pay_now_url) }
+      ? { label: "View invoice", url: String(d.dashboard_url || "") }
       : { label: "Open dashboard", url: String(d.dashboard_url || "") },
   },
   "sim-payment-failed": {
     subject: "Payment attempt was unsuccessful",
     heading: "Payment unsuccessful",
-    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, we couldn't take payment against invoice <b>${escapeHtml(d.invoice_number || "")}</b> for order <b>#${escapeHtml(d.order_number)}</b>. This is usually a temporary issue with the card or bank.</p><p>Please try again from your dashboard, or reply to this email if you'd like a hand.</p>`,
-    cta: (d) => ({ label: "Try again", url: String(d.pay_now_url || d.dashboard_url || "") }),
+    body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, we couldn't take payment against invoice <b>${escapeHtml(d.invoice_number || "")}</b> for order <b>#${escapeHtml(d.order_number)}</b>. Please pay it by bank transfer using the details below, or reply to this email if you'd like a hand.</p>`,
+    cta: (d) => ({ label: "View invoice", url: String(d.dashboard_url || "") }),
   },
   "sim-payment-reminder": {
     subject: "Reminder: SIM invoice payment due",
     heading: "Payment reminder",
     body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, this is a friendly reminder that invoice <b>${escapeHtml(d.invoice_number || "")}</b> for order <b>#${escapeHtml(d.order_number)}</b> is due on <b>${escapeHtml(d.due_date || "")}</b>. Amount due: <b>£${escapeHtml(d.amount_due || "0.00")}</b>.</p>`,
-    cta: (d) => ({ label: "Pay now", url: String(d.pay_now_url || d.dashboard_url || "") }),
+    cta: (d) => ({ label: "View invoice", url: String(d.dashboard_url || "") }),
   },
   "sim-overdue-reminder": {
     subject: "Your SIM invoice is overdue",
     heading: "Invoice overdue",
     body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, invoice <b>${escapeHtml(d.invoice_number || "")}</b> for order <b>#${escapeHtml(d.order_number)}</b> is now overdue. Amount due: <b>£${escapeHtml(d.amount_due || "0.00")}</b>. Please settle it as soon as possible to keep your service active.</p>`,
-    cta: (d) => ({ label: "Pay now", url: String(d.pay_now_url || d.dashboard_url || "") }),
+    cta: (d) => ({ label: "View invoice", url: String(d.dashboard_url || "") }),
   },
   "sim-invoice": {
     subject: "Your OCCTA SIM invoice",
     heading: "New SIM invoice",
     body: (d) => `<p>Hi ${escapeHtml(d.customer_name || "there")}, a new invoice <b>${escapeHtml(d.invoice_number || "")}</b> is ready for order <b>#${escapeHtml(d.order_number)}</b>. Amount due: <b>£${escapeHtml(d.amount_due || "0.00")}</b> by <b>${escapeHtml(d.due_date || "")}</b>.</p>`,
-    cta: (d) => ({ label: "View invoice", url: String(d.pay_now_url || d.dashboard_url || "") }),
+    cta: (d) => ({ label: "View invoice", url: String(d.dashboard_url || "") }),
   },
 };
 
@@ -1116,7 +1089,18 @@ const getSimLifecycleHtml = (data: Record<string, unknown>): { html: string; sub
     };
   }
   const cta = t.cta ? t.cta(data) : null;
-  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${getCommonStyles()}</style></head><body><div class="wrapper"><div class="container"><div class="header"><div class="logo">OCCTA</div><div class="tagline">TELECOM</div></div><div class="content"><h1 class="greeting">${escapeHtml(t.heading)}</h1><div class="text">${t.body(data)}</div>${cta && cta.url ? `<div class="cta-wrap"><a class="cta" href="${escapeHtml(cta.url)}">${escapeHtml(cta.label)}</a></div>` : ""}</div>${getStandardFooter({ showUnsubscribe: false })}</div></div></body></html>`;
+  // OCCTA takes Direct Debit or bank transfer only: any SIM email asking for
+  // money carries the bank-transfer details unless an active DD will collect it.
+  const asksForMoney = ["sim-payment-failed", "sim-payment-reminder", "sim-overdue-reminder", "sim-invoice"].includes(key)
+    || (key === "sim-service-live" && Number(String(data.balance_due_amount || "0")) > 0);
+  const ddCollects = data.payment_method === "direct_debit" && data.dd_active === true && key !== "sim-overdue-reminder" && key !== "sim-payment-failed";
+  const bankBox = asksForMoney && !ddCollects
+    ? `<div style="margin:20px 0;">${bankTransferBoxHtml({
+        reference: bankTransferReference(String(data.account_number ?? ""), String(data.invoice_number ?? data.order_number ?? "")),
+        amount: data.amount_due ? `£${sanitizeNumber(data.amount_due)}` : (data.balance_due_amount ? `£${sanitizeNumber(data.balance_due_amount)}` : null),
+      })}</div>`
+    : "";
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>${getCommonStyles()}</style></head><body><div class="wrapper"><div class="container"><div class="header"><div class="logo">OCCTA</div><div class="tagline">TELECOM</div></div><div class="content"><h1 class="greeting">${escapeHtml(t.heading)}</h1><div class="text">${t.body(data)}</div>${bankBox}${cta && cta.url ? `<div class="cta-wrap"><a class="cta" href="${escapeHtml(cta.url)}">${escapeHtml(cta.label)}</a></div>` : ""}</div>${getStandardFooter({ showUnsubscribe: false })}</div></div></body></html>`;
   return { html, subject: t.subject };
 };
 

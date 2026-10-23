@@ -3,6 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { perfServe } from "../_shared/perfLog.ts";
 import { renderBrandedEmail, escapeEmailHtml } from "../_shared/brandedEmailShell.ts";
 import { fetchHelpfulLinks } from "../_shared/helpfulLinks.ts";
+import { OCCTA_BANK_DETAILS } from "../_shared/paymentOptions.ts";
+import { hasActiveDirectDebit } from "../_shared/ddCollection.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -67,12 +69,12 @@ function buildEmailHtml(p: any, dashboardUrl: string, helpfulLinksHtml = "") {
   const billingHtml = `
     <ul style="margin:0;padding-left:18px">
       <li>First invoice is raised on <strong>${escapeHtml(fmtDate(p.next_billing_date))}</strong> for <strong>${fmtMoney(p.monthly_price_minor || 0)}</strong>.</li>
-      <li>Payment method on file: <strong>${escapeHtml(p.payment_method_label || "")}</strong>. ${isDirectDebit ? "We collect automatically — nothing for you to do. Fully protected by the Direct Debit Guarantee." : "Each invoice comes with a one-tap secure Worldpay link."}</li>
+      <li>Payment method on file: <strong>${escapeHtml(p.payment_method_label || "")}</strong>. ${isDirectDebit ? "We collect automatically — nothing for you to do. Fully protected by the Direct Debit Guarantee." : `${p.payment_method_label === "Direct Debit (being set up)" ? "Until your Direct Debit is active, please" : "Please"} pay each invoice by bank transfer to ${OCCTA_BANK_DETAILS.accountName}, ${OCCTA_BANK_DETAILS.bankName}, sort code ${OCCTA_BANK_DETAILS.sortCode}, account ${OCCTA_BANK_DETAILS.accountNumber}, quoting your account number. We do not take card or phone payments.`}</li>
       <li>VAT is already included in your monthly price.</li>
       <li>Questions about a bill? See the <a href="${billingHelpUrl}" style="color:#111">billing guide</a> or email <a href="mailto:${supportEmail}" style="color:#111">${supportEmail}</a>.</li>
     </ul>
     <p style="margin:12px 0 8px 0;color:#333">Billing starts only once your service is confirmed live. Your first invoice may include your activation fee and a pro-rata charge from your live date to your chosen billing date. After that, your monthly service is billed in advance on your selected billing date.</p>
-    ${isDirectDebit ? "" : `<p style="margin:0;color:#333">You are not automatically charged. We send you an invoice with a secure payment link, and you pay manually.</p>`}`;
+    ${isDirectDebit ? "" : `<p style="margin:0;color:#333">We email you each invoice and you pay it by bank transfer using the details on the invoice. We do not take card or phone payments.</p>`}`;
 
   const gettingStartedSection = `
     <ol style="margin:0;padding-left:20px">
@@ -164,7 +166,7 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
       const { data: svc } = await supabase
         .from("services").select("order_id, user_id")
         .eq("id", row.service_id).maybeSingle();
-      let paymentLabel = "Direct Debit / Invoice link";
+      let paymentLabel = "Bank transfer";
       let speedDown: number | null = null;
       if (svc?.order_id) {
         const { data: ord } = await supabase
@@ -175,8 +177,10 @@ Deno.serve(perfServe("process-activation-outbox", async (req) => {
           const { data: pm } = await supabase
             .from("payment_methods").select("method")
             .eq("id", ord.payment_method_id).maybeSingle();
-          if (pm?.method === "direct_debit") paymentLabel = "Direct Debit";
-          else if (pm?.method === "invoice_link") paymentLabel = "Invoice with secure payment link";
+          // OCCTA takes Direct Debit or bank transfer only (_shared/paymentOptions.ts).
+          if (pm?.method === "direct_debit") {
+            paymentLabel = (await hasActiveDirectDebit(supabase, svc.user_id)) ? "Direct Debit" : "Direct Debit (being set up)";
+          }
         }
         if (ord?.contract_summary_id) {
           const { data: cs } = await supabase

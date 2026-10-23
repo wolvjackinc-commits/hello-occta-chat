@@ -22,7 +22,7 @@ export default function PricingPage() {
               <li><strong>Itemised quote:</strong> monthly recurring price, one-off setup/activation if any, and pro-rata for any part-month at the start.</li>
               <li><strong>VAT:</strong> residential pricing is shown VAT-included. Business pricing is shown VAT-excluded with VAT added at checkout.</li>
               <li><strong>Billing trigger:</strong> billing only starts once your service activation is confirmed — not on order.</li>
-              <li><strong>Payment:</strong> Direct Debit setup is available; otherwise pay each invoice by card via a secure Worldpay payment link.</li>
+              <li><strong>Payment:</strong> by Direct Debit, or by bank transfer using the details on each invoice. We don't take card or phone payments.</li>
             </ul>
           ),
         },
@@ -45,7 +45,7 @@ export default function PricingPage() {
       ]}
       faqs={[
         { question: "Why don't you show one fixed price?", answer: "Available speeds, line technology and setup costs vary by address, so a single headline figure would be misleading. We show your real numbers before you order." },
-        { question: "Can I pay by card instead of Direct Debit?", answer: "Yes. Each invoice can be paid via a secure Worldpay-hosted payment link. Direct Debit setup is also available if you prefer automatic collection — and only collects once you've confirmed the mandate." },
+        { question: "Can I pay by card instead of Direct Debit?", answer: "No. OCCTA doesn't take card payments. If you don't want Direct Debit, pay each invoice by bank transfer using the bank details on the invoice. Direct Debit only collects once you've confirmed the mandate." },
         { question: "Do prices include VAT?", answer: "Residential prices include VAT. Business prices are shown excluding VAT, with VAT added at checkout." },
       ]}
       relatedLinks={[

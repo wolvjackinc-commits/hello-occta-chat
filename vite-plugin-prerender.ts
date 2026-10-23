@@ -629,10 +629,10 @@ const routes: RouteSEO[] = [
   },
   {
     path: "/pay-by-card",
-    title: "Pay by Card — Secure Worldpay Payment Links | OCCTA",
-    description: "Pay your OCCTA invoice by card using a secure Worldpay-hosted payment link. OCCTA does not store card details.",
+    title: "How to Pay Your OCCTA Bill — Direct Debit or Bank Transfer | OCCTA",
+    description: "OCCTA invoices are paid by Direct Debit or by bank transfer. We do not take card payments or payments over the phone.",
     canonical: "/pay-by-card",
-    keywords: "pay by card OCCTA, Worldpay payment, secure card payment broadband, pay broadband bill card",
+    keywords: "how to pay OCCTA bill, OCCTA bank transfer, OCCTA bank details, pay broadband bill bank transfer",
     jsonLd: [localBusinessSchema],
   },
   {

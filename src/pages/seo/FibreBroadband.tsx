@@ -19,7 +19,7 @@ export default function FibreBroadbandPage() {
               <li>Fibre broadband on the line technology available at your address.</li>
               <li>UK-based support by email, phone and the Ollie assistant in the corner of every page.</li>
               <li>Itemised quote — no surprise bundle uplifts.</li>
-              <li>Direct Debit setup or pay-by-card via secure Worldpay payment links.</li>
+              <li>Pay by Direct Debit or by bank transfer (we don't take card payments).</li>
               <li>Flexible monthly options where applicable to the plan and line type.</li>
             </ul>
           ),

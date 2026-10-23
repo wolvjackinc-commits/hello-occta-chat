@@ -4,10 +4,13 @@
 // and email, admin re-generation, and the customer/admin "Download PDF"
 // buttons in the web app. It takes a jsPDF document and draws on it, so the
 // server (esm.sh jspdf) and browser (npm jspdf) render identical documents.
-// No imports: it must stay loadable from both Deno and Vite.
+// Its only import is paymentOptions.ts, which is also runtime-neutral, so it
+// stays loadable from both Deno and Vite.
 //
 // All money is in minor units (pence). Text sticks to WinAnsi characters so
 // jsPDF's built-in Helvetica renders it (no arrows, ticks or emoji).
+
+import { bankTransferLines, bankTransferReference, DD_NOT_COLLECTING_TEXT, paymentMethodLabel } from "./paymentOptions.ts";
 
 /** The jsPDF methods this layout uses. */
 export interface PdfDoc {
@@ -166,14 +169,21 @@ export function isVatApplicable(issueDateIso: string | null | undefined): boolea
   return String(issueDateIso).slice(0, 10) >= OCCTA_COMPANY.vatEffectiveDate;
 }
 
-function methodLabel(method: string | null | undefined): string {
+// OCCTA accepts Direct Debit or bank transfer only (see paymentOptions.ts).
+// Retired card / invoice-link / phone values print as Bank transfer.
+function methodLabel(method: string | null | undefined, ddActive?: boolean | null): string {
+  return paymentMethodLabel(method, ddActive);
+}
+
+// A receipt records how money was actually received, so historic card and
+// phone payments keep their real label.
+function receiptMethodLabel(method: string | null | undefined): string {
   switch (method) {
     case "direct_debit": return "Direct Debit";
-    case "card":
-    case "invoice_link": return "Card (pay online)";
+    case "bank_transfer": case "manual_bank_transfer": return "Bank transfer";
+    case "card": case "invoice_link": case "worldpay": return "Card";
     case "phone": return "Card by phone";
-    case "bank_transfer": return "Bank transfer";
-    default: return method ? method.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "Card (pay online)";
+    default: return method ? method.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase()) : "Bank transfer";
   }
 }
 
@@ -377,7 +387,7 @@ export function drawInvoice(doc: PdfDoc, inv: InvoiceDocument): void {
     facts.push(["Billing period", `${fmtShortDate(inv.periodStart)} – ${fmtShortDate(inclusiveEnd(inv.periodEndExclusive))}`]);
   }
   facts.push(["Payment due", inv.dueDate ? fmtLongDate(inv.dueDate) : "On receipt"]);
-  facts.push(["Payment method", methodLabel(method)]);
+  facts.push(["Payment method", methodLabel(method, method === "direct_debit" ? !!inv.payment?.ddActive : null)]);
   const boxX = 112, boxW = right - boxX, rowH = 6.4;
   const boxH = facts.length * rowH + 5;
   fill(doc, PAPER);
@@ -592,10 +602,13 @@ export function drawInvoice(doc: PdfDoc, inv: InvoiceDocument): void {
     if (inv.payment?.mandateReference) payText.push(`Mandate reference: ${inv.payment.mandateReference}`);
     payText.push("Payments are protected by the Direct Debit Guarantee.");
   } else {
+    payTitle = "Pay by bank transfer";
     payText.push(
-      `Online: log in at ${OCCTA_COMPANY.dashboardUrl} and choose Pay now, or use the secure link in your invoice email.`,
-      `By phone: call ${OCCTA_COMPANY.phone} (${OCCTA_COMPANY.phoneHours}) and quote account ${inv.accountNumber || "number"}.`,
-      "Can't pay on time? Please call us before the due date and we'll help.",
+      ...bankTransferLines(bankTransferReference(inv.accountNumber, inv.invoiceNumber)),
+      method === "direct_debit"
+        ? DD_NOT_COLLECTING_TEXT
+        : "Or set up a Direct Debit from your online account.",
+      "We do not take card or phone payments. Can't pay on time? Call us before the due date.",
     );
   }
   const helpText = [
@@ -691,7 +704,7 @@ export function drawReceipt(doc: PdfDoc, r: ReceiptDocument): void {
     ["Receipt number", r.receiptNumber],
     ["Amount paid", fmtMoney(r.amountMinor)],
     ["Date and time", fmtDateTimeLondon(r.paidAt)],
-    ["Payment method", methodLabel(r.method)],
+    ["Payment method", receiptMethodLabel(r.method)],
   ];
   if (r.transactionReference) rows.push(["Transaction reference", r.transactionReference]);
   if (r.paymentReference) rows.push(["Payment reference", r.paymentReference]);

@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { CreditCard, Shield, Loader2, AlertTriangle, Clock, Download, Home, LayoutDashboard } from "lucide-react";
+import { Loader2, AlertTriangle, Clock, Download, Home, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 import { companyConfig } from "@/lib/companyConfig";
+import { BankTransferDetails } from "@/components/payment/BankTransferDetails";
 import { getPaymentReturnOrigin } from "@/lib/appOrigin";
 import { redirectToExternal } from "@/lib/externalRedirect";
 import { generateReceiptPdf } from "@/lib/generateReceiptPdf";
@@ -68,7 +69,6 @@ export default function Pay() {
     !isRunningOnStableOrigin && (!!token || !!requestId || !!status);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentData, setPaymentData] = useState<PaymentRequestData | null>(null);
   const [paymentResult, setPaymentResult] = useState<"success" | "failed" | "cancelled" | null>(null);
@@ -303,41 +303,6 @@ export default function Pay() {
       </div>
     );
   }
-
-  const handleProceedToPayment = async () => {
-    if (!paymentData || !token) return;
-
-    setIsProcessing(true);
-    try {
-      // IMPORTANT: use a stable origin for payment provider return URLs.
-      // Preview origins can break Worldpay 3DS ("current origin is not supported").
-      const paymentOrigin = getPaymentReturnOrigin();
-      const returnUrl = `${paymentOrigin}/pay?requestId=${paymentData.id}`;
-      
-      console.log('[Pay] Starting payment session:', { paymentOrigin, returnUrl });
-
-      const { data, error: fnError } = await supabase.functions.invoke("payment-request", {
-        body: {
-          action: "create-worldpay-session",
-          token,
-          returnUrl,
-          paymentOrigin,
-        },
-      });
-
-      if (fnError) throw fnError;
-      if (!data?.success) {
-        throw new Error(data?.error || "Failed to create payment session");
-      }
-
-      // Redirect to Worldpay
-      redirectToExternal(data.checkoutUrl);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Payment initialization failed";
-      setError(message);
-      setIsProcessing(false);
-    }
-  };
 
   const handleNavigation = () => {
     if (isLoggedIn) navigate("/dashboard");
@@ -577,9 +542,9 @@ export default function Pay() {
         </CardHeader>
         <CardContent className="pt-6 pb-8">
           <div className="text-center mb-6">
-            <h1 className="font-display text-2xl mb-1">Secure Payment</h1>
+            <h1 className="font-display text-2xl mb-1">How to pay</h1>
             <p className="text-sm text-muted-foreground">
-              Complete your payment securely via Worldpay
+              Please pay by bank transfer using the details below. We do not take card payments.
             </p>
           </div>
 
@@ -587,7 +552,7 @@ export default function Pay() {
             <div className="border-4 border-foreground p-4 mb-4 bg-muted/40">
               <p className="text-sm font-semibold mb-2">Your Contract Summary has been accepted.</p>
               <p className="text-xs text-muted-foreground mb-3">
-                Payment is required before we process your order.
+                Please pay by bank transfer using the details below.
               </p>
               <div className="space-y-1 text-sm">
                 {paymentData.cs.cs_number && (
@@ -637,23 +602,11 @@ export default function Pay() {
             </div>
           </div>
 
-          <Button
-            onClick={handleProceedToPayment}
-            disabled={isProcessing}
-            className="w-full h-14 text-lg gap-2 font-display tracking-wide"
-          >
-            {isProcessing ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <CreditCard className="h-5 w-5" />
-            )}
-            {isProcessing ? "Redirecting..." : "Proceed to Pay"}
-          </Button>
-
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Shield className="h-4 w-4" />
-            <span>Secured by Worldpay • PCI DSS Compliant</span>
-          </div>
+          <BankTransferDetails
+            accountNumber={paymentData.account_number}
+            invoiceNumber={paymentData.invoice_number ?? paymentData.payment_request_number ?? null}
+            amount={paymentData.amount}
+          />
 
           <div className="mt-6 text-center text-xs text-muted-foreground">
             <p>Questions? Call <strong>{CONTACT_PHONE_DISPLAY}</strong></p>

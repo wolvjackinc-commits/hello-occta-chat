@@ -130,7 +130,7 @@ export const AdminPaymentRequests = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [createForm, setCreateForm] = useState({
     accountNumber: "",
-    type: "card_payment" as "card_payment" | "dd_setup",
+    type: "dd_setup" as "card_payment" | "dd_setup",
     amount: "",
     invoiceId: "",
     notes: "",
@@ -288,7 +288,7 @@ export const AdminPaymentRequests = () => {
       }
 
       setShowCreateDialog(false);
-      setCreateForm({ accountNumber: "", type: "card_payment", amount: "", invoiceId: "", notes: "", dueDate: "" });
+      setCreateForm({ accountNumber: "", type: "dd_setup", amount: "", invoiceId: "", notes: "", dueDate: "" });
       setSelectedCustomer(null);
       refetch();
     } catch (err: unknown) {
@@ -406,14 +406,11 @@ export const AdminPaymentRequests = () => {
         <div>
           <h1 className="font-display text-3xl">Payment Requests</h1>
           <p className="text-muted-foreground">
-            Send secure payment links to customers
+            Direct Debit setup requests. OCCTA takes Direct Debit or bank transfer only — card payment links are retired.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowPhonePaymentDialog(true)} className="gap-2">
-            <Phone className="h-4 w-4" />
-            Record Phone Payment
-          </Button>
+          {/* Phone/card payments are not taken: OCCTA accepts Direct Debit or bank transfer only. */}
           <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             New Request
@@ -679,12 +676,6 @@ export const AdminPaymentRequests = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="card_payment">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Card Payment
-                    </div>
-                  </SelectItem>
                   <SelectItem value="dd_setup">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4" />

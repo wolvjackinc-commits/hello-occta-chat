@@ -289,35 +289,11 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
       }
 
       // Payment method branch
-      let payNowUrl: string | null = null;
-      if (pmMethod === "invoice_link") {
-        const { data: existingPR } = await supabase
-          .from("payment_requests").select("id, provider_checkout_url")
-          .eq("invoice_id", invoiceId).neq("status", "cancelled")
-          .order("created_at", { ascending: false }).limit(1).maybeSingle();
-        if (existingPR) {
-          payNowUrl = (existingPR as any).provider_checkout_url ?? null;
-        } else {
-          const token = crypto.randomUUID();
-          const tokenHash = await sha256Hex(token);
-          const expires = new Date(); expires.setDate(expires.getDate() + 14);
-          const { data: pr } = await supabase
-            .from("payment_requests").insert({
-              type: "card_payment",
-              invoice_id: invoiceId,
-              user_id: svc.user_id,
-              customer_email: recipientEmail,
-              customer_name: customerName,
-              account_number: accountNumber,
-              amount: total,
-              currency: "GBP",
-              status: "sent",
-              expires_at: expires.toISOString(),
-              token_hash: tokenHash,
-              notes: `Monthly invoice ${invoiceNumber}`,
-            }).select("id, provider_checkout_url").single();
-          payNowUrl = (pr as any)?.provider_checkout_url ?? `${appOrigin}/pay?token=${token}`;
-        }
+      const payNowUrl: string | null = null;
+      // OCCTA takes Direct Debit or bank transfer only (paymentOptions.ts).
+      // Non-DD invoices carry bank-transfer details; no card payment link.
+      if (pmMethod !== "direct_debit") {
+        // nothing to create: the customer pays by bank transfer
       } else if (pmMethod === "direct_debit") {
         if (ddActive) {
           await supabase.from("invoices").update({

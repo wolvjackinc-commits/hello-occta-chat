@@ -371,42 +371,15 @@ Deno.serve(perfServe("process-first-billing", async (req) => {
       }
 
       // ── Branch on payment method ──
-      let prId: string | null = job.payment_request_id ?? null;
+      const prId: string | null = job.payment_request_id ?? null;
       let ddTaskId: string | null = job.dd_setup_task_id ?? null;
-      let payNowUrl: string | null = null;
+      const payNowUrl: string | null = null;
 
-      if (pm.method === "invoice_link") {
-        if (!prId) {
-          const { data: existingPR } = await supabase
-            .from("payment_requests").select("id, provider_checkout_url")
-            .eq("invoice_id", invoiceId).neq("status", "cancelled")
-            .order("created_at", { ascending: false }).limit(1).maybeSingle();
-          if (existingPR) {
-            prId = existingPR.id;
-            payNowUrl = (existingPR as any).provider_checkout_url ?? null;
-          } else {
-            const token = crypto.randomUUID();
-            const tokenHash = await sha256Hex(token);
-            const expires = new Date(); expires.setDate(expires.getDate() + 14);
-            const { data: pr, error: prErr } = await supabase
-              .from("payment_requests").insert({
-                type: "card_payment",
-                invoice_id: invoiceId,
-                user_id: svc.user_id,
-                customer_email: recipientEmail,
-                customer_name: customerName,
-                amount: total,
-                currency: "GBP",
-                status: "sent",
-                expires_at: expires.toISOString(),
-                token_hash: tokenHash,
-                notes: `First invoice ${invoiceNumber}`,
-              }).select("id, provider_checkout_url").single();
-            if (prErr) throw prErr;
-            prId = pr.id;
-            payNowUrl = (pr as any).provider_checkout_url ?? `${appOrigin}/pay?token=${token}`;
-          }
-        }
+      // OCCTA takes Direct Debit or bank transfer only (paymentOptions.ts).
+      // Invoices that are not collected by an active Direct Debit carry the
+      // bank-transfer details in the PDF and email; no card payment link.
+      if (pm.method !== "direct_debit") {
+        // nothing to create: the customer pays by bank transfer
       } else if (pm.method === "direct_debit") {
         // Only mark as awaiting_dd_collection if a confirmed active mandate exists.
         if (ddActive) {

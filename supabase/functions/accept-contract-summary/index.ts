@@ -871,7 +871,7 @@ async function sendAcceptanceWelcome(
          <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Monthly price</td><td style="padding:6px 0;font-size:13px;"><strong>${escapeHtml(priceLine)}</strong></td></tr>
          <tr><td style="padding:6px 14px 6px 0;font-size:13px;color:#555;">Accepted</td><td style="padding:6px 0;font-size:13px;">${escapeHtml(new Date(cs.accepted_at ?? Date.now()).toLocaleString("en-GB"))}</td></tr>
        </table>
-       <p><strong>What happens next?</strong> Our team will follow up with a secure payment link — we never take card details over email. After payment we'll arrange your install / activation.</p>
+       <p><strong>What happens next?</strong> We'll arrange your install / activation. Billing starts only once your service is live: your bills are collected by Direct Debit once your mandate is active, or paid by bank transfer to OCCTA. We never take card payments.</p>
        <p>Your signed copy is below — keep it for your records. The link refreshes for 7 days; you can always download a fresh copy from your OCCTA dashboard.</p>
        <p style="font-size:12px;color:#555;">Questions? Reply to this email or contact <a href="mailto:hello@occta.co.uk" style="color:#555;">hello@occta.co.uk</a>.</p>`,
       signedUrl ? { label: "Download signed copy", url: signedUrl } : undefined,

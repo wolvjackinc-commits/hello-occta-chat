@@ -10,6 +10,7 @@ import {
   MessageCircle,
   Sparkles,
   CreditCard,
+  Landmark,
   ArrowUpRight,
   Plus,
   Calendar,
@@ -136,7 +137,7 @@ export function OverviewTab(p: Props) {
           </div>
           <Link to={p.nextDueInvoiceId ? `/pay-invoice?id=${p.nextDueInvoiceId}` : "/dashboard?tab=invoices"}>
             <Button variant="hero" size="sm">
-              <CreditCard className="w-4 h-4 mr-1" /> Pay now
+              <Landmark className="w-4 h-4 mr-1" /> How to pay
             </Button>
           </Link>
         </div>

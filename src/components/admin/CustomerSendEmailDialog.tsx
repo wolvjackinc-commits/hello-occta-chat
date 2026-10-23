@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Mail, Loader2, Eye, ArrowLeft, Paperclip, FileText, CalendarClock } from "lucide-react";
+import { Mail, Loader2, Eye, ArrowLeft, Paperclip, FileText, CalendarClock, Upload, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { DD_GUARANTEE_TEXT } from "@/lib/legal/directDebitGuarantee";
@@ -29,6 +29,79 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
   const [body, setBody] = useState("");
   const [includeMandate, setIncludeMandate] = useState(false);
   const [sending, setSending] = useState(false);
+  // Attachments: the customer's invoices (by id) and files uploaded here
+  // (stored in the customer's files, then attached by id server-side).
+  const [invoiceIds, setInvoiceIds] = useState<string[]>([]);
+  const [uploads, setUploads] = useState<Array<{ id: string; name: string; size: number }>>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const { data: invoiceList } = useQuery({
+    queryKey: ["customer-email-invoices", customer.id],
+    enabled: open,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("invoices")
+        .select("id, invoice_number, total, status, issue_date, pdf_storage_key")
+        .eq("user_id", customer.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return (data ?? []) as Array<{ id: string; invoice_number: string | null; total: number | null; status: string | null; issue_date: string | null; pdf_storage_key: string | null }>;
+    },
+  });
+
+  const MAX_FILE_BYTES = 10 * 1024 * 1024; // user-files bucket limit
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not signed in");
+      for (const file of Array.from(files)) {
+        if (file.size > MAX_FILE_BYTES) {
+          toast({ title: `${file.name} is over 10MB`, variant: "destructive" });
+          continue;
+        }
+        const safe = file.name.replace(/[^\w.\- ]+/g, "_");
+        const path = `${customer.id}/${Date.now()}-${safe}`;
+        const { error: upErr } = await supabase.storage.from("user-files").upload(path, file, { contentType: file.type || undefined });
+        if (upErr) throw upErr;
+        const { data: row, error: insErr } = await (supabase as any)
+          .from("user_files")
+          .insert({
+            user_id: customer.id,
+            uploaded_by: user.id,
+            file_name: file.name,
+            file_path: path,
+            file_type: file.type || "application/octet-stream",
+            file_size: file.size,
+            description: "Emailed attachment",
+          })
+          .select("id")
+          .single();
+        if (insErr) throw insErr;
+        setUploads((u) => [...u, { id: row.id, name: file.name, size: file.size }]);
+      }
+    } catch (e) {
+      toast({ title: "Couldn't upload attachment", description: String((e as Error).message), variant: "destructive" });
+    } finally {
+      setUploading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
+
+  const attachmentRefs = [
+    ...invoiceIds.map((id) => ({ kind: "invoice" as const, invoice_id: id })),
+    ...uploads.map((u) => ({ kind: "user_file" as const, user_file_id: u.id })),
+  ];
+  const attachmentNames = [
+    ...invoiceIds.map((id) => {
+      const inv = invoiceList?.find((i) => i.id === id);
+      return `Invoice ${inv?.invoice_number ?? id.slice(0, 8)}.pdf`;
+    }),
+    ...uploads.map((u) => u.name),
+  ];
 
   // Load DD mandate + billing context so preview / append can show the real
   // next collection date, mandate reference and guarantee.
@@ -176,6 +249,7 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
             customer_name: customer.full_name || "there",
             account_number: customer.account_number || "",
           },
+          ...(attachmentRefs.length ? { attachments: attachmentRefs } : {}),
         },
       });
       if (error) throw error;
@@ -184,6 +258,8 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
       setSubject("");
       setBody("");
       setIncludeMandate(false);
+      setInvoiceIds([]);
+      setUploads([]);
       setPreviewOpen(false);
       setOpen(false);
       onSent?.();
@@ -260,6 +336,83 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
               )}
             </div>
           </div>
+
+          {/* Attachments */}
+          <div className="border-2 border-foreground/30 p-3 space-y-2 bg-muted/20">
+            <div className="flex items-center justify-between gap-2">
+              <Label className="font-display text-xs uppercase flex items-center gap-1">
+                <Paperclip className="h-3 w-3" /> Attachments
+              </Label>
+              <input
+                ref={fileInput}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-2 border-foreground"
+                onClick={() => fileInput.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Upload className="h-3 w-3 mr-1" />}
+                Attach file
+              </Button>
+            </div>
+
+            {(invoiceList ?? []).length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">Invoices</p>
+                <div className="max-h-36 overflow-y-auto space-y-1">
+                  {(invoiceList ?? []).map((inv) => {
+                    const checked = invoiceIds.includes(inv.id);
+                    const noPdf = !inv.pdf_storage_key;
+                    return (
+                      <label key={inv.id} className={`flex items-center gap-2 text-xs ${noPdf ? "opacity-50" : "cursor-pointer"}`}>
+                        <Checkbox
+                          checked={checked}
+                          disabled={noPdf}
+                          onCheckedChange={(v) =>
+                            setInvoiceIds((ids) => (v ? [...ids, inv.id] : ids.filter((x) => x !== inv.id)))
+                          }
+                        />
+                        <span className="font-mono">{inv.invoice_number ?? inv.id.slice(0, 8)}</span>
+                        {inv.total != null && <span>£{Number(inv.total).toFixed(2)}</span>}
+                        {inv.issue_date && <span className="text-muted-foreground">{format(new Date(inv.issue_date), "dd MMM yyyy")}</span>}
+                        {inv.status && <span className="text-muted-foreground capitalize">· {inv.status}</span>}
+                        {noPdf && <span className="text-muted-foreground">· no PDF yet</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {uploads.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {uploads.map((u) => (
+                  <span key={u.id} className="inline-flex items-center gap-1 border border-foreground/40 px-2 py-0.5 text-xs">
+                    <FileText className="h-3 w-3" />
+                    {u.name} <span className="text-muted-foreground">({(u.size / 1024).toFixed(0)} KB)</span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${u.name}`}
+                      onClick={() => setUploads((list) => list.filter((x) => x.id !== u.id))}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <p className="text-[10px] text-muted-foreground">
+              Up to 10 attachments, 10MB per file. Uploaded files are also saved to the customer's documents.
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)} disabled={sending}>Cancel</Button>
@@ -299,6 +452,16 @@ export function CustomerSendEmailDialog({ customer, onSent, trigger }: Props) {
                   £{collectionAmount.toFixed(2)} on {format(new Date(collectionDate), "dd MMMM yyyy")}
                   <span className="text-xs text-muted-foreground"> (10 working days' notice)</span>
                 </span>
+              </>
+            )}
+
+            {attachmentNames.length > 0 && (
+              <>
+                <span className="font-display text-xs uppercase text-muted-foreground flex items-center gap-1">
+                  <Paperclip className="h-3 w-3" />
+                  Attachments
+                </span>
+                <span className="text-sm">{attachmentNames.join(", ")}</span>
               </>
             )}
 

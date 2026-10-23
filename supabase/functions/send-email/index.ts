@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 import { buildInvoiceSentEmailHtml, invoiceEmailSubject } from "../_shared/invoiceEmail.ts";
+import { parseAttachmentRefs, resolveAttachments, type ResolvedAttachment } from "../_shared/emailAttachments.ts";
 
 // Maps send-email `type` values to the template_key used in
 // email_template_help_links so the correct KB articles are appended.
@@ -46,6 +47,8 @@ interface EmailRequest {
   invoiceId?: string;
   paymentRequestId?: string;
   userId?: string; // For custom emails to link to a user
+  // Admin-composed emails only: invoices / customer files to attach, by id.
+  attachments?: unknown;
 }
 
 // HTML escape helper to prevent injection attacks
@@ -1160,7 +1163,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, to, data, orderNumber, logToCommunications, invoiceId, paymentRequestId, userId: directUserId }: EmailRequest = await req.json();
+    const { type, to, data, orderNumber, logToCommunications, invoiceId, paymentRequestId, userId: directUserId, attachments: rawAttachments }: EmailRequest = await req.json();
 
     if (!resendApiKey) {
       console.error("Missing RESEND_API_KEY");
@@ -1377,6 +1380,25 @@ const handler = async (req: Request): Promise<Response> => {
         );
     }
 
+    // Attachments: only on admin-composed emails, only the named customer's
+    // own invoices/files, loaded server-side from private storage.
+    let attachments: ResolvedAttachment[] = [];
+    const parsedRefs = parseAttachmentRefs(rawAttachments);
+    if ("error" in parsedRefs) {
+      return new Response(JSON.stringify({ error: parsedRefs.error }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+    if (parsedRefs.refs.length) {
+      if (!["custom_admin", "service_live_welcome"].includes(type) || !directUserId) {
+        return new Response(JSON.stringify({ error: "Attachments are only supported on admin emails to a customer" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+      try {
+        attachments = await resolveAttachments(supabaseAdmin, directUserId, parsedRefs.refs);
+      } catch (attErr) {
+        return new Response(JSON.stringify({ error: attErr instanceof Error ? attErr.message : "Couldn't load attachments" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+      }
+    }
+    const attachmentLog = attachments.map((a) => ({ filename: a.filename, kind: a.kind, id: a.ref_id, bytes: a.bytes }));
+
     // Use RESEND_FROM_EMAIL for all emails - this must be a verified domain in Resend
     const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "noreply@occta.co.uk";
 
@@ -1421,7 +1443,7 @@ const handler = async (req: Request): Promise<Response> => {
             recipient_email: to,
             status: "queued",
             subject,
-            metadata: { subject },
+            metadata: attachmentLog.length ? { subject, attachments: attachmentLog } : { subject },
           })
           .select("id")
           .single();
@@ -1445,6 +1467,9 @@ const handler = async (req: Request): Promise<Response> => {
       bcc: bccList,
       subject,
       html,
+      ...(attachments.length
+        ? { attachments: attachments.map((a) => ({ filename: a.filename, content: a.content })) }
+        : {}),
     });
 
     const resendResult = emailResponse as {
@@ -1483,7 +1508,7 @@ const handler = async (req: Request): Promise<Response> => {
             status: "sent",
             provider_message_id: resendResult.data?.id || resendResult.id || null,
             sent_at: new Date().toISOString(),
-            metadata: { subject },
+            metadata: attachmentLog.length ? { subject, attachments: attachmentLog } : { subject },
             subject,
             body_html: html,
           });

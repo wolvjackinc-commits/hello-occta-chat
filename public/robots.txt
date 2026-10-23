@@ -20,6 +20,7 @@ Disallow: /thank-you
 Disallow: /business-checkout
 Disallow: /business-legacy
 Disallow: /pay
+Allow: /pay-by-card
 Disallow: /pay-invoice
 Disallow: /payment-result
 Disallow: /dd/setup
@@ -51,6 +52,7 @@ Disallow: /thank-you
 Disallow: /business-checkout
 Disallow: /business-legacy
 Disallow: /pay
+Allow: /pay-by-card
 Disallow: /pay-invoice
 Disallow: /payment-result
 Disallow: /dd/setup
@@ -81,6 +83,7 @@ Disallow: /thank-you
 Disallow: /business-checkout
 Disallow: /business-legacy
 Disallow: /pay
+Allow: /pay-by-card
 Disallow: /pay-invoice
 Disallow: /payment-result
 Disallow: /dd/setup
@@ -111,6 +114,7 @@ Disallow: /thank-you
 Disallow: /business-checkout
 Disallow: /business-legacy
 Disallow: /pay
+Allow: /pay-by-card
 Disallow: /pay-invoice
 Disallow: /payment-result
 Disallow: /dd/setup
@@ -141,6 +145,7 @@ Disallow: /thank-you
 Disallow: /business-checkout
 Disallow: /business-legacy
 Disallow: /pay
+Allow: /pay-by-card
 Disallow: /pay-invoice
 Disallow: /payment-result
 Disallow: /dd/setup
@@ -171,6 +176,7 @@ Disallow: /thank-you
 Disallow: /business-checkout
 Disallow: /business-legacy
 Disallow: /pay
+Allow: /pay-by-card
 Disallow: /pay-invoice
 Disallow: /payment-result
 Disallow: /dd/setup
@@ -201,6 +207,7 @@ Disallow: /thank-you
 Disallow: /business-checkout
 Disallow: /business-legacy
 Disallow: /pay
+Allow: /pay-by-card
 Disallow: /pay-invoice
 Disallow: /payment-result
 Disallow: /dd/setup

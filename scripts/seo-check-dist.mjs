@@ -59,8 +59,11 @@ async function pathsToCheck() {
   return paths;
 }
 
+// --snapshots: check a plain `vite build` whose pages come from committed
+// seo-snapshots/ (vite-plugin-seo-snapshots.ts) instead of a live prerender.
+const SNAPSHOT_MODE = process.argv.includes("--snapshots");
 const manifestPath = path.join(DIST, "prerender-manifest.json");
-if (fs.existsSync(manifestPath)) {
+if (!SNAPSHOT_MODE && fs.existsSync(manifestPath)) {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   if (manifest.skipped) {
     console.warn(`SEO check skipped: ${manifest.reason || "browser prerender did not run"}`);
@@ -114,7 +117,9 @@ for (const pathname of paths) {
 }
 
 const notFound = path.join(DIST, "404.html");
-if (!fs.existsSync(notFound)) errors.push("missing dist/404.html");
+if (SNAPSHOT_MODE) {
+  // Lovable serves its own SPA fallback; 404.html only exists after a live prerender.
+} else if (!fs.existsSync(notFound)) errors.push("missing dist/404.html");
 else {
   const html = fs.readFileSync(notFound, "utf8");
   if (!/noindex/i.test(html)) errors.push("404.html is missing noindex");

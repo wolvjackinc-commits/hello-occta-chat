@@ -58,7 +58,7 @@ export const locations: Location[] = [
     faqs: [
       { question: "Is OCCTA available in Leeds?", answer: "Yes \u2014 OCCTA broadband covers Leeds and much of West Yorkshire via the access network available at the address. Check your postcode to see available speeds at your address." },
       { question: "What fibre speeds can I get in Leeds?", answer: "Available speeds depend on the exact address, access technology and supplier product. The order journey confirms the address-specific estimate and contractual speed information before acceptance." },
-      { question: "Can I cancel my Leeds broadband anytime?", answer: "Yes \u2014 OCCTA offers Price Lock 24 and Flex 30 where eligible. Your exact term, price, technology, speed and charges are confirmed before acceptance." },
+      { question: "Can I cancel my Leeds broadband?", answer: "It depends on the plan. Flex 30 is 30-day rolling, so you can leave with 30 days' notice. Price Lock 24 has a 24-month minimum term, and leaving early may carry a charge set out in your agreement. Your exact term, price, speed and charges are confirmed before acceptance." },
     ],
   },
   {

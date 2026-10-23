@@ -479,7 +479,7 @@ export const learnPages: LearnPage[] = [
     intro: "Every payment method has trade-offs. Here's how to pick the one that costs you least while giving you the most control.",
     sections: [
       { heading: "Direct Debit (recommended)", body: "Automatic and protected by the Direct Debit Guarantee. Any OCCTA payment-method pricing difference or charge must be shown in the applicable terms or invoice; do not assume a universal Direct Debit discount." },
-      { heading: "Debit or credit card", body: "Handy for one-off invoices or if you don't want to give a company your bank details. May carry a small processing fee. Card can expire so you'll need to update the details." },
+      { heading: "Debit or credit card", body: "Some providers accept cards for one-off invoices, sometimes with a processing fee, and cards expire so details need updating. OCCTA does not take card payments — use Direct Debit or bank transfer." },
       { heading: "Bank transfer / Faster Payment", body: "Free, fast, and works from any UK bank. Useful for catch-up payments but requires you to remember to send them each month." },
       { heading: "OCCTA's approach", body: "OCCTA invoices are paid by Direct Debit or by bank transfer only. We do not take card payments or payments over the phone. All amounts and dates are shown in your customer dashboard." },
     ],

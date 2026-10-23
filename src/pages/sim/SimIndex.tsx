@@ -87,7 +87,7 @@ const SimIndex = () => {
             <div>
               <HeroKicker>SIM only</HeroKicker>
               <HeroTitle>
-                <span className="sm:block">SIM plans.</span>{" "}
+                <span className="sm:block">SIM only plans.</span>{" "}
                 <span className="sm:block">Simple telecom.</span>{" "}
                 {" "}<span className="block text-primary">Clear terms.</span>
               </HeroTitle>

@@ -130,6 +130,75 @@ async function collectPaths() {
   return paths;
 }
 
+/**
+ * Optional committed snapshot output (SEO_SNAPSHOT_DIR). Lovable publishes
+ * without Chrome, so CI renders the pages and commits the SEO head tags and
+ * rendered #root markup; vite-plugin-seo-snapshots.ts bakes them into the
+ * Lovable build so crawlers get real HTML, not an empty app shell.
+ */
+const SNAPSHOT_DIR = process.env.SEO_SNAPSHOT_DIR ? path.resolve(process.env.SEO_SNAPSHOT_DIR) : "";
+const SNAPSHOT_HEAD_PATTERNS = [
+  /<title>[\s\S]*?<\/title>/gi,
+  /<meta\s+name="(?:description|keywords|robots|title)"[^>]*>/gi,
+  /<link\s+rel="canonical"[^>]*>/gi,
+  /<meta\s+property="(?:og:[^"]+|product:[^"]+|article:[^"]+)"[^>]*>/gi,
+  /<meta\s+name="twitter:[^"]+"[^>]*>/gi,
+  /<script\s+type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/gi,
+];
+
+function snapshotFileName(pathname) {
+  return pathname === "/" ? "index.json" : `${pathname.slice(1).replace(/\//g, "__")}.json`;
+}
+
+function extractRoot(html) {
+  const start = html.indexOf('<div id="root">');
+  if (start < 0) return "";
+  const open = start + '<div id="root">'.length;
+  const tag = /<(\/?)div\b[^>]*>/gi;
+  tag.lastIndex = open;
+  let depth = 1;
+  let match;
+  while ((match = tag.exec(html))) {
+    depth += match[1] ? -1 : 1;
+    if (depth === 0) return html.slice(open, match.index);
+  }
+  return "";
+}
+
+function writeSnapshot(pathname, html) {
+  const rawHead = html.split("</head>")[0];
+  // JSON-LD: keep only the page's own (Helmet, data-rh) blocks so the shell's
+  // global schema is not duplicated next to the page schema.
+  const pageLd = /<script\s+type="application\/ld\+json"\s+data-rh="true"/i.test(rawHead);
+  // Helmet prefixes its tags with data-rh; normalise so the patterns match them.
+  const head = (pageLd
+    ? rawHead.replace(/<script\s+type="application\/ld\+json">[\s\S]*?<\/script>/gi, "")
+    : rawHead
+  ).replace(/\s+data-rh="true"/g, "");
+  // Helmet writes its tags after the shell's, so the last tag per key wins.
+  const byKey = new Map();
+  for (const pattern of SNAPSHOT_HEAD_PATTERNS) {
+    for (const match of head.matchAll(pattern)) {
+      const tag = match[0];
+      let key = tag;
+      if (tag.startsWith("<title")) key = "title";
+      else if (!tag.startsWith("<script")) key = `${tag.slice(1, 5)}:${(tag.match(/(?:name|property|rel)="([^"]+)"/) || [tag, tag])[1]}`;
+      byKey.delete(key);
+      byKey.set(key, tag);
+    }
+  }
+  const tags = [...byKey.values()];
+  const root = extractRoot(html)
+    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+    .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, "");
+  if (!root.includes("<h1")) throw new Error(`snapshot for ${pathname} has no H1`);
+  fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
+  fs.writeFileSync(
+    path.join(SNAPSHOT_DIR, snapshotFileName(pathname)),
+    JSON.stringify({ path: pathname, head: tags, root }) + "\n",
+  );
+}
+
 function outputFile(pathname) {
   if (pathname === "/") return path.join(DIST, "index.html");
   return path.join(DIST, pathname.slice(1), "index.html");
@@ -213,6 +282,7 @@ async function renderPath(browser, pathname) {
     const file = outputFile(pathname);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, html);
+    if (SNAPSHOT_DIR) writeSnapshot(pathname, html);
     console.log(`ok ${pathname}`);
     return pathname;
   } finally {
@@ -340,6 +410,7 @@ try {
   if (browser) {
     try {
       const paths = await collectPaths();
+      if (SNAPSHOT_DIR) fs.rmSync(SNAPSHOT_DIR, { recursive: true, force: true });
       console.log(`Prerendering ${paths.length} public routes`);
       const failures = await pool(paths, 2, (pathname) => renderWithRetry(browser, pathname));
       await render404(browser);

@@ -674,8 +674,15 @@ function escapeHtml(str: string): string {
   return decoded.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** Replaces the tag when the template has it, otherwise adds it to <head>. */
+function upsert(html: string, pattern: RegExp, tag: string): string {
+  if (pattern.test(html)) return html.replace(pattern, () => tag);
+  return html.replace("</head>", () => `    ${tag}\n  </head>`);
+}
+
 function injectSEO(template: string, route: RouteSEO): string {
   let html = template;
+  const url = `${BASE_URL}${route.canonical}`;
 
   // ── Title ──
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(route.title)}</title>`);
@@ -699,10 +706,12 @@ function injectSEO(template: string, route: RouteSEO): string {
   );
 
   // ── Canonical ──
-  html = html.replace(
-    /<link rel="canonical" href="[^"]*" ?\/?>/,
-    `<link rel="canonical" href="${BASE_URL}${route.canonical}" />`
-  );
+  // dist/index.html doubles as the SPA fallback for every unknown URL, so the
+  // root page leaves canonical/og:url to the runtime SEO component.
+  if (route.path !== "/") {
+    html = upsert(html, /<link rel="canonical" href="[^"]*" ?\/?>/, `<link rel="canonical" href="${url}" />`);
+    html = upsert(html, /<meta property="og:url" content="[^"]*" ?\/?>/, `<meta property="og:url" content="${url}" />`);
+  }
 
   // ── Open Graph ──
   html = html.replace(
@@ -723,11 +732,13 @@ function injectSEO(template: string, route: RouteSEO): string {
     /<meta name="twitter:url" content="[^"]*" ?\/?>/,
     `<meta name="twitter:url" content="${BASE_URL}${route.canonical}" />`
   );
-  html = html.replace(
+  html = upsert(
+    html,
     /<meta name="twitter:title" content="[^"]*" ?\/?>/,
     `<meta name="twitter:title" content="${escapeHtml(route.title)}" />`
   );
-  html = html.replace(
+  html = upsert(
+    html,
     /<meta name="twitter:description" content="[^"]*" ?\/?>/,
     `<meta name="twitter:description" content="${escapeHtml(route.description)}" />`
   );

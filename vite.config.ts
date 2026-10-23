@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { seoPrerender } from "./vite-plugin-prerender";
 import { seoArticlePrerender } from "./vite-plugin-seo-articles";
+import { seoSnapshots } from "./vite-plugin-seo-snapshots";
 
 const publicBackendEnv = {
   VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL ?? "https://oexgjmuvgdndizsufipe.supabase.co",
@@ -32,6 +33,8 @@ export default defineConfig(() => ({
     react(),
     seoPrerender(),
     seoArticlePrerender(),
+    // Must stay last: overrides head-only pages with full browser-rendered HTML.
+    seoSnapshots(),
   ].filter(Boolean),
   resolve: {
     alias: {

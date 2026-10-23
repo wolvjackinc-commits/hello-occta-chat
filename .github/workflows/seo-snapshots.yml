@@ -1,0 +1,75 @@
+name: SEO Snapshots
+
+# Lovable publishes without Chrome, so public pages would ship as an empty app
+# shell to crawlers. This job renders every public sitemap URL in real Chrome
+# and commits the result to seo-snapshots/. vite-plugin-seo-snapshots.ts bakes
+# those into the next Lovable build: full HTML, H1, canonical and JSON-LD for
+# Google, Bing and AI search crawlers without running JavaScript.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "seo-snapshots/**"
+      - "supabase/**"
+      - "docs/**"
+      - "**/*.md"
+  schedule:
+    # Weekly refresh (Mondays 05:17 UTC) so prices and KB articles stay current.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seo-snapshots
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build and render public pages in Chrome
+        env:
+          SEO_SNAPSHOTS: "off"
+          SEO_SNAPSHOT_DIR: seo-snapshots
+          PRERENDER_REQUIRE_BROWSER: "1"
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+        run: npm run build
+
+      - name: Verify snapshots bake into a crawlable build
+        run: |
+          set -euo pipefail
+          count=$(ls seo-snapshots/*.json | wc -l)
+          echo "snapshots: $count"
+          test "$count" -gt 150
+          npx vite build
+          node scripts/seo-check-dist.mjs --snapshots
+
+      - name: Commit refreshed snapshots
+        run: |
+          set -euo pipefail
+          git config user.name "occta-seo-bot"
+          git config user.email "seo-bot@users.noreply.github.com"
+          git add -A seo-snapshots
+          if git diff --cached --quiet; then
+            echo "Snapshots unchanged"
+            exit 0
+          fi
+          git commit -m "chore(seo): refresh prerendered page snapshots"
+          for attempt in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1

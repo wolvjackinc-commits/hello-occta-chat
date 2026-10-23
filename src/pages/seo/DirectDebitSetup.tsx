@@ -32,15 +32,15 @@ export default function DirectDebitSetupPage() {
       ]}
       aeo={[
         { question: "Will setting up Direct Debit charge me straight away?", answer: "No. Setup only authorises future collections of OCCTA invoices. Nothing is collected until an invoice is due." },
-        { question: "Is Direct Debit required?", answer: "No — you can pay each invoice by card instead via a secure Worldpay payment link. Direct Debit is offered because most customers prefer the convenience." },
+        { question: "Is Direct Debit required?", answer: "No — you can pay each invoice by bank transfer instead, using the bank details and reference printed on the invoice. OCCTA does not take card or phone payments. Direct Debit is offered because most customers prefer the convenience." },
       ]}
       faqs={[
         { question: "Can I cancel the Direct Debit later?", answer: "Yes, at any time. Cancel via your bank (under the Direct Debit Guarantee) and also tell us so we can update your account and arrange an alternative payment method." },
-        { question: "What if a Direct Debit fails?", answer: "We'll notify you. You can settle the invoice by card. Repeated failures may attract a late fee per the agreed billing terms." },
+        { question: "What if a Direct Debit fails?", answer: "We'll notify you. You can settle the invoice by bank transfer using the details on the invoice. Repeated failures may attract a late fee per the agreed billing terms." },
         { question: "Is my bank data secure?", answer: "We use a regulated payment partner to process Direct Debit setup — we don't store your full bank details ourselves." },
       ]}
       relatedLinks={[
-        { label: "Pay by card", to: "/pay-by-card" },
+        { label: "How to pay your bill", to: "/pay-by-card" },
         { label: "Billing explained", to: "/billing-explained" },
         { label: "First invoice explained", to: "/first-invoice-explained" },
         { label: "Cancellation", to: "/cancellation" },

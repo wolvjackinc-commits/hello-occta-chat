@@ -26,7 +26,7 @@ const BusinessVoicePage = () => (
           <div>
             <HeroKicker>Hosted VoIP &amp; SIP</HeroKicker>
             <HeroTitle size="md">
-              Cloud phone system.
+              Business VoIP phone system.
               {" "}<span className="block text-primary">Zero on-prem headache.</span>
             </HeroTitle>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/70">Softphones, desk phones, auto attendants, call queues, recording. Port your existing numbers with no downtime.</p>

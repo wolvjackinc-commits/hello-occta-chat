@@ -10,8 +10,9 @@ import { OutreachContacts } from "@/components/admin/outreach/OutreachContacts";
 import { OutreachTemplates } from "@/components/admin/outreach/OutreachTemplates";
 import { OutreachSuppressions } from "@/components/admin/outreach/OutreachSuppressions";
 import { OutreachSettingsPanel } from "@/components/admin/outreach/OutreachSettingsPanel";
+import { OutreachCallList } from "@/components/admin/outreach/OutreachCallList";
 
-const TABS = ["dashboard", "campaigns", "contacts", "templates", "suppressions", "settings"] as const;
+const TABS = ["dashboard", "campaigns", "calls", "contacts", "templates", "suppressions", "settings"] as const;
 type Tab = (typeof TABS)[number];
 
 const AdminOutreach = () => {
@@ -65,6 +66,7 @@ const AdminOutreach = () => {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+          <TabsTrigger value="calls">Call list</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="suppressions">Do not contact</TabsTrigger>
@@ -72,6 +74,7 @@ const AdminOutreach = () => {
         </TabsList>
         <TabsContent value="dashboard"><OutreachDashboard onOpenCampaign={(id) => { const n = new URLSearchParams(); n.set("tab", "campaigns"); n.set("campaign", id); setParams(n); }} /></TabsContent>
         <TabsContent value="campaigns"><OutreachCampaigns settings={settings} /></TabsContent>
+        <TabsContent value="calls"><OutreachCallList /></TabsContent>
         <TabsContent value="contacts"><OutreachContacts /></TabsContent>
         <TabsContent value="templates"><OutreachTemplates settings={settings} /></TabsContent>
         <TabsContent value="suppressions"><OutreachSuppressions /></TabsContent>

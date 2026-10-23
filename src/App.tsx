@@ -163,6 +163,7 @@ const BusinessSimPage = lazy(() => import("./pages/business/BusinessSim"));
 const BusinessBundlesPage = lazy(() => import("./pages/business/BusinessBundles"));
 const BusinessIndustryPage = lazy(() => import("./pages/business/BusinessIndustry"));
 const BusinessContactSalesPage = lazy(() => import("./pages/business/BusinessContactSales"));
+const BusinessLineCheckPage = lazy(() => import("./pages/business/LineCheck"));
 const BusinessSupportPage = lazy(() => import("./pages/business/BusinessSupport"));
 const BusinessBillingPage = lazy(() => import("./pages/business/BusinessBilling"));
 const BusinessQuotePage = lazy(() => import("./pages/business/BusinessQuote"));
@@ -362,6 +363,7 @@ const AnimatedRoutes = () => {
         <Route path="/business/bundles" element={<Suspense fallback={<AdminRouteFallback />}><BusinessBundlesPage /></Suspense>} />
         <Route path="/business/industries/:slug" element={<Suspense fallback={<AdminRouteFallback />}><BusinessIndustryPage /></Suspense>} />
         <Route path="/business/contact-sales" element={<Suspense fallback={<AdminRouteFallback />}><BusinessContactSalesPage /></Suspense>} />
+        <Route path="/business/line-check" element={<Suspense fallback={<AdminRouteFallback />}><BusinessLineCheckPage /></Suspense>} />
         <Route path="/business/support" element={<Suspense fallback={<AdminRouteFallback />}><BusinessSupportPage /></Suspense>} />
         <Route path="/business/billing" element={<Suspense fallback={<AdminRouteFallback />}><BusinessBillingPage /></Suspense>} />
         <Route path="/business/quote" element={<Suspense fallback={<AdminRouteFallback />}><BusinessQuotePage /></Suspense>} />

@@ -33,7 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { logAudit } from "@/lib/audit";
 import { normalizeAccountNumber, isAccountNumberValid } from "@/lib/account";
-import { Download, FileText, Lock, CheckCircle2, Mail } from "lucide-react";
+import { Download, FileText, Lock, CheckCircle2, Mail, Paperclip } from "lucide-react";
 
 /**
  * Route wrapper. Legacy bookmarks may still be UUID-based, so the UUID
@@ -627,6 +627,9 @@ const CustomerDetailContent = ({
                 related: c.payment_request_id ? "Payment request" : c.invoice_id ? "Invoice" : "—",
                 subject: c.subject || (c.metadata as any)?.subject || null,
                 body_html: c.body_html,
+                attachments: Array.isArray((c.metadata as any)?.attachments)
+                  ? ((c.metadata as any).attachments as Array<{ filename?: string }>).map((a) => a.filename).filter(Boolean)
+                  : [],
               }));
               const seenMsg = new Set<string>();
               const fromLog = (data?.emailLog ?? [])
@@ -674,7 +677,14 @@ const CustomerDetailContent = ({
                       </TableCell>
                       <TableCell className="text-xs">
                         <div className="flex items-center justify-between gap-2">
-                          <span>{c.subject || c.related}</span>
+                          <span>
+                            {c.subject || c.related}
+                            {c.attachments?.length > 0 && (
+                              <span className="flex items-center gap-1 text-muted-foreground mt-0.5">
+                                <Paperclip className="h-3 w-3" /> {c.attachments.join(", ")}
+                              </span>
+                            )}
+                          </span>
                           <Button
                             type="button"
                             size="sm"

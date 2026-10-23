@@ -170,6 +170,13 @@ export type Database = {
             foreignKeyName: "acceptance_certificates_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
+          {
+            foreignKeyName: "acceptance_certificates_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
             referencedRelation: "contract_summaries"
             referencedColumns: ["id"]
           },
@@ -2821,6 +2828,13 @@ export type Database = {
             foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
+          {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
             referencedRelation: "contract_summaries"
             referencedColumns: ["id"]
           },
@@ -4308,6 +4322,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "draft_order_packs_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
           {
             foreignKeyName: "draft_order_packs_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
@@ -6574,6 +6595,13 @@ export type Database = {
             foreignKeyName: "manual_fulfilment_orders_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
+          {
+            foreignKeyName: "manual_fulfilment_orders_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
             referencedRelation: "contract_summaries"
             referencedColumns: ["id"]
           },
@@ -7159,6 +7187,13 @@ export type Database = {
             foreignKeyName: "order_journeys_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
             referencedRelation: "contract_summaries"
             referencedColumns: ["id"]
           },
@@ -7522,6 +7557,8 @@ export type Database = {
           cta_label: string | null
           cta_path: string | null
           flyer_ref: string | null
+          followup_delay_days: number
+          followup_source_ids: string[]
           hero_image_url: string | null
           id: string
           launched_at: string | null
@@ -7551,6 +7588,8 @@ export type Database = {
           cta_label?: string | null
           cta_path?: string | null
           flyer_ref?: string | null
+          followup_delay_days?: number
+          followup_source_ids?: string[]
           hero_image_url?: string | null
           id?: string
           launched_at?: string | null
@@ -7580,6 +7619,8 @@ export type Database = {
           cta_label?: string | null
           cta_path?: string | null
           flyer_ref?: string | null
+          followup_delay_days?: number
+          followup_source_ids?: string[]
           hero_image_url?: string | null
           id?: string
           launched_at?: string | null
@@ -8935,6 +8976,13 @@ export type Database = {
             foreignKeyName: "payment_requests_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
+          {
+            foreignKeyName: "payment_requests_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
             referencedRelation: "contract_summaries"
             referencedColumns: ["id"]
           },
@@ -9790,6 +9838,13 @@ export type Database = {
             foreignKeyName: "provisioning_readiness_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
+          {
+            foreignKeyName: "provisioning_readiness_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
             referencedRelation: "contract_summaries"
             referencedColumns: ["id"]
           },
@@ -9861,6 +9916,13 @@ export type Database = {
           title?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
           {
             foreignKeyName: "quote_events_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
@@ -11254,6 +11316,13 @@ export type Database = {
             foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
             isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
             referencedRelation: "contract_summaries"
             referencedColumns: ["id"]
           },
@@ -12565,11 +12634,37 @@ export type Database = {
         Row: {
           account_number: string | null
           created_at: string | null
+          cs_accepted_at: string | null
+          cs_delivery_charge: number | null
+          cs_digital_voice: Json | null
+          cs_id: string | null
+          cs_installation_charge: number | null
+          cs_likely_service_date: string | null
+          cs_minimum_term_months: number | null
+          cs_monthly_price_incl_vat: number | null
+          cs_number: string | null
+          cs_one_off_charges: Json | null
+          cs_plan_name: string | null
+          cs_plan_term: string | null
+          cs_router_charge: number | null
+          cs_router_option: Json | null
+          cs_selected_addons: Json | null
+          cs_service_type:
+            | Database["public"]["Enums"]["service_interest_kind"]
+            | null
+          cs_setup_charge: number | null
+          cs_setup_option: Json | null
+          cs_status:
+            | Database["public"]["Enums"]["contract_summary_status_kind"]
+            | null
           date_of_birth: string | null
           email: string | null
           full_name: string | null
+          has_service: boolean | null
+          has_submitted_order: boolean | null
           id: string | null
           latest_activity_at: string | null
+          latest_order_at: string | null
           latest_postcode: string | null
           latest_postcode_normalized: string | null
           phone: string | null
@@ -12710,6 +12805,13 @@ export type Database = {
           withdrawn_reason?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
           {
             foreignKeyName: "service_cancellation_cases_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
@@ -12869,6 +12971,13 @@ export type Database = {
           terms_version?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
           {
             foreignKeyName: "contract_acceptances_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
@@ -13408,6 +13517,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_contract_acceptances"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_journeys_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
           },
           {
             foreignKeyName: "order_journeys_contract_summary_id_fkey"
@@ -14490,6 +14606,13 @@ export type Database = {
           title?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quote_events_contract_summary_id_fkey"
+            columns: ["contract_summary_id"]
+            isOneToOne: false
+            referencedRelation: "admin_customer_search_view"
+            referencedColumns: ["cs_id"]
+          },
           {
             foreignKeyName: "quote_events_contract_summary_id_fkey"
             columns: ["contract_summary_id"]
@@ -15705,6 +15828,8 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      outreach_line_check_prefill: { Args: { p_token: string }; Returns: Json }
+      outreach_queue_followups: { Args: never; Returns: number }
       outreach_record_engagement: {
         Args: {
           p_suspected_bot: boolean

@@ -45,7 +45,7 @@ describe("OCCTA Customers operational indicator", () => {
   it("does not classify a closed account as an unsubmitted order", () => {
     expect(light({ orderStatuses: ["cancelled"], hasSubmittedOrder: true }).colour).toBe("grey");
   });
-  it("does not guess when backend data is unavailable", () => {
+  it("shows a failed order as needing action", () => {\n    expect(light({ hasSubmittedOrder: true, orderStatuses: ["failed"] }).label).toBe("Order failed");\n  });\n  it("does not guess when backend data is unavailable", () => {
     expect(light({ sourceReady: false, serviceStatuses: ["active"] }).colour).toBe("grey");
   });
 });

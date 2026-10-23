@@ -40,7 +40,8 @@ const PROVISIONING_SERVICE_STATUSES = new Set([
 const CLOSED_SERVICE_STATUSES = new Set([
   "cancelled", "canceled", "ceased", "terminated", "inactive", "closed",
 ]);
-const FAILED_ORDER_STATUSES = new Set(["rejected", "failed"]);\nconst CLOSED_ORDER_STATUSES = new Set([
+const FAILED_ORDER_STATUSES = new Set(["rejected", "failed"]);
+const CLOSED_ORDER_STATUSES = new Set([
   "cancelled", "canceled", "rejected", "failed", "closed",
 ]);
 
@@ -126,7 +127,15 @@ export function getCustomerTrafficLight(
     };
   }
 
-  if (orders.some((status) => FAILED_ORDER_STATUSES.has(status)) && !hasOpenOrder) {\n    return {\n      colour: "red",\n      label: "Order failed",\n      reason: "An order failed or was rejected and requires investigation.",\n    };\n  }\n\n  if (hasClosedService || allOrdersClosed) {
+  if (orders.some((status) => FAILED_ORDER_STATUSES.has(status)) && !hasOpenOrder) {
+    return {
+      colour: "red",
+      label: "Order failed",
+      reason: "An order failed or was rejected and requires investigation.",
+    };
+  }
+
+  if (hasClosedService || allOrdersClosed) {
     return {
       colour: "grey",
       label: "Closed / inactive",

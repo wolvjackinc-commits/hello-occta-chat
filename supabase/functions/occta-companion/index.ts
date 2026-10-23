@@ -17,7 +17,7 @@ import {
   redactSensitiveText,
   withOptions,
 } from "../_shared/companionCore.ts";
-import { type BrainReply, claudeEnabled, runOcctaBrain } from "./brain.ts";
+import { type BrainEvent, type BrainImage, type BrainReply, claudeEnabled, runOcctaBrain } from "./brain.ts";
 import { type CustomerScope, type OrdersResult, createAccountToolkit } from "./accountTools.ts";
 
 const OCCTA_PHONE = "0800 260 6626";
@@ -42,7 +42,7 @@ type CompanionReply = {
   content: string;
   verificationToken?: string;
   source?: "account" | "approved_content" | "knowledge_base" | "ai";
-  engine?: "claude" | "lovable";
+  engine?: "claude";
   handoff?: { reason: string; summary: string };
 };
 
@@ -593,7 +593,7 @@ function approvedPublicReply(intent: string): string | null {
       );
     case "direct_debit":
       return withOptions(
-        `Direct Debit mandates are set up securely and processed through OCCTA's approved payment providers. Never send bank details in chat. Use the secure Direct Debit setup route or contact the billing team if a mandate is pending or rejected. Until your Direct Debit is active, pay invoices by bank transfer to OCCTA LIMITED (Lloyds Bank, sort code 30-98-97, account 61499362) quoting your OCCTA account number. OCCTA does not take card or phone payments. [How to pay](${BASE_URL}/pay-by-card) · [Direct Debit help](${BASE_URL}/help/direct-debit-setup-help).`,
+        `Direct Debit mandates are set up securely and processed through OCCTA's approved payment providers. Never send bank details in chat. Use the secure Direct Debit setup route or contact the billing team if a mandate is pending or rejected. Until your Direct Debit is active, pay invoices by bank transfer to OCCTA LIMITED (Lloyds Bank, sort code 30-98-97, account 61499362) quoting your OCCTA account number. OCCTA does not take card or phone payments. [Set up Direct Debit](${BASE_URL}/dd/setup) · [Direct Debit help](${BASE_URL}/help/direct-debit-setup-help).`,
         ["Set up Direct Debit", "Check my invoice", "Raise a billing ticket"],
       );
     case "first_invoice":
@@ -697,19 +697,56 @@ async function recordAnalytics(
   }
 }
 
-serve(async (request) => {
-  if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+type HandlerResult = { status: number; payload: Record<string, unknown> };
 
+const IMAGE_TYPES: Record<string, BrainImage["mediaType"]> = {
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif", webp: "image/webp",
+};
+
+// Images the customer attached to this chat, so Ollie can read router lights,
+// error screens or letters. Only files under this session's (or this signed-in
+// user's) own upload prefix, and only ones the safety scan marked clean.
+async function loadCustomerImages(
+  serviceClient: any,
+  value: unknown,
+  sessionId: string,
+  userId: string | null,
+): Promise<BrainImage[]> {
+  if (!Array.isArray(value)) return [];
+  const prefixes = [`guest/${sessionId}/`, ...(userId ? [`user/${userId}/`] : [])];
+  const images: BrainImage[] = [];
+  for (const item of value.slice(0, 3)) {
+    const path = typeof item?.path === "string" ? item.path : "";
+    if (!path || path.includes("..") || !prefixes.some((prefix) => path.startsWith(prefix))) continue;
+    const mediaType = IMAGE_TYPES[path.split(".").pop()?.toLowerCase() ?? ""];
+    if (!mediaType) continue;
+    try {
+      const { data: scan } = await serviceClient.from("chat_attachment_scans").select("status").eq("path", path).maybeSingle();
+      if (scan?.status !== "clean") continue;
+      const { data: file, error } = await serviceClient.storage.from("chat-attachments").download(path);
+      if (error || !file || file.size > 5 * 1024 * 1024) continue;
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      for (let index = 0; index < bytes.length; index += 0x8000) {
+        binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+      }
+      images.push({ mediaType, data: btoa(binary), name: String(item?.name ?? path.split("/").pop()).replace(/[\r\n]/g, " ").slice(0, 120) });
+    } catch (imageError) {
+      console.error("ollie image load failed", (imageError as Error).message);
+    }
+  }
+  return images;
+}
+
+async function handle(request: Request, body: any, emit?: (event: BrainEvent) => void): Promise<HandlerResult> {
   const startedAt = Date.now();
   try {
-    const body = await request.json().catch(() => ({}));
     const messages = normaliseMessages(body.messages);
     const sessionId = safeSessionId(body.sessionId);
-    if (!messages.length) return jsonResponse({ error: "Please send a message." }, 400);
+    if (!messages.length) return { status: 400, payload: { error: "Please send a message." } };
 
     const totalCharacters = messages.reduce((sum, message) => sum + message.content.length, 0);
-    if (totalCharacters > 24000) return jsonResponse({ error: "This conversation is too long. Please start a new chat." }, 413);
+    if (totalCharacters > 60000) return { status: 413, payload: { error: "This conversation is too long. Please start a new chat." } };
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -719,7 +756,7 @@ serve(async (request) => {
     const authUser = await getAuthenticatedUser(serviceClient, request.headers.get("Authorization"));
     const generalRateKey = await digestIdentifier(authUser?.id ?? sessionId);
     const allowed = await checkRateLimit(serviceClient, "occta_companion_message", generalRateKey, 40, 5, false);
-    if (!allowed) return jsonResponse({ error: "Please wait a moment before sending another message." }, 429);
+    if (!allowed) return { status: 429, payload: { error: "Please wait a moment before sending another message." } };
 
     const accountIntent = detectAccountIntent(messages);
     const latestUserText = lastUserText(messages);
@@ -746,8 +783,8 @@ serve(async (request) => {
       if (!accountNumber) {
         reply = {
           content: withOptions(
-            `Happy to dig into that. First, the boring-but-important bit: what's your OCCTA account number? It starts with **OCC**. Then I'll ask for the account holder's date of birth, and I can see everything, bills included. (Signing in works too, if you'd rather.) Please don't send bank details, passwords or one-time codes.`,
-            ["I need help finding it", "Sign in instead", "Talk to a human"],
+            `Happy to dig into that. First, the boring-but-important bit: what's your OCCTA account number? It starts with **OCC** and it's on your welcome email and invoices. Then I'll ask for the account holder's date of birth, and I can see everything, bills included. (Signing in works too, if you'd rather.) Please don't send bank details, passwords or one-time codes.`,
+            ["I can't find it", "Sign in instead", "Talk to a human"],
           ),
           source: "account",
         };
@@ -779,6 +816,7 @@ serve(async (request) => {
           // Verified: hand over to the AI with this customer's tools to answer the original question.
           scope = verified;
           justVerified = true;
+          emit?.({ type: "status", label: "Verified. Opening your account" });
           if (!claudeEnabled()) {
             reply = { content: await accountReply(serviceClient, verified, accountIntent), source: "account" };
           }
@@ -787,7 +825,11 @@ serve(async (request) => {
     }
 
     if (!reply) {
-      const knowledgeContext = await searchKnowledgeBase(serviceClient, latestUserText, Boolean(scope?.userId));
+      const [knowledgeContext, images] = await Promise.all([
+        searchKnowledgeBase(serviceClient, latestUserText, Boolean(scope?.userId)),
+        loadCustomerImages(serviceClient, body.attachments, sessionId, authUser?.id ?? null),
+      ]);
+      if (images.length) emit?.({ type: "status", label: "Looking at your photo" });
       const account = scope ? createAccountToolkit(serviceClient, scope, { loadOrders }) : undefined;
       let brainReply: BrainReply | null = null;
       try {
@@ -797,8 +839,11 @@ serve(async (request) => {
           knowledgeContext,
           searchKnowledge: (query: string) =>
             searchKnowledgeBase(serviceClient, query, Boolean(scope?.userId)),
+          serviceClient,
           account,
           justVerified,
+          images,
+          emit,
         });
       } catch (aiError) {
         console.error("occta brain failed", (aiError as Error).message);
@@ -827,23 +872,65 @@ serve(async (request) => {
       Date.now() - startedAt,
     );
 
-    return jsonResponse({
-      content: reply.content,
-      role: "assistant",
-      verificationToken: reply.verificationToken ?? issuedToken,
-      source: reply.source,
-      engine: reply.engine,
-      handoff: reply.handoff,
-    });
+    return {
+      status: 200,
+      payload: {
+        content: reply.content,
+        role: "assistant",
+        verificationToken: reply.verificationToken ?? issuedToken,
+        verified: Boolean(scope),
+        source: reply.source,
+        engine: reply.engine,
+        handoff: reply.handoff,
+      },
+    };
   } catch (error) {
     if ((error as Error).message === "verification_rate_limited") {
-      return jsonResponse({
-        error: `Too many verification attempts. Please wait 15 minutes or call ${OCCTA_PHONE}.`,
-      }, 429);
+      return { status: 429, payload: { error: `Too many verification attempts. Please wait 15 minutes or call ${OCCTA_PHONE}.` } };
     }
     console.error("occta-companion error", (error as Error).message);
-    return jsonResponse({
-      error: `I couldn't load that safely just now. Please try again or call ${OCCTA_PHONE}.`,
-    }, 500);
+    return { status: 500, payload: { error: `I couldn't load that safely just now. Please try again or call ${OCCTA_PHONE}.` } };
   }
+}
+
+serve(async (request) => {
+  if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (request.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
+
+  const body = await request.json().catch(() => ({}));
+
+  if (body?.stream !== true) {
+    const result = await handle(request, body);
+    return jsonResponse(result.payload, result.status);
+  }
+
+  // Server-sent events: live status, streamed text, then the final payload.
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: string, data: unknown) => {
+        try {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Client went away; keep processing so analytics and tickets complete.
+        }
+      };
+      const keepAlive = setInterval(() => send("ping", {}), 15_000);
+      try {
+        const result = await handle(request, body, (event) => send(event.type, event));
+        send("done", { status: result.status, ...result.payload });
+      } finally {
+        clearInterval(keepAlive);
+        try { controller.close(); } catch { /* already closed */ }
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
 });

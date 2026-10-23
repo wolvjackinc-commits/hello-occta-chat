@@ -84,10 +84,11 @@ const Layout = ({ children }: LayoutProps) => {
       ) : !isCheckout ? (
         <button
           onClick={openChat}
-          className="fixed right-4 bottom-4 z-[9999] rounded-full bg-primary text-primary-foreground p-3 shadow-lg hover:opacity-90 transition-opacity"
+          className="fixed right-4 bottom-4 z-[9999] flex items-center gap-2 border-[3px] border-foreground bg-primary px-4 py-2.5 font-display text-sm uppercase text-primary-foreground shadow-[4px_4px_0_hsl(var(--foreground))] transition-transform hover:-translate-y-0.5"
           aria-label="Open OCCTA chat"
         >
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-5 w-5" />
+          <span>Ask Ollie</span>
         </button>
       ) : null}
     </div>

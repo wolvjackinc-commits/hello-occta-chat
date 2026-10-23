@@ -29,6 +29,7 @@ import { OrderDetailDialog } from "@/components/admin/OrderDetailDialog";
 import { logAudit } from "@/lib/audit";
 import { CheckSquare, Download, Square, Loader2, UserPlus, ExternalLink, StickyNote, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ContractSnapshotInline, snapshotFromContractRow } from "@/components/admin/ContractSnapshot";
 import { format } from "date-fns";
 import {
   AdminPageHeader,
@@ -55,6 +56,7 @@ type Order = {
   status: OrderStatus;
   admin_notes?: string | null;
   created_at: string;
+  contract_summary_id?: string | null;
 };
 
 export const AdminOrders = () => {
@@ -86,12 +88,24 @@ export const AdminOrders = () => {
         .order("created_at", { ascending: false })
         .limit(1000);
       const [orders, guestOrders, sessions] = await Promise.all([
-        supabase.from("orders").select("id, service_type, plan_name, status, notes, created_at").order("created_at", { ascending: false }),
+        supabase.from("orders").select("id, service_type, plan_name, status, notes, created_at, contract_summary_id").order("created_at", { ascending: false }),
         supabase.from("guest_orders").select("*").order("created_at", { ascending: false }),
         sessionPromise,
       ]);
 
+      // What each order signed for (router, one-time fees, add-ons, price).
+      const csIds = Array.from(new Set((orders.data || []).map((o: any) => o.contract_summary_id).filter(Boolean)));
+      const contracts: Record<string, any> = {};
+      if (csIds.length) {
+        const { data: css } = await (supabase as any)
+          .from("contract_summaries")
+          .select("id, cs_number, status, accepted_at, plan_name, plan_term, minimum_term_months, monthly_price_incl_vat, router_option, router_charge, setup_option, setup_charge, installation_charge, delivery_charge, one_off_charges_snapshot, one_off_charges_json, selected_addons, digital_voice_addon_snapshot, likely_service_date")
+          .in("id", csIds);
+        for (const c of css ?? []) contracts[c.id] = c;
+      }
+
       return {
+        contracts,
         orders: (orders.data || []).map((order) => ({
           ...order,
           admin_notes: order.notes ?? null,
@@ -444,7 +458,13 @@ export const AdminOrders = () => {
                           {order.id.slice(0, 8)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{order.plan_name}</TableCell>
+                      <TableCell className="text-sm">
+                        <div>{order.plan_name}</div>
+                        {(() => {
+                          const snap = snapshotFromContractRow(order.contract_summary_id ? data?.contracts?.[order.contract_summary_id] : null);
+                          return snap ? <ContractSnapshotInline cs={snap} className="mt-1 max-w-md" /> : null;
+                        })()}
+                      </TableCell>
                       <TableCell>
                         <Select
                           value={order.status}

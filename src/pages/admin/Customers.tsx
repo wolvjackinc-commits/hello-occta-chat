@@ -25,6 +25,8 @@ import CustomerQuickActions from "@/components/admin/CustomerQuickActions";
 import { AdminDataHealthBanner } from "@/components/admin/AdminDataHealthBanner";
 import { CreateCustomerDialog } from "@/components/admin/CreateCustomerDialog";
 import { AdminEmptyState } from "@/components/admin/primitives";
+import { getCustomerTrafficLight } from "@/lib/admin/customerTrafficLight";
+import { CustomerTrafficLightBadge, CustomerTrafficLightLegend } from "@/components/admin/CustomerTrafficLightBadge";
 
 const PAGE_SIZE = 10;
 
@@ -114,6 +116,8 @@ export const AdminCustomers = () => {
 
   const { data, isFetching, error } = useQuery({
     queryKey,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -220,6 +224,63 @@ export const AdminCustomers = () => {
     },
   });
 
+  // Fetch only the ten visible accounts. This is deliberately separate from the
+  // list query: an invoice/service API error must never hide the customer list
+  // or misrepresent an unverified account as live.
+  const visibleIds = useMemo(
+    () => (data?.customers ?? []).map((customer) => customer.id),
+    [data?.customers],
+  );
+
+  const { data: accountSignals, isError: signalsError } = useQuery({
+    queryKey: ["admin-customer-traffic", visibleIds],
+    enabled: visibleIds.length > 0,
+    staleTime: 5_000,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    queryFn: async () => {
+      const [services, orders, guestOrders, invoices] = await Promise.all([
+        supabase.from("services").select("user_id, status").in("user_id", visibleIds),
+        // Some historic orders link by customer_id instead of user_id.
+        supabase.from("orders").select("user_id, customer_id, status")
+          .or(`user_id.in.(${visibleIds.join(",")}),customer_id.in.(${visibleIds.join(",")})`),
+        supabase.from("guest_orders").select("user_id, status").in("user_id", visibleIds),
+        supabase.from("invoices").select("user_id, status, due_date, total").in("user_id", visibleIds),
+      ]);
+      const failed = [services, orders, guestOrders, invoices].find((response) => response.error);
+      if (failed?.error) throw failed.error;
+
+      type Signal = {
+        serviceStatuses: Array<string | null>;
+        orderStatuses: Array<string | null>;
+        invoices: Array<{ status: string | null; due_date: string | null; total: number | null }>;
+      };
+      const byId: Record<string, Signal> = Object.fromEntries(
+        visibleIds.map((id) => [id, { serviceStatuses: [], orderStatuses: [], invoices: [] }]),
+      );
+      for (const service of services.data ?? []) {
+        if (byId[service.user_id]) byId[service.user_id].serviceStatuses.push(service.status);
+      }
+      for (const order of orders.data ?? []) {
+        const matchedIds = new Set([order.user_id, order.customer_id]);
+        for (const id of matchedIds) {
+          if (id && byId[id]) byId[id].orderStatuses.push(order.status);
+        }
+      }
+      for (const order of guestOrders.data ?? []) {
+        if (order.user_id && byId[order.user_id]) byId[order.user_id].orderStatuses.push(order.status);
+      }
+      for (const invoice of invoices.data ?? []) {
+        if (byId[invoice.user_id]) {
+          byId[invoice.user_id].invoices.push({
+            status: invoice.status, due_date: invoice.due_date, total: invoice.total,
+          });
+        }
+      }
+      return byId;
+    },
+  });
+
   const totalPages = Math.ceil((data?.count ?? 0) / PAGE_SIZE);
 
   const handleAdvancedSearch = () => {
@@ -315,6 +376,8 @@ export const AdminCustomers = () => {
         </div>
       </Card>
 
+      <CustomerTrafficLightLegend />
+
       {/* Advanced Search Panel */}
       <CustomerAdvancedSearch
         filters={advancedFilters}
@@ -361,6 +424,18 @@ export const AdminCustomers = () => {
       <div className="grid gap-4">
         {data?.customers?.map((customer) => {
           const accountNumber = formatAccountNumber(customer.account_number);
+          const signal = accountSignals?.[customer.id];
+          const light = signalsError
+            ? { colour: "grey" as const, label: "Status unavailable", reason: "Could not read live service, order or invoice records. Retrying automatically." }
+            : getCustomerTrafficLight({
+            sourceReady: Boolean(signal) && !signalsError,
+            hasSubmittedOrder: customer.has_submitted_order,
+            hasService: customer.has_service,
+            contractStatus: customer.cs_status,
+            serviceStatuses: signal?.serviceStatuses ?? [],
+            orderStatuses: signal?.orderStatuses ?? [],
+            invoices: signal?.invoices ?? [],
+          });
           return (
             <Card
               key={customer.id}
@@ -373,8 +448,11 @@ export const AdminCustomers = () => {
                   </div>
                   <div className="space-y-1">
                     {/* Account Number - Prominent */}
-                    <div className="font-display text-lg font-bold">
-                      {accountNumber}
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="font-display text-lg font-bold">
+                        {accountNumber}
+                      </div>
+                      <CustomerTrafficLightBadge status={light} />
                     </div>
 
                     {/* Name */}

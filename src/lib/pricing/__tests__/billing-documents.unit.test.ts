@@ -103,14 +103,29 @@ describe("invoice PDF", () => {
     }
   });
 
-  it("tells a Direct Debit customer there is nothing to do, and a card customer how to pay", () => {
+  it("tells a Direct Debit customer there is nothing to do, and anyone else to pay by bank transfer", () => {
     const dd = new jsPDF();
     drawInvoice(dd as unknown as PdfDoc, invoice);
     expect(pdfText(dd)).toContain("Direct Debit – no action needed");
-    const card = new jsPDF();
-    drawInvoice(card as unknown as PdfDoc, { ...invoice, payment: { method: "invoice_link" } });
-    expect(pdfText(card)).toContain("How to pay");
-    expect(pdfText(card)).toContain("TOTAL TO PAY");
+    expect(pdfText(dd)).not.toContain("Sort code");
+    for (const method of ["invoice_link", "card", "phone", "bank_transfer", null]) {
+      const doc = new jsPDF();
+      drawInvoice(doc as unknown as PdfDoc, { ...invoice, payment: { method } });
+      const text = pdfText(doc);
+      expect(text).toContain("Pay by bank transfer");
+      expect(text).toContain("TOTAL TO PAY");
+      for (const s of ["OCCTA LIMITED", "Lloyds Bank", "30-98-97", "61499362", "Reference: OCC-104233"]) expect(text).toContain(s);
+      expect(text).not.toMatch(/Pay now|Card \(pay online\)|By phone: call/);
+    }
+  });
+
+  it("asks a Direct Debit customer whose mandate is not collecting to pay by bank transfer", () => {
+    const doc = new jsPDF();
+    drawInvoice(doc as unknown as PdfDoc, { ...invoice, payment: { method: "direct_debit", ddActive: false } });
+    const text = pdfText(doc);
+    expect(text).toContain("Pay by bank transfer");
+    expect(text).toContain("will not be collected by Direct Debit");
+    expect(text).not.toContain("no action needed");
   });
 
   it("shows part payments and the remaining balance", () => {
@@ -164,17 +179,27 @@ describe("invoice email", () => {
     expect(invoiceEmailSubject({ ...base, payment_method: "direct_debit", dd_active: true })).toBe("Your OCCTA bill INV-1: £71.06 by Direct Debit");
   });
 
-  it("gives card customers a Pay now button and escapes customer text", () => {
-    const html = buildInvoiceSentEmailHtml({ ...base, payment_method: "invoice_link" }, opts);
-    expect(html).toContain(">Pay now<");
-    expect(html).toContain("https://www.occta.co.uk/pay?token=t");
-    expect(html).not.toContain("<b>Patel</b>");
+  it("gives everyone else OCCTA's bank details, never a card link, and escapes customer text", () => {
+    for (const method of ["invoice_link", "card", "bank_transfer"]) {
+      const html = buildInvoiceSentEmailHtml({ ...base, account_number: "OCC35614656", payment_method: method }, opts);
+      for (const s of ["OCCTA LIMITED", "Lloyds Bank", "30-98-97", "61499362", "OCC35614656", "Pay by bank transfer"]) expect(html).toContain(s);
+      expect(html).not.toContain(">Pay now<");
+      expect(html).not.toContain("pay?token=");
+      expect(html).not.toContain("Card (pay online)");
+      expect(html).not.toContain("<b>Patel</b>");
+    }
     expect(invoiceEmailSubject({ ...base, payment_method: "invoice_link" })).toBe("Your OCCTA bill INV-1: £71.06 due by 29 Oct 2026");
   });
 
+  it("tells a Direct Debit customer whose collection isn't active to pay by bank transfer", () => {
+    const html = buildInvoiceSentEmailHtml({ ...base, payment_method: "direct_debit", dd_active: false }, opts);
+    expect(html).toContain("30-98-97");
+    expect(html).toContain("will not be collected by Direct Debit");
+    expect(html).not.toContain("Collected by Direct Debit on or after");
+  });
+
   it("drops links that aren't http(s)", () => {
-    const html = buildInvoiceSentEmailHtml({ ...base, pay_now_url: "javascript:alert(1)" }, opts);
+    const html = buildInvoiceSentEmailHtml({ ...base, pay_now_url: "javascript:alert(1)", invoice_pdf_url: "javascript:alert(2)" }, opts);
     expect(html).not.toContain("javascript:");
-    expect(html).toContain("https://www.occta.co.uk/pay-invoice?id=id-1");
   });
 });

@@ -28,7 +28,7 @@ export default function SmallBusinessTelecomPage() {
           body: (
             <ul className="list-disc pl-5 space-y-2">
               <li>Business prices are shown VAT-excluded; VAT is added on the invoice.</li>
-              <li>Direct Debit setup is available; you can also pay each invoice by card via a secure Worldpay payment link.</li>
+              <li>Pay by Direct Debit, or pay each invoice by bank transfer using the details on the invoice. We don't take card payments.</li>
               <li>Cancellation depends on the agreement you accepted — your business contract is the binding source of truth.</li>
             </ul>
           ),
@@ -48,7 +48,7 @@ export default function SmallBusinessTelecomPage() {
         { label: "Coverage check", to: "/coverage" },
         { label: "Pricing", to: "/pricing" },
         { label: "Direct Debit setup", to: "/direct-debit-setup" },
-        { label: "Pay by card", to: "/pay-by-card" },
+        { label: "How to pay your bill", to: "/pay-by-card" },
       ]}
       primaryCta={{ label: "Check business availability", to: "/business" }}
       secondaryCta={{ label: "Talk to business sales", to: "/business-sales" }}

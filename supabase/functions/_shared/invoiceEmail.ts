@@ -4,6 +4,7 @@
 // Apple Mail, and mirrors the PDF bill from billingDocument.ts.
 
 import { OCCTA_COMPANY, splitStoredDescription } from "./billingDocument.ts";
+import { bankTransferBoxHtml, bankTransferReference, DD_NOT_COLLECTING_TEXT, paymentMethodLabel } from "./paymentOptions.ts";
 
 export interface InvoiceEmailData {
   customer_name?: unknown;
@@ -67,7 +68,6 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
   const showVat = Number(data.vat_total ?? 0) !== 0;
   const lines = Array.isArray(data.lines) ? data.lines as Array<{ description?: unknown; qty?: unknown; line_total?: unknown }> : [];
   const dashboardUrl = safeUrl(data.dashboard_url) ?? `${opts.siteUrl}/dashboard`;
-  const payUrl = safeUrl(data.pay_now_url) ?? `${opts.siteUrl}/pay-invoice?id=${encodeURIComponent(String(data.invoice_id ?? ""))}`;
   const pdfUrl = safeUrl(data.invoice_pdf_url);
   const due = data.due_date ? esc(data.due_date) : "on receipt";
   const firstName = esc(String(data.customer_name ?? "").trim().split(/\s+/)[0] || "there");
@@ -91,11 +91,12 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
         <td align="right" style="${FONT}padding:9px 16px;font-size:13px;font-weight:bold;color:#0d0d0d;border-top:1px solid #e6e6df;">${v}</td>
       </tr>` : "";
 
-  const methodText = dd ? "Direct Debit" : data.payment_method === "direct_debit" ? "Direct Debit (not yet active)" : "Card (pay online)";
+  const methodText = paymentMethodLabel(String(data.payment_method ?? ""), data.payment_method === "direct_debit" ? dd : null);
+  const reference = bankTransferReference(String(data.account_number ?? ""), String(data.invoice_number ?? ""));
   const headline = dd ? "Amount we'll collect" : "Total to pay";
   const subline = dd
     ? `Collected by Direct Debit on or after <strong style="color:#ffffff;">${due}</strong>. No action needed.`
-    : `Please pay by <strong style="color:#ffffff;">${due}</strong>.`;
+    : `Please pay by bank transfer by <strong style="color:#ffffff;">${due}</strong>.`;
 
   const button = (href: string, label: string, primary: boolean) => `
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-table;margin:6px 4px;">
@@ -151,8 +152,7 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
   </td></tr>
 
   <tr><td align="center" style="padding:6px 22px 14px;">
-    ${dd ? "" : button(payUrl, "Pay now", true)}
-    ${pdfUrl ? button(pdfUrl, "Download PDF bill", dd) : ""}
+    ${pdfUrl ? button(pdfUrl, "Download PDF bill", true) : ""}
     ${button(dashboardUrl, "View my account", false)}
   </td></tr>
 
@@ -189,12 +189,14 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
     </table>
   </td></tr>
 
+  ${dd ? "" : `<tr><td style="padding:0 28px 16px;">${bankTransferBoxHtml({ reference, amount: money(data.total) })}</td></tr>`}
+
   <tr><td style="padding:0 28px 26px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f6f6f1;border-radius:6px;">
       <tr><td style="padding:16px 18px;border-left:4px solid ${dd ? "#ffde00" : "#0d0d0d"};${FONT}font-size:13px;line-height:20px;color:#444444;">
         ${dd
           ? `<strong style="color:#0d0d0d;">Paying by Direct Debit</strong><br>There's nothing you need to do. Payments are protected by the Direct Debit Guarantee.`
-          : `<strong style="color:#0d0d0d;">Ways to pay</strong><br>Online with the Pay now button or in <a href="${esc(dashboardUrl)}" style="color:#0d0d0d;">your account</a>, or by card on ${OCCTA_COMPANY.phone}. Can't pay on time? Call us before the due date and we'll help.`}
+          : `<strong style="color:#0d0d0d;">How to pay</strong><br>${data.payment_method === "direct_debit" ? DD_NOT_COLLECTING_TEXT + " The details are below." : "Please pay by bank transfer using the details below, or set up a Direct Debit from <a href=\"" + esc(dashboardUrl) + "\" style=\"color:#0d0d0d;\">your account</a>."} We do not take card or phone payments. Can't pay on time? Call us before the due date and we'll help.`}
         <br><br><strong style="color:#0d0d0d;">Questions about your bill?</strong> Call ${OCCTA_COMPANY.phone} (${OCCTA_COMPANY.phoneHours}) or email <a href="mailto:${OCCTA_COMPANY.email}" style="color:#0d0d0d;">${OCCTA_COMPANY.email}</a>.
       </td></tr>
     </table>

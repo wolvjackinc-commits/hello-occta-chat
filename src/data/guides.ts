@@ -792,7 +792,7 @@ export const guides: Guide[] = [
     keywords: 'broadband eligibility UK, broadband ordering requirements, flexible broadband UK, broadband with limited credit history',
     category: 'broadband',
     categoryLabel: 'Broadband',
-    intro: 'Most UK broadband providers run a hard credit check before they will switch you on. If your credit file is thin, damaged, or simply private, that is a real barrier. OCCTA is built differently: flexible terms, card payment up front, and no long lock-in. Here is how to get connected without the credit-check hurdle.',
+    intro: 'Most UK broadband providers run a hard credit check before they will switch you on. If your credit file is thin, damaged, or simply private, that is a real barrier. OCCTA is built differently: flexible terms, simple bank transfer or Direct Debit payments, and no long lock-in. Here is how to get connected without the credit-check hurdle.',
     sections: [
       {
         heading: 'Why do broadband providers run credit checks?',
@@ -809,7 +809,7 @@ export const guides: Guide[] = [
         ],
         bullets: [
           'Flex 30 is 30-day rolling with no fixed minimum term where eligible; normal notice is 30 days',
-          'Pay your first invoice by card to get connected quickly',
+          'Pay your first invoice by bank transfer or Direct Debit',
           'Available payment methods are confirmed for the selected order',
           'Flex 30 has no remaining-month ETF; Price Lock 24 may have an ETF during the minimum term; separately valid network charges may apply where lawful',
         ],
@@ -828,7 +828,7 @@ export const guides: Guide[] = [
       {
         heading: 'What you will need to sign up',
         paragraphs: [
-          'We keep onboarding light: your installation address and postcode, a contact email and phone number, your date of birth, and a payment card for the first invoice. That is it.',
+          'We keep onboarding light: your installation address and postcode, a contact email and phone number, your date of birth, and how you will pay: Direct Debit or bank transfer. That is it.',
           'There is no hard credit search and no impact on your credit score from signing up with OCCTA.',
         ],
       },
@@ -850,7 +850,7 @@ export const guides: Guide[] = [
       },
       {
         question: 'What if I cannot set up a Direct Debit?',
-        answer: 'That is fine. You can pay each invoice by card or bank transfer. Direct Debit is optional, not required.',
+        answer: 'That is fine. You can pay each invoice by bank transfer instead. We do not take card payments.',
       },
       {
         question: 'Will OCCTA report me to credit agencies?',

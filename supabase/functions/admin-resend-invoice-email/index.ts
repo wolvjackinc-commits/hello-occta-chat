@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { sha256Hex } from "../_shared/billingHelpers.ts";
+import { invoicePaymentRoute } from "../_shared/ddCollection.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const invoiceId: string | undefined = body?.invoice_id;
-  const note: string = typeof body?.note === "string" ? body.note : "corrected invoice payment link sent";
+  const note: string = typeof body?.note === "string" ? body.note : "invoice email resent";
   if (!invoiceId) return json({ error: "missing_invoice_id" }, 400);
 
   const appOrigin = Deno.env.get("PUBLIC_APP_ORIGIN") ?? "https://www.occta.co.uk";
@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
   const { data: inv, error: invErr } = await supabase
     .from("invoices")
-    .select("id, user_id, invoice_number, issue_date, due_date, total, subtotal, vat_total, billing_period_start, billing_period_end, pdf_storage_key")
+    .select("id, user_id, status, invoice_number, issue_date, due_date, total, subtotal, vat_total, billing_period_start, billing_period_end, pdf_storage_key")
     .eq("id", invoiceId).maybeSingle();
   if (invErr || !inv) return json({ error: "invoice_not_found" }, 404);
 
@@ -66,32 +66,11 @@ Deno.serve(async (req) => {
     .select("description, qty, line_total")
     .eq("invoice_id", invoiceId);
 
-  const { data: pr } = await supabase
-    .from("payment_requests")
-    .select("id, status, expires_at, provider_checkout_url, type")
-    .eq("invoice_id", invoiceId).maybeSingle();
-
-  let payNowUrl: string | null = null;
-  let tokenRotated = false;
-  if (pr && pr.type === "card_payment") {
-    if (pr.provider_checkout_url) {
-      payNowUrl = pr.provider_checkout_url;
-    } else {
-      const newToken = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, "");
-      const newHash = await sha256Hex(newToken);
-      const nowMs = Date.now();
-      const existingExpiry = pr.expires_at ? new Date(pr.expires_at).getTime() : 0;
-      const minExpiryMs = nowMs + 14 * 24 * 3600 * 1000;
-      const newExpiry = existingExpiry > minExpiryMs
-        ? new Date(existingExpiry) : new Date(minExpiryMs);
-      const { error: upErr } = await supabase.from("payment_requests")
-        .update({ token_hash: newHash, expires_at: newExpiry.toISOString(), status: "sent" })
-        .eq("id", pr.id);
-      if (upErr) return json({ error: "token_rotate_failed", details: upErr.message }, 500);
-      payNowUrl = `${appOrigin}/pay?token=${newToken}`;
-      tokenRotated = true;
-    }
-  }
+  // OCCTA takes Direct Debit or bank transfer only (_shared/paymentOptions.ts),
+  // so a resend never creates or refreshes a card payment link.
+  const payNowUrl: string | null = null;
+  const tokenRotated = false;
+  const payRoute = await invoicePaymentRoute(supabase, inv);
 
   let pdfSignedUrl: string | null = null;
   if (inv.pdf_storage_key) {
@@ -105,7 +84,7 @@ Deno.serve(async (req) => {
       type: "invoice_sent",
       to: recipientEmail,
       invoiceId: inv.id,
-      paymentRequestId: pr?.id ?? null,
+      paymentRequestId: null,
       logToCommunications: true,
       userId: inv.user_id,
       data: {
@@ -127,6 +106,8 @@ Deno.serve(async (req) => {
         pay_now_url: payNowUrl ?? `${appOrigin}/pay-invoice?id=${inv.id}`,
         invoice_pdf_url: pdfSignedUrl,
         dashboard_url: dashboardUrl,
+        payment_method: payRoute.payment_method,
+        dd_active: payRoute.dd_active,
       },
     },
   });
@@ -140,7 +121,7 @@ Deno.serve(async (req) => {
   await supabase.from("communications_log").insert({
     invoice_id: inv.id,
     user_id: inv.user_id,
-    payment_request_id: pr?.id ?? null,
+    payment_request_id: null,
     template_name: "invoice_resend_corrected",
     recipient_email: recipientEmail,
     status: "sent",

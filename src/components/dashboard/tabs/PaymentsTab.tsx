@@ -116,7 +116,7 @@ export function PaymentsTab({ userId }: { userId: string }) {
                 </Link>
               )}
               {canPay && (
-                <span className="text-xs text-muted-foreground flex items-center">Payment link sent by email</span>
+                <span className="text-xs text-muted-foreground flex items-center">Pay by bank transfer (details on your invoice)</span>
               )}
               {pr.contract_summary_id && (
                 <Link to={`/dashboard/contract/${pr.contract_summary_id}`}>

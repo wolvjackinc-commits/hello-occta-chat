@@ -118,6 +118,8 @@ Deno.serve(async (req) => {
     }
     if (!["esim", "physical"].includes(sim_type)) return json(400, { error: "Invalid sim_type" });
     if (!["card", "direct_debit"].includes(payment_method)) return json(400, { error: "Invalid payment_method" });
+    // OCCTA takes Direct Debit or bank transfer only (_shared/paymentOptions.ts).
+    if (payment_method === "card") return json(400, { error: "card_payments_not_offered", message: "OCCTA does not take card payments. Please choose Direct Debit." });
     if (!["keep", "new", "new_with_stac", "provide_later"].includes(number_choice)) return json(400, { error: "Invalid number_choice" });
     if (sim_type === "physical" && !delivery_address) return json(400, { error: "Delivery address required for physical SIM" });
 

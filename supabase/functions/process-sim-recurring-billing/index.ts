@@ -5,7 +5,8 @@ import { isCronSecret } from "../_shared/cronSecret.ts";
 // - Creates one monthly invoice per SIM order per period (guarded by unique
 //   index invoices_sim_period_unique).
 // - Applies first_payment_credit_minor before requesting money.
-// - Card/invoice-link: creates a Worldpay payment_request + Pay Now link.
+// - Not on Direct Debit: the invoice carries OCCTA bank-transfer details
+//   (no card payments; see _shared/paymentOptions.ts).
 // - Direct Debit: only proceeds if an active dd_mandate exists; otherwise
 //   creates an admin_task and skips.
 // - Advances sim_orders.next_billing_date using the anchor helper.
@@ -16,7 +17,6 @@ import {
   internalEmailHeaders,
   invokeErrorDetail,
   nextAnchorBillingDate,
-  sha256Hex,
   toDisplayPeriodEndIso,
   vatRatePercent,
 } from "../_shared/billingHelpers.ts";
@@ -168,32 +168,14 @@ Deno.serve(async (req) => {
           .eq("id", o.id);
       }
 
-      let payNowUrl: string | null = null;
+      const payNowUrl: string | null = null;
       let ddActive = false;
 
       if (dueMinor === 0) {
         // Fully credit-covered. Mark paid + emit zero-balance receipt entry.
         await supabase.from("invoices").update({ status: "paid" }).eq("id", inv.id);
-      } else if (o.payment_method === "card") {
-        // Create Worldpay payment_request
-        const token = crypto.randomUUID();
-        const tokenHash = await sha256Hex(token);
-        const expires = new Date();
-        expires.setDate(expires.getDate() + 14);
-        await supabase.from("payment_requests").insert({
-          type: "card_payment",
-          invoice_id: inv.id,
-          user_id: o.customer_id,
-          customer_email: o.email,
-          customer_name: o.full_name,
-          amount: totalMajor,
-          currency: "GBP",
-          status: "sent",
-          expires_at: expires.toISOString(),
-          token_hash: tokenHash,
-          notes: `SIM monthly ${invoiceNumber}`,
-        });
-        payNowUrl = `${appOrigin}/pay?token=${token}`;
+      } else if (o.payment_method !== "direct_debit") {
+        // Bank transfer: details are in the invoice email; no card payment link.
       } else if (o.payment_method === "direct_debit") {
         const { data: mandate } = await supabase
           .from("dd_mandates")

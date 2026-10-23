@@ -4,12 +4,14 @@
 // Mirror of src/lib/legal/fullContractTerms.ts (edge runtime copy).
 // If you change one, change the other. Bump FULL_CONTRACT_TERMS_VERSION.
 
+// 2026-10-a: payment is by Direct Debit or bank transfer only (no card or
+// phone payments); one-off charges are billed on the first invoice.
 // 2026-08-a: removed unsupported generic commitments (named ADR provider,
 // voluntary speeds-code membership, compensation-scheme thresholds, blanket
 // IPv4 / router-ownership / warranty promises, fixed late-fee and suspension
 // timings, 24/7 support claims, exact liability cap). Applies to NEW document
 // generation only — historic accepted PDFs and hashes are never regenerated.
-export const FULL_CONTRACT_TERMS_VERSION = "2026-08-a";
+export const FULL_CONTRACT_TERMS_VERSION = "2026-10-a";
 
 export type ContractSection = {
   heading: string;
@@ -62,8 +64,8 @@ export const FULL_CONTRACT_SECTIONS: ContractSection[] = [
     heading: "6. Price, VAT, billing & payment",
     paragraphs: [
       "Residential prices are quoted inclusive of VAT at the prevailing standard rate. Business prices are quoted exclusive of VAT; VAT is added on the invoice. The exact monthly price, any one-off charges and your billing cycle (monthly or quarterly) are shown above.",
-      "Charges are taken in advance via the payment method you have set up (typically Direct Debit under the Direct Debit Guarantee, or card-on-file via Worldpay). One-off charges shown above are taken before service activation unless agreed otherwise in writing.",
-      "If a Direct Debit or card payment fails we will notify you and give you a reasonable opportunity to settle the invoice before any further action. Any late-payment charge, and the point at which service may be restricted or suspended for non-payment, are set out in your order documentation and in our published Price Transparency document; we will tell you before any such charge or restriction applies.",
+      "Charges are billed in advance and paid either by Direct Debit (under the Direct Debit Guarantee) or by bank transfer to OCCTA's bank account shown on your invoice. OCCTA does not take card payments or payments over the phone. One-off charges shown above are included in your first invoice unless agreed otherwise in writing.",
+      "If a Direct Debit collection fails or a bank transfer is not received by the due date we will notify you and give you a reasonable opportunity to settle the invoice before any further action. Any late-payment charge, and the point at which service may be restricted or suspended for non-payment, are set out in your order documentation and in our published Price Transparency document; we will tell you before any such charge or restriction applies.",
       "All bank-transfer, manual and phone payments are receipted and reflected in your online account within one working day.",
     ],
   },

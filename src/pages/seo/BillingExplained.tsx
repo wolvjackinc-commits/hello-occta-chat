@@ -4,10 +4,10 @@ export default function BillingExplainedPage() {
   return (
     <SeoContentLayout
       title="Billing Explained — How OCCTA Invoices Work"
-      metaDescription="How OCCTA billing works: billing starts only after activation, your invoice shows monthly charges, VAT and any pro-rata, and you can pay by Direct Debit or secure Worldpay card link."
+      metaDescription="How OCCTA billing works: billing starts only after activation, your invoice shows monthly charges, VAT and any pro-rata, and you pay by Direct Debit or bank transfer."
       canonical="/billing-explained"
       h1="Billing explained"
-      shortAnswer="OCCTA bills you only after your service activation is confirmed. Each invoice shows your monthly plan, any one-off charges, pro-rata for the partial first month, and VAT. You can pay by Direct Debit (once you've confirmed the mandate) or by card via a secure Worldpay payment link."
+      shortAnswer="OCCTA bills you only after your service activation is confirmed. Each invoice shows your monthly plan, any one-off charges, pro-rata for the partial first month, and VAT. You pay by Direct Debit (once you've confirmed the mandate) or by bank transfer. We don't take card payments."
       intro={
         <p>This page explains how OCCTA invoices work end-to-end — when billing starts, what's on each invoice, and how to pay. For the first bill specifically, see <a href="/first-invoice-explained" className="underline">First invoice explained</a>.</p>
       }
@@ -35,7 +35,7 @@ export default function BillingExplainedPage() {
           body: (
             <ul className="list-disc pl-5 space-y-2">
               <li><strong>Direct Debit:</strong> set up a mandate so future invoices collect automatically. Collection only happens after you've confirmed the mandate.</li>
-              <li><strong>Card:</strong> pay each invoice from your dashboard using a secure Worldpay payment link.</li>
+              <li><strong>Bank transfer:</strong> pay each invoice to OCCTA's bank account shown on the invoice, quoting your account number. We don't take card or phone payments.</li>
             </ul>
           ),
         },
@@ -43,17 +43,17 @@ export default function BillingExplainedPage() {
       aeo={[
         { question: "Does ordering start my bill?", answer: "No. Billing begins only after we confirm your service is activated." },
         { question: "Will Direct Debit collect automatically straight away?", answer: "Only once you've confirmed the Direct Debit mandate. We don't collect a Direct Debit without a confirmed mandate." },
-        { question: "How can I pay if I haven't set up Direct Debit?", answer: "You can pay any invoice from your dashboard by card via a secure Worldpay payment link." },
+        { question: "How can I pay if I haven't set up Direct Debit?", answer: "Pay each invoice by bank transfer using the OCCTA bank details on the invoice, quoting your account number." },
       ]}
       faqs={[
-        { question: "Where do I see my invoices?", answer: "Sign in to your dashboard. Every invoice has a downloadable PDF and a pay-by-card link if it's outstanding." },
-        { question: "What happens if a Direct Debit fails?", answer: "We'll let you know and you can settle the invoice by card. A late fee may apply per the agreed billing terms." },
+        { question: "Where do I see my invoices?", answer: "Sign in to your dashboard. Every invoice has a downloadable PDF with OCCTA's bank details if it's outstanding." },
+        { question: "What happens if a Direct Debit fails?", answer: "We'll let you know and you can settle the invoice by bank transfer. A late fee may apply per the agreed billing terms." },
         { question: "Can I change my billing day?", answer: "Some accounts support a billing day change from your billing settings. If you can't see the option, contact support." },
       ]}
       relatedLinks={[
         { label: "First invoice explained", to: "/first-invoice-explained" },
         { label: "Direct Debit setup", to: "/direct-debit-setup" },
-        { label: "Pay by card", to: "/pay-by-card" },
+        { label: "How to pay your bill", to: "/pay-by-card" },
         { label: "Pricing", to: "/pricing" },
         { label: "Cancellation", to: "/cancellation" },
       ]}

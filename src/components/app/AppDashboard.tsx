@@ -322,7 +322,7 @@ const AppDashboard = ({
   const activeSection = requestedSection && sectionTitle[requestedSection] ? requestedSection : "home";
 
   const menuItems = [
-    { icon: CreditCard, label: "Invoices & Payments", description: "Bills, receipts and Pay Now", link: "/dashboard?tab=invoices", badge: unpaidInvoices.length || undefined },
+    { icon: CreditCard, label: "Invoices & Payments", description: "Bills, receipts and how to pay", link: "/dashboard?tab=invoices", badge: unpaidInvoices.length || undefined },
     { icon: ReceiptIcon, label: "Payments & Receipts", description: "Payment history and receipts", link: "/dashboard?tab=payments" },
     { icon: Landmark, label: "Direct Debit", description: "Your payment mandate", link: "/dashboard?tab=dd" },
     { icon: FileText, label: "Contract details", description: "Your signed contract summary", link: "/dashboard?tab=cs" },
@@ -550,7 +550,7 @@ const AppDashboard = ({
       <div className="px-4 -mt-4">
         {errorBanner}
 
-        {/* Outstanding balance / Pay now */}
+        {/* Outstanding balance / how to pay (Direct Debit or bank transfer) */}
         {latestInvoice && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -576,7 +576,7 @@ const AppDashboard = ({
             </div>
             <div className="flex gap-2 mt-3">
               <Link to={`/pay-invoice?id=${latestInvoice.id}`} className="flex-1">
-                <Button className="w-full rounded-xl">Pay now</Button>
+                <Button className="w-full rounded-xl">How to pay</Button>
               </Link>
               <Button
                 variant="outline"

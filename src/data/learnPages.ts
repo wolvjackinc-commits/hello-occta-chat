@@ -481,14 +481,14 @@ export const learnPages: LearnPage[] = [
       { heading: "Direct Debit (recommended)", body: "Automatic and protected by the Direct Debit Guarantee. Any OCCTA payment-method pricing difference or charge must be shown in the applicable terms or invoice; do not assume a universal Direct Debit discount." },
       { heading: "Debit or credit card", body: "Handy for one-off invoices or if you don't want to give a company your bank details. May carry a small processing fee. Card can expire so you'll need to update the details." },
       { heading: "Bank transfer / Faster Payment", body: "Free, fast, and works from any UK bank. Useful for catch-up payments but requires you to remember to send them each month." },
-      { heading: "OCCTA's approach", body: "We accept Direct Debit (preferred), card via Worldpay's secure Hosted Payment Page, and bank transfer for larger business invoices. All amounts and dates are shown in your customer dashboard." },
+      { heading: "OCCTA's approach", body: "OCCTA invoices are paid by Direct Debit or by bank transfer only. We do not take card payments or payments over the phone. All amounts and dates are shown in your customer dashboard." },
     ],
     faqs: [
       { question: "Is card safer than Direct Debit?", answer: "Both are protected. Card has chargeback rights; DD has the Direct Debit Guarantee, which is generally easier to invoke." },
-      { question: "Do I get a discount for paying by Direct Debit?", answer: "Yes — Direct Debit is our recommended method and is priced accordingly. Card payments may carry a small handling charge." },
+      { question: "Can I pay OCCTA by card?", answer: "No. OCCTA takes payment by Direct Debit or bank transfer only. Our bank details and reference are on every invoice." },
       { question: "What happens if I miss a payment?", answer: "We'll email a reminder immediately and re-attempt Direct Debit collection. Late fees only apply after 7 days; service suspension only after 30." },
     ],
-    related: [{ label: "Direct Debit explained", to: "/learn/direct-debit-explained" }, { label: "Pay by card", to: "/pay-by-card" }, { label: "Billing explained", to: "/billing-explained" }, CHECK],
+    related: [{ label: "Direct Debit explained", to: "/learn/direct-debit-explained" }, { label: "How to pay your bill", to: "/pay-by-card" }, { label: "Billing explained", to: "/billing-explained" }, CHECK],
     keywords: "how to pay broadband bill, cheapest way to pay broadband, direct debit vs card broadband",
   },
 ];

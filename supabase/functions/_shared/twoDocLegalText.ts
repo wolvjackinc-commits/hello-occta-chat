@@ -52,7 +52,7 @@ export function priceChangeFixedPoundsWording(opts: {
 
 // ─── Payment schedule (safe wording) ─────────────────────────────────────────
 export const PAYMENT_SCHEDULE_SAFE =
-  "Billing starts only after your service is confirmed live. Your first invoice may include agreed setup, activation, equipment or installation charges and any applicable pro-rata amount. Monthly service is then billed in advance on your agreed billing date. Direct Debit is treated as active only once the payment provider confirms the mandate.";
+  "Billing starts only after your service is confirmed live. Your first invoice may include agreed setup, activation, equipment or installation charges and any applicable pro-rata amount. Monthly service is then billed in advance on your agreed billing date. Invoices are paid by Direct Debit or by bank transfer to OCCTA; we do not take card or phone payments. Direct Debit is treated as active only once the payment provider confirms the mandate; until then, invoices are paid by bank transfer.";
 
 // ─── Complaints / ADR ────────────────────────────────────────────────────────
 export const COMPLAINTS_ADR_SAFE =

@@ -258,7 +258,7 @@ export default function BillingSettings() {
                   Preferred Payment Method
                 </Label>
                 <Select
-                  value={settings?.preferred_payment_method || "card"}
+                  value={settings?.preferred_payment_method === "direct_debit" ? "direct_debit" : "bank_transfer"}
                   onValueChange={(value) =>
                     setSettings((prev) =>
                       prev ? { ...prev, preferred_payment_method: value } : prev
@@ -269,7 +269,7 @@ export default function BillingSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="card">Card Payment</SelectItem>
+                    <SelectItem value="bank_transfer">Bank transfer</SelectItem>
                     <SelectItem value="direct_debit" disabled={!mandate}>
                       Direct Debit {!mandate && "(Not Set Up)"}
                     </SelectItem>

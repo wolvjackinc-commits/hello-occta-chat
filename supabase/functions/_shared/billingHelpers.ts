@@ -306,7 +306,6 @@ export function buildInvoiceEmailHtml(args: {
       <tr><td colspan="3" style="padding:6px 0;text-align:right">VAT (${args.totals.vat_rate}%)</td><td style="text-align:right">${fmtPounds(args.totals.vat_total_minor)}</td></tr>
       <tr style="border-top:2px solid #111"><td colspan="3" style="padding:10px 0;text-align:right"><b>Total due (inc. VAT)</b></td><td style="text-align:right"><b>${fmtPounds(args.totals.total_gross_minor)}</b></td></tr>
     </table>
-    ${args.payNowUrl ? `<p style="text-align:center"><a href="${args.payNowUrl}" style="display:inline-block;background:#facc15;color:#111;padding:12px 24px;text-decoration:none;border:3px solid #111;font-weight:bold">Pay now</a></p>` : ""}
     <p>
       ${args.pdfUrl ? `<a href="${args.pdfUrl}">Download PDF</a> · ` : ""}
       <a href="${args.dashboardUrl}">Open dashboard</a>

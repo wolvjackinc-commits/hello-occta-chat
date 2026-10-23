@@ -3,6 +3,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { bankTransferBoxHtml, bankTransferReference } from "../_shared/paymentOptions.ts";
+import { invoicePaymentRoute } from "../_shared/ddCollection.ts";
 
 const resendApiKey = Deno.env.get("RESEND_API_KEY");
 const resend = new Resend(resendApiKey);
@@ -13,13 +15,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
 };
 
-async function hashToken(token: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(token);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
 
 // Template types for invoice reminders
 type ReminderTemplate = 'due_soon' | 'due_today' | 'overdue_7';
@@ -124,6 +119,7 @@ const getReminderHtml = (data: {
   total: number;
   due_date: string;
   pay_url: string;
+  account_number: string;
   template: ReminderTemplate;
 }) => {
   const config = getTemplateConfig(data.template);
@@ -196,14 +192,21 @@ const getReminderHtml = (data: {
         </div>
         ` : ''}
         
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${escapeHtml(data.pay_url)}" style="display: inline-block; background: #0d0d0d; color: #ffffff; padding: 16px 40px; text-decoration: none; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; box-shadow: 4px 4px 0 0 ${config.urgencyColor};">
-            Pay Now — £${sanitizeNumber(data.total)} →
-          </a>
+        <div style="margin: 24px 0;">
+          ${bankTransferBoxHtml({
+            reference: bankTransferReference(data.account_number, data.invoice_number),
+            amount: `£${sanitizeNumber(data.total)}`,
+            title: "How to pay: bank transfer",
+          })}
         </div>
+
+        <p style="text-align: center; color: #444; font-size: 13px; margin-top: 16px;">
+          OCCTA takes payment by Direct Debit or bank transfer only. We do not take card or phone payments.
+          <br><a href="${escapeHtml(data.pay_url)}" style="color: #0d0d0d;">View this invoice in your account</a>
+        </p>
         
         <p style="text-align: center; color: #666; font-size: 13px; margin-top: 24px;">
-          If you've already paid, please disregard this reminder. Payments can take 1-2 business days to process.
+          If you've already paid, please disregard this reminder. Bank transfers can take 1-2 business days to reach us.
         </p>
       </div>
       
@@ -313,7 +316,7 @@ serve(async (req) => {
         // Fetch profile for customer name and email
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, email')
+          .select('full_name, email, account_number')
           .eq('id', invoice.user_id)
           .single();
 
@@ -352,46 +355,17 @@ serve(async (req) => {
             .eq('id', invoice.id);
         }
 
-        // IMPORTANT: token_hash stores a SHA-256 hash, so we cannot reuse an existing request
-        // (we don't keep raw tokens). Always create a new payment request for email reminders.
-        const rawToken = crypto.randomUUID();
-        const tokenHash = await hashToken(rawToken);
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
-
-        // Optional: mark any previous active requests as cancelled to reduce confusion
-        await supabase
-          .from('payment_requests')
-          .update({ status: 'cancelled' })
-          .eq('invoice_id', invoice.id)
-          .in('status', ['sent', 'opened'])
-          .gt('expires_at', new Date().toISOString());
-
-        const { data: newPaymentRequest, error: prError } = await supabase
-          .from('payment_requests')
-          .insert({
-            type: 'card_payment',
-            invoice_id: invoice.id,
-            user_id: invoice.user_id,
-            customer_name: profile.full_name || 'Customer',
-            customer_email: profile.email,
-            amount: invoice.total,
-            currency: 'GBP',
-            status: 'sent',
-            token_hash: tokenHash,
-            expires_at: expiresAt.toISOString(),
-          })
-          .select('id')
-          .single();
-
-        if (prError || !newPaymentRequest) {
-          console.error(`Failed to create payment request for ${invoice.invoice_number}:`, prError);
-          errors.push(`Failed to create payment request for ${invoice.invoice_number}`);
+        // OCCTA takes Direct Debit or bank transfer only (_shared/paymentOptions.ts).
+        // A bill an active Direct Debit will collect needs no "pay" reminder;
+        // anything else is chased with the bank-transfer details.
+        const route = await invoicePaymentRoute(supabase, { user_id: invoice.user_id, status: dayOffset < 0 ? 'overdue' : invoice.status });
+        if (route.dd_active) {
+          skipped.push(`${invoice.invoice_number}: collected by Direct Debit`);
           continue;
         }
 
-        const paymentRequestId = newPaymentRequest.id;
-        const payUrl = `${siteUrl}/pay?token=${rawToken}`;
+        const paymentRequestId: string | null = null;
+        const payUrl = `${siteUrl}/dashboard?tab=invoices`;
 
         const html = getReminderHtml({
           customer_name: profile.full_name || 'Customer',
@@ -403,6 +377,7 @@ serve(async (req) => {
             year: 'numeric'
           }),
           pay_url: payUrl,
+          account_number: profile.account_number || '',
           template,
         });
 

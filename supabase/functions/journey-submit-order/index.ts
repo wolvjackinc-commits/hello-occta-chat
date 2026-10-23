@@ -368,7 +368,7 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
         .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
       const pmLine = pm.method === "direct_debit"
         ? `Pay monthly by BACS Direct Debit`
-        : `Monthly invoice paid online via secure payment link`;
+        : `Monthly invoice paid by bank transfer`;
       const dayLine = pm.method === "direct_debit"
         ? `Preferred collection day: <strong>${pm.billing_anchor_day}</strong>`
         : `Preferred invoice day: <strong>${pm.billing_anchor_day}</strong>`;

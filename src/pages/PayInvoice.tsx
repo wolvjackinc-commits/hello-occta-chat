@@ -4,13 +4,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, FileText, AlertCircle, CheckCircle, ArrowLeft, CreditCard, Calendar, Receipt, Download } from 'lucide-react';
+import { Loader2, FileText, AlertCircle, CheckCircle, ArrowLeft, Calendar, Receipt, Download } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import OcctaLoader from '@/components/loading/OcctaLoader';
 import { format } from 'date-fns';
 import { generateReceiptPdf } from '@/lib/generateReceiptPdf';
 import { toast } from 'sonner';
 import { CONTACT_PHONE_DISPLAY } from '@/lib/constants';
+import { BankTransferDetails } from '@/components/payment/BankTransferDetails';
 
 interface Invoice {
   id: string;
@@ -43,7 +44,6 @@ export default function PayInvoice() {
   const invoiceId = searchParams.get('id');
   
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
@@ -124,44 +124,6 @@ export default function PayInvoice() {
     }
   };
 
-  const handlePayNow = async () => {
-    if (!invoice || !user) {
-      console.error('Missing invoice or user:', { invoice: !!invoice, user: !!user });
-      toast.error('Unable to process payment. Please refresh and try again.');
-      return;
-    }
-
-    // Handle case where profile might not be loaded yet
-    const customerEmail = profile?.email || user.email;
-
-    if (!customerEmail) {
-      console.error('No customer email available');
-      toast.error('No email address on file. Please contact support.');
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const { data, error: fnError } = await supabase.functions.invoke('payment-request', {
-        body: {
-          action: 'customer-create-invoice-payment',
-          invoiceId: invoice.id,
-        },
-      });
-
-      if (fnError || !data?.success || !data?.token) {
-        console.error('Failed to create payment request:', fnError || data?.error);
-        throw new Error('Failed to create payment request');
-      }
-
-      navigate(data.pay_url_path || `/pay?token=${encodeURIComponent(data.token)}`);
-    } catch (err) {
-      console.error('Error creating payment request:', err);
-      toast.error('Failed to start payment. Please try again.');
-      setProcessing(false);
-    }
-  };
-
   const handleDownloadReceipt = async () => {
     if (!receipt || !invoice || !profile) return;
     
@@ -175,7 +137,7 @@ export default function PayInvoice() {
         accountNumber: profile.account_number || '',
         amount: receipt.amount,
         paidAt: receipt.paid_at,
-        method: receipt.method || 'Card',
+        method: receipt.method || 'Bank transfer',
         reference: receipt.reference || receipt.id.slice(0, 8).toUpperCase(),
       });
     } finally {
@@ -272,7 +234,7 @@ export default function PayInvoice() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 border-4 border-foreground">
                         <div className="flex items-center gap-2 mb-2">
-                          <CreditCard className="w-4 h-4 text-muted-foreground" />
+                          <Receipt className="w-4 h-4 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground uppercase">Amount Paid</span>
                         </div>
                         <p className="font-display text-xl">£{receipt.amount.toFixed(2)}</p>
@@ -373,28 +335,20 @@ export default function PayInvoice() {
               </div>
             )}
 
-            <Button
-              onClick={handlePayNow}
-              disabled={processing}
-              className="w-full h-14 text-lg font-display"
-              variant="hero"
-            >
-              {processing ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  Preparing Payment...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Pay Now — £{invoice.total.toFixed(2)}
-                </>
-              )}
-            </Button>
-
-            <p className="text-center text-xs text-muted-foreground mt-4">
-              You'll be redirected to our secure payment page
-            </p>
+            {invoice.status === 'awaiting_dd_collection' ? (
+              <div className="p-4 border-2 border-foreground bg-muted/40 text-sm">
+                <p className="font-semibold">Paying by Direct Debit</p>
+                <p className="text-muted-foreground mt-1">
+                  This invoice will be collected by Direct Debit on or after the due date. You don't need to do anything.
+                </p>
+              </div>
+            ) : (
+              <BankTransferDetails
+                accountNumber={profile?.account_number}
+                invoiceNumber={invoice.invoice_number}
+                amount={invoice.total}
+              />
+            )}
           </CardContent>
         </Card>
 

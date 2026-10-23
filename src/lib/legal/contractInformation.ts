@@ -47,7 +47,7 @@ export const CONTRACT_INFORMATION_SECTIONS: ContractInformationSection[] = [
     "The recurring price and one-off charges for your order are shown in your Contract Summary/order. Consumer prices are inclusive of VAT unless expressly stated otherwise.",
     "Billing starts only after the service is confirmed live. Monthly subscription charges are then billed in advance on your agreed billing date. The first invoice may also contain agreed one-off charges and a pro-rata amount where the live date and billing date differ.",
     "You can review invoices, payment status and available usage/itemisation through your OCCTA account/dashboard or by asking support. Where a service has usage-based charges, the applicable tariff/allowance information is supplied or incorporated before acceptance.",
-    "Direct Debit is treated as active only after the payment provider confirms the mandate. Card payments use a secure payment process/link unless you separately and expressly agree to another compliant recurring-card arrangement."
+    "Invoices are paid by Direct Debit or by bank transfer to OCCTA's bank account shown on the invoice. OCCTA does not take card payments or payments over the phone. Direct Debit is treated as active only after the payment provider confirms the mandate; until then, invoices are paid by bank transfer."
   ]},
   { heading: "9. Late payment, failed collections, restriction and debt", paragraphs: [
     "If an undisputed payment fails or becomes overdue, we will notify you and give you a reasonable opportunity to pay before proportionate recovery or service action is taken.",

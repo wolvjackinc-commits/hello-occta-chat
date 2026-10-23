@@ -38,7 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { logAudit } from "@/lib/audit";
 import { formatAccountNumber } from "@/lib/account";
 import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
-import { hashToken } from "@/lib/tokenHash";
+import { bankTransferLines } from "../../../supabase/functions/_shared/paymentOptions.ts";
 import { format } from "date-fns";
 import { CustomerPicker } from "@/components/admin/CustomerPicker";
 import { IncludeArchivedToggle } from "@/components/admin/primitives";
@@ -467,50 +467,21 @@ export const AdminBilling = () => {
 
     setIsSendingPaymentLink(true);
     try {
-      // Generate secure token and hash it
-      const rawToken = crypto.randomUUID();
-      const tokenHash = await hashToken(rawToken);
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 14); // 14 days expiry
-
-      // Create payment request with hashed token
-      const { data: paymentRequest, error: prError } = await supabase
-        .from("payment_requests")
-        .insert({
-          type: "card_payment",
-          invoice_id: invoice.id,
-          user_id: invoice.user_id,
-          customer_email: profile.email,
-          customer_name: profile.full_name || "Customer",
-          account_number: profile.account_number || null,
-          amount: invoice.total,
-          currency: "GBP",
-          status: "sent",
-          expires_at: expiresAt.toISOString(),
-          token_hash: tokenHash, // Store hashed token for secure validation
-          notes: `Payment for invoice ${invoice.invoice_number}`,
-        })
-        .select()
-        .single();
-
-      if (prError) throw prError;
-
-      // Send email with payment link
+      // OCCTA takes Direct Debit or bank transfer only, so this sends the
+      // invoice amount with OCCTA's bank details — no card payment link.
+      // Send email with bank-transfer details
       const { error: emailError } = await supabase.functions.invoke("send-email", {
         body: {
           type: "payment_link",
           to: profile.email,
           logToCommunications: true,
           invoiceId: invoice.id,
-          paymentRequestId: paymentRequest.id,
           data: {
             customer_name: profile.full_name || "Customer",
             account_number: profile.account_number || "",
             invoice_number: invoice.invoice_number,
             amount: invoice.total,
             due_date: invoice.due_date ? format(new Date(invoice.due_date), "dd MMM yyyy") : null,
-            expires_at: expiresAt.toISOString(),
-            token: rawToken, // Send raw token in email (not the hash)
           },
         },
       });
@@ -519,9 +490,10 @@ export const AdminBilling = () => {
 
       await logAudit({
         action: "send",
-        entity: "payment_request",
-        entityId: paymentRequest.id,
+        entity: "invoice",
+        entityId: invoice.id,
         metadata: { 
+          kind: "bank_transfer_details",
           invoice_id: invoice.id, 
           invoice_number: invoice.invoice_number,
           amount: invoice.total,
@@ -529,7 +501,7 @@ export const AdminBilling = () => {
       });
 
       toast({ 
-        title: "Payment link sent", 
+        title: "Bank details sent", 
         description: `Email sent to ${profile.email}`,
       });
 
@@ -544,9 +516,9 @@ export const AdminBilling = () => {
         setCommunicationsLog((comms || []) as unknown as CommunicationLog[]);
       }
     } catch (err: any) {
-      console.error("Failed to send payment link:", err);
+      console.error("Failed to send bank details:", err);
       toast({ 
-        title: "Failed to send payment link", 
+        title: "Failed to send bank details", 
         description: err.message, 
         variant: "destructive" 
       });
@@ -692,15 +664,16 @@ export const AdminBilling = () => {
                               variant="ghost"
                               size="icon"
                               onClick={() => {
-                                const paymentLink = `${window.location.origin}/pay-invoice?id=${invoice.id}`;
-                                navigator.clipboard.writeText(paymentLink);
+                                const acct = profileMap.get(invoice.user_id)?.account_number || invoice.invoice_number;
+                                const text = `Please pay £${Number(invoice.total).toFixed(2)} for invoice ${invoice.invoice_number} by bank transfer:\n${bankTransferLines(acct).join("\n")}\nWe do not take card or phone payments.`;
+                                navigator.clipboard.writeText(text);
                                 toast({
-                                  title: "Payment link copied",
-                                  description: "Send this link to the customer to pay online.",
+                                  title: "Bank details copied",
+                                  description: "Paste them into your message to the customer.",
                                 });
                               }}
-                              title="Copy payment link"
-                              aria-label="Copy payment link"
+                              title="Copy bank transfer details"
+                              aria-label="Copy bank transfer details"
                             >
                               <LinkIcon className="h-4 w-4" />
                             </Button>
@@ -887,7 +860,7 @@ export const AdminBilling = () => {
                       ) : (
                         <CreditCard className="h-4 w-4" />
                       )}
-                      Send Payment Link
+                      Send Bank Details
                     </Button>
                     <Button
                       onClick={() => {

@@ -107,7 +107,7 @@ export default function ReceiptView({ mode }: { mode: Mode }) {
                 <Link to="/dashboard"><Button variant="outline" className="border-4 border-foreground">Back to dashboard</Button></Link>
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Lock className="w-3 h-3" /> This receipt is derived from your verified Worldpay payment. Viewing or printing it does not change your payment status.
+                <Lock className="w-3 h-3" /> This receipt is derived from your verified payment record. Viewing or printing it does not change your payment status.
               </p>
             </div>
           </div>

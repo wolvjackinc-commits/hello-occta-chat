@@ -1,7 +1,7 @@
 import { ReactNode, lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Header from "./Header";
-import { MessageCircle, Phone, ShieldCheck } from "lucide-react";
+import { Phone, ShieldCheck } from "lucide-react";
 import CheckoutJourneyTracker from "@/components/checkout/CheckoutJourneyTracker";
 import TopicCrosslink from "@/components/seo/TopicCrosslink";
 import Switch50CampaignStrip from "@/components/campaigns/Switch50CampaignStrip";
@@ -9,6 +9,7 @@ import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 import CursorCompanion from "@/components/brand/CursorCompanion";
 
 const Footer = lazy(() => import("./Footer"));
+import OllieLauncher from "@/components/chat/OllieLauncher";
 const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionV4"));
 
 interface LayoutProps {
@@ -82,14 +83,7 @@ const Layout = ({ children }: LayoutProps) => {
           <OcctaCompanion initialOpen onClose={() => setChatOpen(false)} />
         </Suspense>
       ) : !isCheckout ? (
-        <button
-          onClick={openChat}
-          className="fixed right-4 bottom-4 z-[9999] flex items-center gap-2 border-[3px] border-foreground bg-primary px-4 py-2.5 font-display text-sm uppercase text-primary-foreground shadow-[4px_4px_0_hsl(var(--foreground))] transition-transform hover:-translate-y-0.5"
-          aria-label="Open OCCTA chat"
-        >
-          <MessageCircle className="h-5 w-5" />
-          <span>Ask Ollie</span>
-        </button>
+        <OllieLauncher onOpen={openChat} bottomClass="bottom-4" />
       ) : null}
     </div>
   );

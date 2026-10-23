@@ -2,8 +2,8 @@ import { ReactNode, lazy, Suspense, useState, useEffect, useCallback } from "rea
 import AppHeader from "./AppHeader";
 import AppBottomNav from "./AppBottomNav";
 import OfflineIndicator from "./OfflineIndicator";
-import { MessageCircle } from "lucide-react";
 
+import OllieLauncher from "@/components/chat/OllieLauncher";
 const OcctaCompanion = lazy(() => import("@/components/chat/OcctaCompanionV4"));
 
 interface AppLayoutProps {
@@ -35,14 +35,7 @@ const AppLayout = ({ children, hideNav = false }: AppLayoutProps) => {
           <OcctaCompanion initialOpen onClose={() => setChatOpen(false)} />
         </Suspense>
       ) : (
-        <button
-          onClick={openChat}
-          className="fixed right-4 bottom-20 z-[9999] flex items-center gap-2 border-[3px] border-foreground bg-primary px-4 py-2.5 font-display text-sm uppercase text-primary-foreground shadow-[4px_4px_0_hsl(var(--foreground))] transition-transform hover:-translate-y-0.5"
-          aria-label="Open secure OCCTA account chat"
-        >
-          <MessageCircle className="h-5 w-5" />
-          <span>Ask Ollie</span>
-        </button>
+        <OllieLauncher onOpen={openChat} bottomClass="bottom-20" />
       )}
     </div>
   );

@@ -16,6 +16,8 @@ import {
   Smartphone,
   Sparkles,
   Square,
+  ThumbsDown,
+  ThumbsUp,
   TicketPlus,
   UserRound,
   WifiOff,
@@ -210,17 +212,43 @@ function loadHistory(): Message[] {
   }
 }
 
+function greetingLine(): string {
+  const hour = Number(new Date().toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/London" }));
+  if (hour < 5) return "Up late? Same. I don't sleep, which is either dedication or a design flaw.";
+  if (hour < 12) return "Morning. Kettle's on, routers are mostly behaving.";
+  if (hour < 17) return "Afternoon. Peak time for Wi-Fi to develop opinions.";
+  if (hour < 22) return "Evening. Prime time for buffering, so let's not.";
+  return "Evening. Still here, still unreasonably keen.";
+}
+
 function welcome(signedIn: boolean, name?: string): Message {
   return {
     id: crypto.randomUUID(),
     role: "assistant",
     content: signedIn
-      ? `Hiya${name ? ` ${name}` : ""}, I'm **Ollie**. I can see your OCCTA account, so ask me anything: bills explained line by line, Direct Debits, orders, tickets, or why the Wi-Fi has gone on strike.`
-      : `Hiya, I'm **Ollie** from OCCTA. Broadband, bills, SIMs or a router having a sulk, just tell me in normal words and I'll sort it here. For account questions I'll just need your account number and date of birth.`,
+      ? `${greetingLine()}\n\nHiya${name ? ` ${name}` : ""}, I'm **Ollie**. Your account's open, so ask me anything: bills explained line by line, Direct Debits, orders, tickets, or why the Wi-Fi has gone on strike.`
+      : `${greetingLine()}\n\nI'm **Ollie**, OCCTA's resident fixer. Broadband, bills, SIMs or a router having a sulk, just tell me in normal words and I'll sort it here. For account questions I'll only need your account number and date of birth.`,
     createdAt: new Date().toISOString(),
     agent: "ollie",
   };
 }
+
+const WAITING_QUIPS = [
+  "Putting the kettle on",
+  "Having a stern word with the router",
+  "Reading the small print so you don't have to",
+  "Untangling some fibre",
+  "Consulting the department of common sense",
+  "Asking the Wi-Fi nicely",
+];
+
+const PLACEHOLDERS = [
+  "Ask Ollie anything…",
+  "e.g. Why is my Wi-Fi slower than a Monday?",
+  "e.g. Explain my bill like I'm five",
+  "e.g. Which broadband do I actually need?",
+  "e.g. My router's flashing red. Help.",
+];
 
 function parseOptions(content: string): { body: string; options: string[] } {
   const match = content.match(/<<<OPTIONS:(\[[\s\S]*?\])>>>\s*$/);
@@ -379,13 +407,20 @@ function TypingDots() {
   );
 }
 
-function AssistantMessage({ message, onAction, onAttachment, isLatest }: {
+function AssistantMessage({ message, onAction, onAttachment, onFeedback, isLatest }: {
   message: Message;
   onAction: (value: string) => void;
   onAttachment: (attachment: Attachment) => void;
+  onFeedback: (message: Message, helpful: boolean) => void;
   isLatest: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [rated, setRated] = useState<boolean | null>(null);
+  const rate = (helpful: boolean) => {
+    if (rated !== null) return;
+    setRated(helpful);
+    onFeedback(message, helpful);
+  };
   const { body, options } = parseOptions(occtaOnlyLinks(message.content));
   const copy = async () => {
     try {
@@ -416,6 +451,14 @@ function AssistantMessage({ message, onAction, onAttachment, isLatest }: {
           <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1 hover:text-foreground" aria-label="Copy reply">
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? "Copied" : "Copy"}
           </button>
+          {rated === null ? (
+            <span className="ml-auto inline-flex items-center gap-1">
+              <button type="button" onClick={() => rate(true)} className="p-0.5 hover:text-foreground" aria-label="This was helpful" title="Helpful"><ThumbsUp className="h-3 w-3" /></button>
+              <button type="button" onClick={() => rate(false)} className="p-0.5 hover:text-foreground" aria-label="This wasn't helpful" title="Not helpful"><ThumbsDown className="h-3 w-3" /></button>
+            </span>
+          ) : (
+            <span className="ml-auto italic">{rated ? "Cheers, that's made my day." : "Noted. I'll have a quiet word with myself."}</span>
+          )}
         </div>
       )}
       {isLatest && !message.streaming && options.length > 0 && (
@@ -461,6 +504,8 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
   const scrollRef = useRef<HTMLDivElement>(null);
   const pollSince = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const [quip, setQuip] = useState(0);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
   const humanLive = handoffStatus === "live";
   const awaitingHuman = handoffStatus === "awaiting_human";
@@ -667,6 +712,48 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       if (fileRef.current) fileRef.current.value = "";
     }
   }, [ensureConversation, toast, uploading]);
+
+  // Something to read while Ollie thinks, until a real status arrives.
+  useEffect(() => {
+    if (!loading) return;
+    setQuip(Math.floor(Math.random() * WAITING_QUIPS.length));
+    const timer = window.setInterval(() => setQuip((value) => (value + 1) % WAITING_QUIPS.length), 2400);
+    return () => window.clearInterval(timer);
+  }, [loading]);
+
+  // Rotate example prompts in the empty composer.
+  useEffect(() => {
+    if (input) return;
+    const timer = window.setInterval(() => setPlaceholderIndex((value) => (value + 1) % PLACEHOLDERS.length), 4500);
+    return () => window.clearInterval(timer);
+  }, [input]);
+
+  // Esc closes the floating chat.
+  useEffect(() => {
+    if (embedded || !open) return;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape" || ticketOpen) return;
+      abortRef.current?.abort();
+      setOpen(false);
+      onClose?.();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [embedded, onClose, open, ticketOpen]);
+
+  const sendFeedback = useCallback(async (message: Message, helpful: boolean) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      await fetch(COMPANION_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mode: "feedback", sessionId: sessionId.current, helpful, excerpt: redact(plainText(message.content)).slice(0, 500) }),
+      });
+    } catch {
+      // Feedback is best-effort.
+    }
+  }, []);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -906,7 +993,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     <div
       role="dialog"
       aria-label="Chat with Ollie, OCCTA's assistant"
-      className={`${embedded ? "h-full min-h-[580px]" : "fixed inset-x-2 bottom-2 top-2 z-[9999] sm:inset-auto sm:bottom-6 sm:right-6 sm:top-auto sm:h-[min(760px,calc(100dvh-3rem))] sm:w-[460px]"} ${className} flex flex-col overflow-hidden border-4 border-foreground bg-card shadow-[10px_10px_0_hsl(var(--foreground))]`}
+      className={`${embedded ? "h-full min-h-[580px]" : "fixed inset-0 z-[9999] h-[100dvh] animate-in fade-in slide-in-from-bottom-4 duration-200 sm:inset-auto sm:bottom-6 sm:right-6 sm:h-[min(760px,calc(100dvh-3rem))] sm:w-[460px] sm:border-4 sm:shadow-[10px_10px_0_hsl(var(--foreground))]"} ${embedded ? "border-4 shadow-[10px_10px_0_hsl(var(--foreground))]" : ""} ${className} flex flex-col overflow-hidden border-foreground bg-card`}
     >
       <header className="flex items-center justify-between border-b-4 border-foreground bg-primary px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -917,7 +1004,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
           <div className="min-w-0">
             <div className="font-display text-lg uppercase leading-tight text-primary-foreground">{humanLive ? "OCCTA Advisor" : "Ollie"}</div>
             <div className="truncate text-[11px] font-medium text-primary-foreground/80">
-              {humanLive ? "A real person has joined · history kept" : awaitingHuman ? "Advisor on the way · Ollie still here" : "OCCTA assistant · replies instantly · advisors on hand"}
+              {humanLive ? "A real person has joined · history kept" : awaitingHuman ? "Advisor on the way · Ollie still here" : "Replies in seconds · tea-powered · humans on standby"}
             </div>
           </div>
         </div>
@@ -940,7 +1027,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
         <div ref={scrollRef} onScroll={onScroll} className="h-full overflow-y-auto overscroll-contain" aria-live="polite" aria-busy={loading}>
           <div className="space-y-4 p-4">
             {messages.map((message) => (
-              <div key={message.id} className={`flex gap-2 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={message.id} className={`flex animate-in fade-in slide-in-from-bottom-1 gap-2 duration-300 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                 {message.role === "assistant" && <div className="mt-0.5"><OllieAvatar human={message.agent === "human"} /></div>}
                 <div className={message.role === "user"
                   ? "max-w-[82%] border-2 border-foreground bg-foreground px-3 py-2 text-sm text-background"
@@ -950,7 +1037,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
                     <div className="mb-1 text-[10px] font-display uppercase tracking-wide text-muted-foreground">OCCTA advisor</div>
                   )}
                   {message.role === "assistant"
-                    ? <AssistantMessage message={message} isLatest={message.id === lastAssistantId && !loading} onAction={onAction} onAttachment={(attachment) => void openAttachment(attachment)} />
+                    ? <AssistantMessage message={message} isLatest={message.id === lastAssistantId && !loading} onAction={onAction} onAttachment={(attachment) => void openAttachment(attachment)} onFeedback={(target, helpful) => void sendFeedback(target, helpful)} />
                     : <>
                         <p className="whitespace-pre-wrap break-words">{message.content}</p>
                         {message.attachments?.map((attachment) => (
@@ -969,7 +1056,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
               <div className="flex items-center gap-2">
                 <OllieAvatar />
                 <div className="inline-flex items-center gap-2 border-2 border-foreground/30 bg-background px-3 py-2 text-xs text-muted-foreground">
-                  {status ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />{status}…</> : humanLive ? <>Sending to your advisor…</> : <><TypingDots /><span className="sr-only">Ollie is typing</span></>}
+                  {status ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />{status}…</> : humanLive ? <>Sending to your advisor…</> : <><TypingDots /><span key={quip} className="animate-in fade-in duration-300">{WAITING_QUIPS[quip]}…</span></>}
                 </div>
               </div>
             )}
@@ -978,7 +1065,10 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
             )}
 
             {messages.length <= 1 && !loading && (
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="pt-1 text-[11px] font-display uppercase tracking-wide text-muted-foreground">Popular right now</div>
+            )}
+            {messages.length <= 1 && !loading && (
+              <div className="grid grid-cols-2 gap-2">
                 {starters.map(({ label, prompt, icon: Icon }) => (
                   <button
                     key={label}
@@ -1013,7 +1103,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
         </div>
       )}
 
-      <form onSubmit={(event) => { event.preventDefault(); void send(input); }} className="border-t-4 border-foreground bg-background p-3">
+      <form onSubmit={(event) => { event.preventDefault(); void send(input); }} className="border-t-4 border-foreground bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <input ref={fileRef} type="file" className="hidden" accept="image/*,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.pptx" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAttachment(file); }} />
         {(pending.length > 0 || uploading) && (
           <div className="mb-2 flex flex-wrap gap-2">
@@ -1037,7 +1127,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={onKeyDown}
             rows={1}
-            placeholder={humanLive ? "Message your OCCTA advisor…" : awaitingSecureEmail ? "Your registered account email…" : pending.length ? "Add a note about the attachment…" : "Ask Ollie anything…"}
+            placeholder={humanLive ? "Message your OCCTA advisor…" : awaitingSecureEmail ? "Your registered account email…" : pending.length ? "Add a note about the attachment…" : PLACEHOLDERS[placeholderIndex]}
             maxLength={4000}
             aria-label="Message Ollie"
             className="max-h-[132px] min-h-[36px] flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground"

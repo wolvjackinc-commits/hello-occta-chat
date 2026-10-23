@@ -669,6 +669,7 @@ async function recordAnalytics(
   assistantText: string,
   intent: string,
   responseTime: number,
+  toolsUsed: string[] = [],
 ) {
   try {
     await serviceClient.from("chat_analytics").insert([
@@ -689,6 +690,7 @@ async function recordAnalytics(
         detected_intent: intent,
         detected_category: intent.startsWith("account_") ? "account" : "support",
         response_time_ms: responseTime,
+        tool_used: toolsUsed.length ? [...new Set(toolsUsed)].join(",").slice(0, 200) : null,
         created_at: new Date().toISOString(),
       },
     ]);
@@ -738,9 +740,32 @@ async function loadCustomerImages(
   return images;
 }
 
+async function recordFeedback(request: Request, body: any): Promise<HandlerResult> {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey || typeof body.helpful !== "boolean") return { status: 400, payload: { error: "invalid_feedback" } };
+  const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+  const sessionId = safeSessionId(body.sessionId);
+  const authUser = await getAuthenticatedUser(serviceClient, request.headers.get("Authorization"));
+  const allowed = await checkRateLimit(serviceClient, "occta_companion_feedback", await digestIdentifier(authUser?.id ?? sessionId), 30, 10, false);
+  if (!allowed) return { status: 429, payload: { error: "rate_limited" } };
+  await serviceClient.from("chat_analytics").insert({
+    session_id: sessionId,
+    user_id: authUser?.id ?? null,
+    message_type: "assistant",
+    message_content: redactSensitiveText(String(body.excerpt ?? "")).slice(0, 500) || "(feedback)",
+    detected_intent: "feedback",
+    detected_category: "feedback",
+    was_helpful: body.helpful,
+    created_at: new Date().toISOString(),
+  });
+  return { status: 200, payload: { ok: true } };
+}
+
 async function handle(request: Request, body: any, emit?: (event: BrainEvent) => void): Promise<HandlerResult> {
   const startedAt = Date.now();
   try {
+    if (body?.mode === "feedback") return await recordFeedback(request, body);
     const messages = normaliseMessages(body.messages);
     const sessionId = safeSessionId(body.sessionId);
     if (!messages.length) return { status: 400, payload: { error: "Please send a message." } };
@@ -762,6 +787,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
     const latestUserText = lastUserText(messages);
     const publicIntent = detectPublicIntent(latestUserText);
     let reply: CompanionReply | null = null;
+    let toolsUsed: string[] = [];
 
     // Identity comes only from the signed-in session or a server-signed verification token.
     let scope: CustomerScope | null = null;
@@ -850,6 +876,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
       }
 
       if (brainReply) {
+        toolsUsed = brainReply.tools ?? [];
         reply = { content: brainReply.content, source: "ai", engine: brainReply.engine, handoff: brainReply.handoff };
       } else if (accountIntent && scope) {
         reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
@@ -870,6 +897,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
       reply.content,
       intentLabel,
       Date.now() - startedAt,
+      toolsUsed,
     );
 
     return {

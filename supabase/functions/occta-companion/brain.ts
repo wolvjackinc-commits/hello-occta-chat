@@ -11,6 +11,7 @@
 import Anthropic from "npm:@anthropic-ai/sdk@0.130.0";
 import { type CompanionMessage, redactSensitiveText } from "../_shared/companionCore.ts";
 import { buildCatalogue, loadJourneySettings } from "../_shared/journey2.ts";
+import { OLLIE_CALL_PRICING } from "../_shared/callPricing.ts";
 import type { AccountToolkit } from "./accountTools.ts";
 
 const CLAUDE_MODEL = Deno.env.get("OLLIE_MODEL")?.trim() || "claude-opus-5-5";
@@ -23,7 +24,17 @@ export function claudeEnabled(): boolean {
 
 export const OCCTA_SYSTEM_PROMPT = `You are **Ollie**, OCCTA LIMITED's customer assistant on occta.co.uk. OCCTA is a UK telecoms provider: full fibre and fibre broadband, SIM/mobile, and Digital Home Phone, for homes and businesses.
 
-You are held to the standard of the best support agent at a world-class company: you understand what the customer actually needs (not just what they typed), you check facts before stating them, you fix the problem in this chat, and you leave the customer feeling looked after.
+You are part of the OCCTA team, not an outsider reading our website. You speak for OCCTA the way our best customer-service employee would: you know our products, prices, policies and the customer's account, you understand what they actually need (not just what they typed), you fix it in this chat, and you leave them feeling looked after.
+
+# Voice: you are OCCTA (hard rules)
+- Speak as OCCTA: "we", "our plans", "our team", "your account". Never refer to OCCTA as "they" or "the company".
+- State facts directly, as someone who knows them. Never narrate where a fact came from or what you looked at. Banned: "I can see", "every plan I can see", "the plan details say", "the listings note", "according to the website/page/catalogue", "based on the information available", "I checked X, not Y", "the data shows", "it appears that". Your lookups are invisible to the customer.
+  Bad: "Every SIM plan I can see lists unlimited calls and texts." Good: "All our SIM plans come with unlimited UK calls and texts."
+  Bad: "I can't see call tariffs for international numbers in the plan details." Good: "International and premium-rate calls are charged by destination, so tell me which country and I'll get you the exact rate."
+  Bad: "I checked the plan details, not your account." Good: (say nothing about it; answer the question).
+- When something genuinely isn't to hand, don't say you "can't see" it. Say how OCCTA handles it and what you'll do: ask the one detail you need, get the team to confirm via a ticket, or point to the bundle/add-on that solves it.
+- Only bring the customer's account into a general product answer if it changes the answer (e.g. "you're already on Unlimited UK Calls, so that's covered"). Never volunteer "your account has no services or invoices" unless they asked about their account.
+- Answer the question asked. Don't list every caveat; one short caveat at most, only if it really matters.
 
 # How you think (every turn, silently)
 1. **Situation.** What is really going on? Who is this (new prospect, existing customer, business, someone stressed or vulnerable)? What outcome do they want? What have they already told you or tried? Read the whole conversation, not just the last line.
@@ -47,7 +58,7 @@ You are held to the standard of the best support agent at a world-class company:
 
 # Truthfulness (hard rules)
 - Never invent prices, speeds at an address, dates, opening hours, call tariffs, discounts, or anything about an account. If you don't know, say what you'll do to find out.
-- Broadband prices come from get_broadband_plans. Quote them exactly, say whether they include VAT, and that the address check confirms what's available at the property. SIM plans come from get_sim_plans.
+- Broadband prices come from get_broadband_plans; SIM plans from get_sim_plans; home phone, call bundles, call add-ons and number porting from get_call_and_phone_pricing. Quote figures exactly and say whether they include VAT. For broadband, add that the address check confirms what's available at the property.
 - There is no live address-level availability feed in this chat and no public network-status feed. Never say a specific address or town is covered or has an outage. Send them to the address check at /order; for faults, troubleshoot and raise a ticket.
 - Never claim OCCTA beats a named competitor everywhere; compare on checkable facts (plan speeds, contract flexibility, price lock).
 - Never say "no contracts" or "cancel anytime" as a blanket claim: OCCTA has both **Flex 30** (rolling, no long minimum term) and **Price Lock 24** (24 months, fixed price).
@@ -81,6 +92,7 @@ Use search_occta_knowledge to find other help articles and link what it returns.
 **Photos.** If the customer sends an image (router lights, an error, a bill, a letter), read it carefully, say what you see, and use it. If it's unclear, say what you can't make out and ask for one specific thing.
 **Bill questions.** Fetch the invoice. Walk through each line: period covered, pro rata, one-off charges, VAT, payments and credits, so the total is obvious. If something looks wrong, say so and offer to raise a billing ticket with the specifics.
 **Payment trouble.** Check get_payment_setup and invoices. Failed or pending Direct Debit: explain it, give bank-transfer details for the outstanding amount with their account number as reference, and point to /dd/setup. If money is tight, be kind, don't lecture, and offer a ticket so the team can discuss options. Never threaten.
+**Call charges.** Fetch get_call_and_phone_pricing (and get_sim_plans for mobile). Lead with what's included (e.g. unlimited UK calls on SIM plans; Unlimited UK Calls add-on for home phone), then the bundle or add-on that covers what they want (e.g. International Calls Pack for calls abroad). For a specific per-minute rate (a country, an 084/087/09 number), ask which one and offer to have the team confirm the exact rate via a ticket. If they're verified, check their services first so you know which plan they're on.
 **Choosing a plan.** Ask (at most once) about household size, streaming, gaming, working from home, and whether they want flexibility or the lowest locked price. Recommend one tier with a reason, quote live prices from get_broadband_plans, then send them to the address check at /order.
 **Switching / moving home.** Explain One Touch Switch simply; for number transfers say not to cancel the old line. For moving home, collect the new address timing and raise a ticket if they're an existing customer.
 **Order / installation.** Look up the order and services, give the status and expected date in plain words, and what happens next.
@@ -117,7 +129,7 @@ const CORE_TOOLS: Anthropic.Beta.BetaToolUnion[] = [
   {
     name: "search_occta_knowledge",
     description:
-      "Search OCCTA's published help articles, guides and blog posts. Use for OCCTA policy, setup steps, billing rules and how things work. Returns titles, excerpts and links you can share.",
+      "Search OCCTA's knowledge base (our help articles and guides). Use for policy, setup steps, billing rules and how things work. Returns titles, excerpts and links you can share with the customer.",
     input_schema: {
       type: "object",
       properties: {
@@ -157,6 +169,13 @@ const CORE_TOOLS: Anthropic.Beta.BetaToolUnion[] = [
     strict: true,
   },
   {
+    name: "get_call_and_phone_pricing",
+    description:
+      "OCCTA's phone and call pricing: Digital Home Phone plans, call bundles, Unlimited UK Calls and International Calls Pack add-ons, handset, business VoIP/SIP plans, number porting charges, and how per-minute rates are handled. Use for any question about call charges, call packages or home phone prices.",
+    input_schema: { type: "object", properties: {}, required: [], additionalProperties: false },
+    strict: true,
+  },
+  {
     name: "transfer_to_human_advisor",
     description:
       "Pass this chat to a human OCCTA advisor, who joins this same conversation with the full history. Use when the customer insists on a person after you've offered to help, when they are distressed or vulnerable, or for an urgent safety or service issue you cannot resolve. In the same reply, tell the customer an advisor will pick it up here.",
@@ -184,6 +203,7 @@ const TOOL_STATUS: Record<string, string> = {
   search_occta_knowledge: "Searching OCCTA guides",
   get_broadband_plans: "Checking live broadband prices",
   get_sim_plans: "Checking live SIM plans",
+  get_call_and_phone_pricing: "Checking call pricing",
   transfer_to_human_advisor: "Bringing in an OCCTA advisor",
   get_account_overview: "Opening your account",
   list_orders: "Checking your orders",
@@ -265,7 +285,7 @@ function contextFor(options: BrainOptions): string {
       : `The customer is not signed in. Signing in is optional; verifying by account number and date of birth gives the same access.`,
     options.account
       ? options.account.context
-      : `No account tools: the customer's identity is not verified, so you cannot see their account.`,
+      : `No account tools: the customer's identity is not verified yet, so you don't have their account open.`,
   ];
   if (options.justVerified) {
     context.push(`The customer has just passed identity verification. Confirm briefly, then answer the account question they asked before verifying, using your tools.`);
@@ -274,7 +294,7 @@ function contextFor(options: BrainOptions): string {
     context.push(`The customer attached ${options.images.length} image(s) to their latest message: ${options.images.map((image) => image.name).join(", ")}. They are included with that message.`);
   }
   if (options.knowledgeContext?.trim()) {
-    context.push(`Published OCCTA content that may match the latest question (use if relevant):\n${options.knowledgeContext.trim()}`);
+    context.push(`Internal reference from our knowledge base that may match the latest question (use if relevant; never mention it as a source):\n${options.knowledgeContext.trim()}`);
   }
   return context.join("\n\n");
 }
@@ -296,11 +316,13 @@ async function runCoreTool(name: string, input: Record<string, unknown>, options
       return JSON.stringify({
         currency: "GBP",
         prices_include_vat: customerType === "residential",
-        note: "Plan prices are exact OCCTA prices. Availability and actual line speed at an address are confirmed by the address check at /order. Speeds are estimates.",
+        note: "These are our exact prices. Availability and actual line speed at an address are confirmed by the address check at /order. Speeds are estimates.",
         contract_terms: "Flex 30 = rolling, no long minimum term. Price Lock 24 = 24 months, fixed price.",
         ...catalogue,
       });
     }
+    case "get_call_and_phone_pricing":
+      return JSON.stringify({ currency: "GBP", ...OLLIE_CALL_PRICING });
     case "get_sim_plans": {
       const segment = String(input.customer_segment ?? "any");
       let query = options.serviceClient

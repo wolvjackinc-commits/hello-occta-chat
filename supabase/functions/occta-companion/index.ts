@@ -651,7 +651,7 @@ async function searchKnowledgeBase(serviceClient: any, query: string, includeCus
 function knowledgeFallback(kbContext: string): string {
   if (kbContext) {
     return withOptions(
-      `I found these approved OCCTA resources that match your question:\n\n${kbContext}\n\nI have not filled in any missing account or commercial details.`,
+      `Here are our guides on that:\n\n${kbContext}\n\nTell me which part you need and I'll take you through it.`,
       ["Open Help Centre", "Ask a more specific question", "Talk to a human"],
     );
   }

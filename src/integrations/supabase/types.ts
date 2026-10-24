@@ -8075,6 +8075,142 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_commission_payouts: {
+        Row: {
+          amount: number
+          bank_reference: string
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string
+          paid_on: string
+          partner_id: string
+          recorded_by: string | null
+        }
+        Insert: {
+          amount: number
+          bank_reference: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id: string
+          paid_on: string
+          partner_id: string
+          recorded_by?: string | null
+        }
+        Update: {
+          amount?: number
+          bank_reference?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string
+          paid_on?: string
+          partner_id?: string
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commission_payouts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commission_payouts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "partner_commission_payouts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commission_payouts_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          address: string | null
+          code: string
+          commission_amount: number
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          notes: string | null
+          outreach_contact_id: string | null
+          partner_type: string
+          payout_note: string | null
+          postcode: string | null
+          status: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          commission_amount?: number
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          notes?: string | null
+          outreach_contact_id?: string | null
+          partner_type?: string
+          payout_note?: string | null
+          postcode?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          commission_amount?: number
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          notes?: string | null
+          outreach_contact_id?: string | null
+          partner_type?: string
+          payout_note?: string | null
+          postcode?: string | null
+          status?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partners_outreach_contact_id_fkey"
+            columns: ["outreach_contact_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_attempts: {
         Row: {
           amount: number
@@ -15068,9 +15204,22 @@ export type Database = {
         Args: { _new_user_id: string; _qr_id: string; _reason: string }
         Returns: undefined
       }
+      admin_list_partner_referrals: {
+        Args: { p_partner_id?: string }
+        Returns: Json
+      }
       admin_override_quote_floor: {
         Args: { _quote_id: string; _reason: string }
         Returns: undefined
+      }
+      admin_record_partner_payout: {
+        Args: {
+          p_bank_reference: string
+          p_note?: string
+          p_order_id: string
+          p_paid_on: string
+        }
+        Returns: string
       }
       admin_reject_quote_request: {
         Args: { _qr_id: string; _reason: string }
@@ -15585,6 +15734,14 @@ export type Database = {
           status: string
         }[]
       }
+      get_partner_landing: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          display_name: string
+          partner_type: string
+        }[]
+      }
       get_platform_settings: {
         Args: never
         Returns: {
@@ -15693,6 +15850,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_outreach_staff: { Args: { _uid: string }; Returns: boolean }
+      is_partner_staff: { Args: { _uid: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       is_two_doc_flow_enabled_for: {
         Args: { _user_id: string }
@@ -15884,6 +16042,30 @@ export type Database = {
           p_source: string
         }
         Returns: undefined
+      }
+      partner_referrals_internal: {
+        Args: { p_order_id?: string; p_partner_id?: string }
+        Returns: {
+          attributed_by: string
+          bank_reference: string
+          cancelled: boolean
+          commission_amount: number
+          commission_status: string
+          customer_id: string
+          in_arrears: boolean
+          lifecycle_status: string
+          order_created_at: string
+          order_id: string
+          order_number: string
+          order_status: string
+          paid_invoices: number
+          paid_on: string
+          partner_code: string
+          partner_id: string
+          partner_name: string
+          plan_name: string
+          status_reason: string
+        }[]
       }
       process_checkout_tracking: { Args: never; Returns: Json }
       quote_below_retail_floor: {

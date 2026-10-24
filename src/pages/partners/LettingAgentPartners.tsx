@@ -5,11 +5,11 @@ export default function LettingAgentPartners() {
   return (
     <SeoContentLayout
       title="Letting agent broadband partner programme — £25 per tenant | OCCTA"
-      metaDescription="Huddersfield broadband provider OCCTA pays letting agents and landlords £25 for each tenant who signs up through their link. Tenants get 30-day rolling broadband where available."
+      metaDescription="UK broadband provider OCCTA pays letting agents and landlords £25 for each tenant who signs up through their link. Tenants get 30-day rolling broadband where available."
       canonical="/partners/letting-agents"
       h1="Broadband for your tenants. £25 for your agency."
       shortAnswer="Add your OCCTA partner link to your tenant welcome email or move-in pack. Tenants order themselves, and we pay your agency £25 for each one who signs up, once their second Direct Debit has been collected."
-      intro="The first thing most tenants chase after moving in is the internet. OCCTA is a broadband provider based in Huddersfield. Our Flex 30 plans roll monthly where available, so tenants are never locked in past their tenancy, and every price is confirmed before they order."
+      intro="The first thing most tenants chase after moving in is the internet. OCCTA is a UK broadband provider based in Huddersfield, working with letting agents across the country. Our Flex 30 plans roll monthly where available, so tenants are never locked in past their tenancy, and every price is confirmed before they order."
       sections={[
         {
           heading: "How it works",

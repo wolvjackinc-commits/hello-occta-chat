@@ -329,7 +329,7 @@ VALUES (
   'Broadband for {{business_name}} tenants + £25 per move-in',
   'Tenants get 30-day rolling broadband; your agency earns £25 for each tenant who signs up. Nothing to sign.',
   $html$<p style="margin:0 0 14px;font-size:17px;font-weight:700;color:#0d0d0d">Hello {{business_name}} team,</p>
-<p style="margin:0 0 14px">The first thing most tenants chase after moving in is the internet. OCCTA is a broadband provider based here in Huddersfield, and we'd like to help your tenants get connected without tying them into a long contract.</p>
+<p style="margin:0 0 14px">The first thing most tenants chase after moving in is the internet. OCCTA is a UK broadband provider, based in Huddersfield, and we'd like to help your tenants get connected without tying them into a long contract.</p>
 <p style="margin:0 0 12px;font-size:12px;letter-spacing:2px;font-weight:700;color:#777;text-transform:uppercase">How the partner programme works</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px">
 <tr><td width="48" valign="top" style="padding:0 12px 14px 0"><div style="width:36px;height:36px;line-height:36px;text-align:center;background:#0d0d0d;color:#ffe500;font-weight:900;font-size:15px">01</div></td><td valign="top" style="padding:0 0 14px"><strong>We give you a link and a flyer</strong><br><span style="color:#555;font-size:14px">Add one line to your welcome email or move-in pack.</span></td></tr>
@@ -341,14 +341,14 @@ VALUES (
 <p style="margin:0 0 16px;font-size:19px;font-weight:900;color:#ffe500">Why tenants like it</p>
 <p style="margin:0 0 12px"><span style="color:#ffe500;font-weight:900">&#10003;</span>&nbsp; <strong>Flex 30.</strong> 30-day rolling broadband where available, so nobody is locked in past their tenancy.</p>
 <p style="margin:0 0 12px"><span style="color:#ffe500;font-weight:900">&#10003;</span>&nbsp; <strong>The price shown first.</strong> Monthly price, setup and router cost are confirmed before they order.</p>
-<p style="margin:0 0 14px"><span style="color:#ffe500;font-weight:900">&#10003;</span>&nbsp; <strong>UK-based support</strong> from a Huddersfield company.</p>
+<p style="margin:0 0 14px"><span style="color:#ffe500;font-weight:900">&#10003;</span>&nbsp; <strong>UK-based support</strong>, with ticket tracking in their OCCTA dashboard.</p>
 </td></tr></table>
 <p style="margin:0 0 14px">Prefer to talk? Call <strong>0800 260 6626</strong> or simply reply to this email.</p>
 <p style="margin:0 0 18px">Best regards,<br><strong>Saurabh, Partnerships</strong><br><span style="color:#666;font-size:13px">OCCTA Limited, 22 Pavilion View, Huddersfield</span></p>
 <p style="margin:0;font-size:11px;line-height:1.5;color:#777">Commission is paid after the referred customer's second Direct Debit has been collected and is never charged to the tenant. Plans and speeds depend on the address and are confirmed before ordering.</p>$html$,
   $txt$Hello {{business_name}} team,
 
-The first thing most tenants chase after moving in is the internet. OCCTA is a broadband provider based here in Huddersfield, and we'd like to help your tenants get connected without tying them into a long contract.
+The first thing most tenants chase after moving in is the internet. OCCTA is a UK broadband provider, based in Huddersfield, and we'd like to help your tenants get connected without tying them into a long contract.
 
 How the partner programme works:
 1. We give you a link and a flyer. Add one line to your welcome email or move-in pack.
@@ -360,7 +360,7 @@ Get your agency's partner link: {{cta_url}}
 Why tenants like it:
 - Flex 30: 30-day rolling broadband where available.
 - The price shown first: monthly price, setup and router cost confirmed before ordering.
-- UK-based support from a Huddersfield company.
+- UK-based support, with ticket tracking in their OCCTA dashboard.
 
 Prefer to talk? Call 0800 260 6626 or reply to this email.
 

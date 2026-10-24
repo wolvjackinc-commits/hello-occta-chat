@@ -1,0 +1,108 @@
+name: Deploy letting-agent partner programme
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/20261024170000_lettings_partner_programme.sql'
+      - '.github/workflows/deploy-partners.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-partners
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: oexgjmuvgdndizsufipe
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm deployment credential exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "SUPABASE_ACCESS_TOKEN is not configured in GitHub Actions. Nothing was deployed."
+            exit 1
+          fi
+
+      - name: Apply the partner migration (idempotent) and verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          import json, os, urllib.error, urllib.request
+
+          ref = os.environ["PROJECT_REF"]
+          token = os.environ["SUPABASE_ACCESS_TOKEN"]
+          url = f"https://api.supabase.com/v1/projects/{ref}/database/query"
+          migration = "supabase/migrations/20261024170000_lettings_partner_programme.sql"
+
+          def query(sql: str):
+              req = urllib.request.Request(
+                  url,
+                  data=json.dumps({"query": sql}).encode(),
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Content-Type": "application/json",
+                      "User-Agent": "occta-partners-deploy",
+                  },
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=120) as resp:
+                      return json.loads(resp.read().decode() or "[]")
+              except urllib.error.HTTPError as err:
+                  raise SystemExit(f"database query failed: HTTP {err.code} {err.read().decode(errors='replace')[:600]}")
+
+          query(open(migration, encoding="utf-8").read())
+          print("migration applied")
+
+          names = {r["table_name"] for r in query(
+              "select table_name from information_schema.tables where table_schema = 'public' "
+              "and table_name in ('partners','partner_commission_payouts')")}
+          missing = {"partners", "partner_commission_payouts"} - names
+          if missing:
+              raise SystemExit(f"missing tables: {', '.join(sorted(missing))}")
+
+          rls = query("select relname, relrowsecurity from pg_class where relname in ('partners','partner_commission_payouts') and relkind = 'r'")
+          off = [r["relname"] for r in rls if not r["relrowsecurity"]]
+          if off:
+              raise SystemExit(f"row level security is off for: {', '.join(off)}")
+
+          fns = {r["proname"] for r in query(
+              "select proname from pg_proc where pronamespace = 'public'::regnamespace and proname in "
+              "('admin_list_partner_referrals','admin_record_partner_payout','get_partner_landing','partner_referrals_internal')")}
+          if len(fns) != 4:
+              raise SystemExit(f"functions missing; found {sorted(fns)}")
+
+          # Anonymous visitors may resolve a partner name but never run the internal evaluator.
+          grants = query("select has_function_privilege('anon', 'public.partner_referrals_internal(uuid, uuid)', 'execute') as anon_internal, "
+                         "has_function_privilege('anon', 'public.get_partner_landing(text)', 'execute') as anon_landing, "
+                         "has_function_privilege('anon', 'public.admin_record_partner_payout(uuid, date, text, text)', 'execute') as anon_payout")
+          print("grants", json.dumps(grants))
+          g = grants[0]
+          if g["anon_internal"] or g["anon_payout"] or not g["anon_landing"]:
+              raise SystemExit("unexpected function grants")
+
+          # The evaluator must run cleanly against live data.
+          sample = query("select count(*) as n from public.partner_referrals_internal(null, null)")
+          print("partner_referrals_internal rows", sample[0]["n"])
+
+          tpl = query("select template_key from public.outreach_templates where template_key = 'letting-agent-partners'")
+          print("outreach_template", "present" if tpl else "missing")
+
+          cols = {r["column_name"] for r in query(
+              "select column_name from information_schema.columns "
+              "where table_schema = 'supabase_migrations' and table_name = 'schema_migrations'")}
+          if {"version", "name"}.issubset(cols):
+              query("insert into supabase_migrations.schema_migrations (version, name) "
+                    "select '20261024170000', 'lettings_partner_programme' "
+                    "where not exists (select 1 from supabase_migrations.schema_migrations where version = '20261024170000')")
+              print("schema_migrations_recorded 20261024170000")
+          PY

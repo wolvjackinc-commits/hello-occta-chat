@@ -96,6 +96,8 @@ const RoutersPage = lazy(() => import("./pages/seo/Routers"));
 const BroadbandPlansSeo = lazy(() => import("./pages/seo/BroadbandPlans"));
 const SimOnlyPlansSeo = lazy(() => import("./pages/seo/SimOnlyPlans"));
 const SwitchBroadbandSeo = lazy(() => import("./pages/seo/SwitchBroadband"));
+const LettingAgentPartners = lazy(() => import("./pages/partners/LettingAgentPartners"));
+const PartnerLanding = lazy(() => import("./pages/partners/PartnerLanding"));
 const Switch50OfferSeo = lazy(() => import("./pages/seo/Switch50Offer"));
 const LandlinePlansSeo = lazy(() => import("./pages/seo/LandlinePlans"));
 import ComparisonPage from "./pages/ComparisonPage";
@@ -156,6 +158,7 @@ const AdminBusinessQuoteRequests = lazy(() => import("./pages/admin/BusinessQuot
 const AdminBusinessActivityLog = lazy(() => import("./pages/admin/BusinessActivityLog"));
 const AdminRolesPermissions = lazy(() => import("./pages/admin/RolesPermissions"));
 const AdminOutreach = lazy(() => import("./pages/admin/Outreach"));
+const AdminPartners = lazy(() => import("./pages/admin/Partners"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 // New business hub (replaces legacy /business page)
 const BusinessHub = lazy(() => import("./pages/business/BusinessHub"));
@@ -306,6 +309,7 @@ const AnimatedRoutes = () => {
             {/* Outreach campaign manager */}
             <Route element={<ProtectedAdminRoute requiredRoles={["super_admin", "admin"]} />}>
               <Route path="outreach" element={<Suspense fallback={<AdminRouteFallback />}><AdminOutreach /></Suspense>} />
+              <Route path="partners" element={<Suspense fallback={<AdminRouteFallback />}><AdminPartners /></Suspense>} />
             </Route>
             {/* Super-admin only: role management */}
             <Route element={<ProtectedAdminRoute requiredRoles={["super_admin", "admin"]} />}>
@@ -506,6 +510,8 @@ const AnimatedRoutes = () => {
         <Route path="/superfast-broadband" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
         <Route path="/broadband-without-landline" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
         <Route path="/moving-house-broadband" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/partners/letting-agents" element={<Suspense fallback={null}><LettingAgentPartners /></Suspense>} />
+        <Route path="/p/:code" element={<Suspense fallback={null}><PartnerLanding /></Suspense>} />
         <Route path="/unlimited-data-sim" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
         <Route path="/30-day-sim-only" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
         <Route path="/esim" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />

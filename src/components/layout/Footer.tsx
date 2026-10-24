@@ -36,6 +36,7 @@ const Footer = () => {
       { name: "Business Billing", path: "/business/billing" },
       { name: "Business Support", path: "/business/support" },
       { name: "Talk to Sales", path: "/business/contact-sales" },
+      { name: "Letting Agent Partners", path: "/partners/letting-agents" },
     ],
     support: [
       { name: "Help & Support Hub", path: "/support" },

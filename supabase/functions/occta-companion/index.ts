@@ -162,7 +162,7 @@ function safeSessionId(value: unknown): string {
 function unavailableSection(section: string): string {
   return withOptions(
     `I securely identified the account, but I couldn't load the ${section} section just now. I won't guess or show stale information.`,
-    ["Try again", "Open my dashboard", "Talk to a human"],
+    ["Try again", "Open my dashboard"],
   );
 }
 
@@ -350,7 +350,7 @@ async function accountReply(
     if (!rows.length) {
       return withOptions(
         `Hi ${name} — I checked the verified account, but I can't see an order linked to it yet. If it was placed very recently, it may still be processing.`,
-        ["Check my services", "Raise a ticket", "Talk to a human"],
+        ["Check my services", "Raise a ticket"],
       );
     }
     const lines = rows.slice(0, 5).map((row) =>
@@ -366,7 +366,7 @@ async function accountReply(
     if (!scope.userId) {
       return withOptions(
         `Hi ${name} — I can't see an online billing record linked to this account yet, so I won't guess. I can raise it with the billing team for you.`,
-        ["Sign in", "Raise a billing ticket", "Talk to a human"],
+        ["Sign in", "Raise a billing ticket"],
       );
     }
     const { data: invoices, error } = await serviceClient
@@ -417,7 +417,7 @@ async function accountReply(
         latest
           ? `Hi ${name} — I can't see a live service record yet. The latest order is currently ${statusLabel(latest.lifecycle_status ?? latest.status)}.`
           : `Hi ${name} — I can't see an active service linked to this verified account yet.`,
-        ["Track my order", "Raise a ticket", "Talk to a human"],
+        ["Track my order", "Raise a ticket"],
       );
     }
     const lines = services.slice(0, 6).map((service) =>
@@ -433,7 +433,7 @@ async function accountReply(
     if (!scope.userId) {
       return withOptions(
         `Hi ${name} — I can't see an online support record linked to this account yet. I can raise a new case with the team for you.`,
-        ["Sign in", "Raise a ticket", "Talk to a human"],
+        ["Sign in", "Raise a ticket"],
       );
     }
     const { data: tickets, error } = await serviceClient
@@ -462,7 +462,7 @@ async function accountReply(
     if (!scope.userId) {
       return withOptions(
         `Hi ${name} — I can't see online documents linked to this account yet. The team can send them to you.`,
-        ["Sign in", "Check my order", "Talk to a human"],
+        ["Sign in", "Check my order"],
       );
     }
     const [summariesResult, invoiceIdsResult] = await Promise.all([
@@ -534,12 +534,12 @@ function approvedPublicReply(intent: string): string | null {
     case "sim":
       return withOptions(
         `Current personal and business SIM options are shown in OCCTA's live catalogue. Network, data allowance, term, roaming and eSIM or physical-SIM availability can vary, so I won't guess. [View current SIM options](${BASE_URL}/sim).`,
-        ["View SIM plans", "Explain eSIM", "Talk to support"],
+        ["View SIM plans", "Explain eSIM"],
       );
     case "esim":
       return withOptions(
         `An eSIM is a digital SIM installed on a compatible phone instead of a removable plastic card. Whether OCCTA can supply one depends on the current plan, network and device. Check the live SIM options or ask the team to confirm compatibility before ordering. [View SIM options](${BASE_URL}/sim).`,
-        ["View SIM plans", "Check phone compatibility", "Talk to support"],
+        ["View SIM plans", "Check phone compatibility"],
       );
     case "voice":
       return withOptions(
@@ -549,7 +549,7 @@ function approvedPublicReply(intent: string): string | null {
     case "number_porting":
       return withOptions(
         `OCCTA can usually request a transfer of an eligible existing number, but the losing provider, number type and order details must be checked first. Do not cancel the old phone service yourself until the transfer is confirmed, because that can risk losing the number.`,
-        ["Start a switch", "Digital Voice information", "Talk to support"],
+        ["Start a switch", "Digital Voice information"],
       );
     case "switching":
       return withOptions(
@@ -559,37 +559,37 @@ function approvedPublicReply(intent: string): string | null {
     case "cancellation":
       return withOptions(
         `Cancellation depends on the plan you chose. **Flex 30** is the flexible monthly option and uses its stated notice terms. **Price Lock 24** has a fixed minimum term, so early termination charges may apply if it ends early. Important account actions are confirmed by the OCCTA team. [Read the cancellation information](${BASE_URL}/cancellation).`,
-        ["Check my account", "Talk to a human", "Read cancellation terms"],
+        ["Check my account", "Read cancellation terms"],
       );
     case "service_status":
       return withOptions(
         `Check OCCTA's service-status page first for a known incident. If nothing is listed, restart the router and ONT or modem once, then test one device by Ethernet if possible. A local Wi-Fi issue may not appear as a network outage. [Open service status](${BASE_URL}/status).`,
-        ["My internet is down", "Explain router lights", "Talk to a human"],
+        ["My internet is down", "Explain router lights"],
       );
     case "no_internet":
       return withOptions(
         `Let's separate a local Wi-Fi problem from a line fault. Check that the router and ONT or modem have power, make sure cables are firmly connected, then restart the equipment once and allow several minutes to reconnect. If possible, test one device by Ethernet. [Follow the no-internet checklist](${BASE_URL}/help/no-internet-troubleshooting).`,
-        ["Tell me my router lights", "Check service status", "Talk to a human"],
+        ["Tell me my router lights", "Check service status"],
       );
     case "router_lights":
       return withOptions(
         `Light labels vary by router and ONT model. A red or unlit **LOS/Optical** light can indicate a fibre signal problem; an Internet light that stays red may indicate authentication or line setup; a Wi-Fi light only shows the local wireless network. Tell me the device model and exact light label before changing settings.`,
-        ["My LOS light is red", "My Internet light is red", "Talk to support"],
+        ["My LOS light is red", "My Internet light is red"],
       );
     case "slow_wifi":
       return withOptions(
         `Slow Wi-Fi is often caused by distance, walls or interference rather than the broadband line. Test by Ethernet first, move the router into the open, use 5GHz near the router and pause large downloads or cloud backups. [Try the slow Wi-Fi fixes](${BASE_URL}/help/slow-wifi-fix).`,
-        ["Run a proper speed test", "Improve Wi-Fi coverage", "Talk to support"],
+        ["Run a proper speed test", "Improve Wi-Fi coverage"],
       );
     case "pppoe_missing":
       return withOptions(
         `PPPoE credentials are sensitive. They are normally provided in the OCCTA welcome or go-live information for a compatible own-router setup. Do not post them in chat. If you cannot find them, ask support to resend them through the approved secure channel after account verification.`,
-        ["Check my account", "Open own-router guide", "Talk to support"],
+        ["Check my account", "Open own-router guide"],
       );
     case "router":
       return withOptions(
         `For full fibre, the Ethernet cable runs from the ONT to the router's **WAN/Internet** port. A compatible own router normally uses PPPoE details supplied in the OCCTA welcome or go-live email. Never share those credentials in chat. [Open the own-router guide](${BASE_URL}/help/own-router-setup).`,
-        ["My router has a red light", "I cannot find PPPoE details", "Talk to support"],
+        ["My router has a red light", "I cannot find PPPoE details"],
       );
     case "direct_debit":
       return withOptions(
@@ -609,12 +609,12 @@ function approvedPublicReply(intent: string): string | null {
     case "complaints":
       return withOptions(
         `OCCTA first tries to resolve complaints directly. If a complaint remains unresolved, the Complaints Code explains escalation and the applicable independent ADR route and timing. [Read the Complaints Code](${BASE_URL}/legal/complaints-code).`,
-        ["Raise a complaint", "Talk to a human", "Read the Complaints Code"],
+        ["Raise a complaint", "Read the Complaints Code"],
       );
     case "vulnerable":
       return withOptions(
         `OCCTA can record support needs and discuss appropriate communication or service arrangements. Broadband-based phone services and telecare can be affected by power cuts, so resilience should be discussed before relying on them. [Read the vulnerable-customer policy](${BASE_URL}/legal/vulnerable-customers).`,
-        ["Tell OCCTA my support needs", "Ask about Digital Voice resilience", "Talk to a human"],
+        ["Tell OCCTA my support needs", "Ask about Digital Voice resilience"],
       );
     case "human":
       return withOptions(
@@ -652,12 +652,12 @@ function knowledgeFallback(kbContext: string): string {
   if (kbContext) {
     return withOptions(
       `Here are our guides on that:\n\n${kbContext}\n\nTell me which part you need and I'll take you through it.`,
-      ["Open Help Centre", "Ask a more specific question", "Talk to a human"],
+      ["Open Help Centre", "Ask a more specific question"],
     );
   }
   return withOptions(
     `I don't have enough verified information to answer that safely, and I won't make it up. Tell me whether this is about broadband, SIM, Digital Voice, billing, switching or an existing account. You can also contact ${OCCTA_EMAIL} or call ${OCCTA_PHONE}.`,
-    ["Broadband help", "Billing help", "Check my account", "Talk to a human"],
+    ["Broadband help", "Billing help", "Check my account"],
   );
 }
 
@@ -810,7 +810,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
         reply = {
           content: withOptions(
             `Happy to dig into that. First, the boring-but-important bit: what's your OCCTA account number? It starts with **OCC** and it's on your welcome email and invoices. Then I'll ask for the account holder's date of birth, and I can see everything, bills included. (Signing in works too, if you'd rather.) Please don't send bank details, passwords or one-time codes.`,
-            ["I can't find it", "Sign in instead", "Talk to a human"],
+            ["I can't find it", "Sign in instead"],
           ),
           source: "account",
         };
@@ -818,7 +818,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
         reply = {
           content: withOptions(
             `Lovely, I've got account ${maskAccountNumber(accountNumber)}. Now the account holder's date of birth as **DD/MM/YYYY**, please. It's only used for this check and isn't shown back in the chat.`,
-            ["Sign in instead", "Talk to a human"],
+            ["Sign in instead"],
           ),
           source: "account",
         };
@@ -828,7 +828,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
           reply = {
             content: withOptions(
               `I couldn't verify those details. Check the account number and date of birth. For security, I won't say which detail did not match.`,
-              ["Try verification again", "Sign in instead", "Talk to a human"],
+              ["Try verification again", "Sign in instead"],
             ),
             source: "account",
           };

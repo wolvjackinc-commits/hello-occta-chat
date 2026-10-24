@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -271,11 +271,20 @@ function plainText(markdown: string): string {
     .trim();
 }
 
+const FRUSTRATED_RE = /\b(?:not fixed|still (?:not|isn['’]?t|doesn['’]?t|broken|down|slow|no)|not (?:helpful|satisfied|working at all)|useless|rubbish|waste of time|same (?:problem|issue)|i (?:already )?told you|you keep|this is ridiculous|fed up|getting nowhere|going round in circles)\b/i;
+
+/** Clearly frustrated in at least two of the customer's last four messages. */
 function customerDissatisfied(messages: Message[]): boolean {
   return messages
     .filter((message) => message.role === "user")
     .slice(-4)
-    .some((message) => /\b(?:still|again|already tried|not fixed|not working|wrong|not helpful|not satisfied|useless|same problem|same issue|doesn['’]?t work|didn['’]?t work|you keep|i told you)\b/i.test(message.rawContent ?? message.content));
+    .filter((message) => FRUSTRATED_RE.test(message.rawContent ?? message.content)).length >= 2;
+}
+
+const HUMAN_OPTION_RE = /\b(?:human|advisor|adviser|agent|person|someone|staff|connect me|call (?:us|support|occta)|phone (?:us|support))\b/i;
+
+function isHumanOption(option: string): boolean {
+  return HUMAN_OPTION_RE.test(option);
 }
 
 function formatSize(bytes?: number): string {
@@ -324,9 +333,9 @@ function appendGuides(answer: string, query: string, intent: string): string {
 function internalFallback(query: string, intent: string): string {
   const guides = matchOcctaGuides(query, intent, 3);
   if (guides.length) {
-    return `I found OCCTA help pages that match what you're trying to do:\n\n${guides.map((guide) => `• [**${guide.title}**](/help/${guide.slug})`).join("\n")}\n\nTell me what you see or which step you're stuck on and I'll carry on from there.\n\n<<<OPTIONS:["I'm still stuck","Talk to an advisor"]>>>`;
+    return `I found OCCTA help pages that match what you're trying to do:\n\n${guides.map((guide) => `• [**${guide.title}**](/help/${guide.slug})`).join("\n")}\n\nTell me what you see or which step you're stuck on and I'll carry on from there.\n\n<<<OPTIONS:["I'm still stuck","Show me another guide"]>>>`;
   }
-  return `I'm having trouble reaching my full brain for a moment. Tell me **what you're trying to do** or **what isn't working** in one sentence and I'll narrow it down, or I can pass you to an advisor.\n\n<<<OPTIONS:["Try again","Talk to an advisor","Browse OCCTA guides"]>>>`;
+  return `I'm having trouble reaching my full brain for a moment. Tell me **what you're trying to do** or **what isn't working** in one sentence and I'll narrow it down.\n\n<<<OPTIONS:["Try again","Browse OCCTA guides"]>>>`;
 }
 
 function buildTicketPrefill(messages: Message[]): TicketPrefill {
@@ -407,7 +416,8 @@ function TypingDots() {
   );
 }
 
-function AssistantMessage({ message, onAction, onAttachment, onFeedback, isLatest }: {
+function AssistantMessage({ message, onAction, onAttachment, onFeedback, isLatest, allowHumanOptions }: {
+  allowHumanOptions: boolean;
   message: Message;
   onAction: (value: string) => void;
   onAttachment: (attachment: Attachment) => void;
@@ -421,7 +431,13 @@ function AssistantMessage({ message, onAction, onAttachment, onFeedback, isLates
     setRated(helpful);
     onFeedback(message, helpful);
   };
-  const { body, options } = parseOptions(occtaOnlyLinks(message.content));
+  const parsed = parseOptions(occtaOnlyLinks(message.content));
+  const body = parsed.body;
+  // Ollie should solve things itself, so a person is only offered when it's been
+  // asked for, the customer is clearly fed up, or Ollie raised it on purpose.
+  const options = allowHumanOptions || /\badvisor\b/i.test(body)
+    ? parsed.options
+    : parsed.options.filter((option) => !isHumanOption(option));
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(plainText(message.content));
@@ -434,7 +450,7 @@ function AssistantMessage({ message, onAction, onAttachment, onFeedback, isLates
   return (
     <div className="group space-y-2">
       {body && (
-        <Streamdown className="prose prose-sm max-w-none text-foreground prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-a:font-semibold prose-a:text-foreground prose-a:underline prose-a:decoration-primary prose-a:decoration-2 prose-a:underline-offset-2 prose-strong:text-foreground">
+        <Streamdown className="prose prose-sm max-w-none break-words text-foreground [&_ol]:!ml-0 [&_ol]:!pl-6 [&_ul]:!ml-0 [&_ul]:!pl-5 [&_li]:!pl-0.5 prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-a:font-semibold prose-a:text-foreground prose-a:underline prose-a:decoration-primary prose-a:decoration-2 prose-a:underline-offset-2 prose-strong:text-foreground">
           {body}
         </Streamdown>
       )}
@@ -513,6 +529,8 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
   const showAdvisorLink = !humanLive && !awaitingHuman && messages.length > 2 && customerDissatisfied(messages);
   const starters = signedIn ? signedStarters : guestStarters;
   const lastAssistantId = [...messages].reverse().find((message) => message.role === "assistant")?.id;
+  const askedForHuman = messages.some((message) => message.role === "user" && isExplicitHumanRequest(message.rawContent ?? message.content));
+  const allowHumanOptions = humanLive || awaitingHuman || askedForHuman || customerDissatisfied(messages);
 
   useEffect(() => {
     void (async () => {
@@ -540,16 +558,62 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     sessionStorage.setItem(HISTORY_KEY, JSON.stringify(safeHistory(messages)));
   }, [messages]);
 
-  // Follow the conversation unless the customer has scrolled up to read.
-  useEffect(() => {
+  // Scrolling: show the customer's own message, then keep the START of Ollie's
+  // reply in view. While a reply is short we follow it down; once it would push
+  // its first line off screen we stop and let the customer read from the top.
+  const anchorId = useRef<string | null>(null);
+  const anchorDone = useRef(false);
+  const nearBottom = useRef(true);
+  const manualScroll = useRef(false);
+
+  useLayoutEffect(() => {
     const node = scrollRef.current;
-    if (node && atBottom) node.scrollTop = node.scrollHeight;
-  }, [messages, status, atBottom]);
+    const last = messages[messages.length - 1];
+    if (!node || !last) return;
+
+    if (last.role === "user") {
+      anchorId.current = null;
+      anchorDone.current = false;
+      manualScroll.current = false;
+      node.scrollTop = node.scrollHeight;
+      return;
+    }
+
+    if (anchorId.current !== last.id) {
+      // A new reply. Advisor messages that arrive while someone is reading
+      // further up don't yank the view.
+      if (!nearBottom.current && last.agent === "human") return;
+      anchorId.current = last.id;
+      anchorDone.current = false;
+      manualScroll.current = false;
+    }
+    if (anchorDone.current || manualScroll.current) return;
+
+    const element = node.querySelector<HTMLElement>(`[data-message-id="${CSS.escape(last.id)}"]`);
+    if (!element) {
+      node.scrollTop = node.scrollHeight;
+      return;
+    }
+    const top = element.getBoundingClientRect().top - node.getBoundingClientRect().top + node.scrollTop - 12;
+    if (element.offsetHeight + 24 > node.clientHeight) {
+      node.scrollTop = top;
+      anchorDone.current = true;
+    } else {
+      node.scrollTop = node.scrollHeight;
+    }
+  }, [messages, status]);
 
   const onScroll = useCallback(() => {
     const node = scrollRef.current;
     if (!node) return;
-    setAtBottom(node.scrollHeight - node.scrollTop - node.clientHeight < 80);
+    const bottom = node.scrollHeight - node.scrollTop - node.clientHeight < 80;
+    nearBottom.current = bottom;
+    setAtBottom(bottom);
+  }, []);
+
+  // A deliberate scroll by the customer always wins over auto-scrolling.
+  const onUserScroll = useCallback(() => {
+    manualScroll.current = true;
   }, []);
 
   const scrollToBottom = useCallback(() => {
@@ -811,7 +875,6 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     setPending([]);
     setLoading(true);
     setStatus(null);
-    setAtBottom(true);
 
     // Advisors see attachments in their console too.
     if (attachments.length) {
@@ -944,7 +1007,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       const text = error instanceof Error ? error.message : "request_failed";
       setMessages((current) => [...current.filter((message) => message.id !== replyId).map((message) => ({ ...message, rawContent: undefined })), {
         id: crypto.randomUUID(), role: "assistant", agent: "ollie", createdAt: new Date().toISOString(),
-        content: `I couldn't finish that just now${/wait|too many|too long/i.test(text) ? `: ${text}` : "."} I haven't guessed an answer. Try again, or I can pass you to an advisor.\n\n<<<OPTIONS:["Try again","Talk to an advisor"]>>>`,
+        content: `I couldn't finish that just now${/wait|too many|too long/i.test(text) ? `: ${text}` : "."} I haven't guessed an answer. Give it another go; if it keeps misbehaving, just ask for an advisor.\n\n<<<OPTIONS:["Try again"]>>>`,
       }]);
     } finally {
       setLoading(false);
@@ -1024,10 +1087,10 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       )}
 
       <div className="relative min-h-0 flex-1">
-        <div ref={scrollRef} onScroll={onScroll} className="h-full overflow-y-auto overscroll-contain" aria-live="polite" aria-busy={loading}>
+        <div ref={scrollRef} onScroll={onScroll} onWheel={onUserScroll} onTouchMove={onUserScroll} className="h-full overflow-y-auto overscroll-contain" aria-live="polite" aria-busy={loading}>
           <div className="space-y-4 p-4">
             {messages.map((message) => (
-              <div key={message.id} className={`flex animate-in fade-in slide-in-from-bottom-1 gap-2 duration-300 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={message.id} data-message-id={message.id} className={`flex animate-in fade-in slide-in-from-bottom-1 gap-2 duration-300 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                 {message.role === "assistant" && <div className="mt-0.5"><OllieAvatar human={message.agent === "human"} /></div>}
                 <div className={message.role === "user"
                   ? "max-w-[82%] border-2 border-foreground bg-foreground px-3 py-2 text-sm text-background"
@@ -1037,7 +1100,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
                     <div className="mb-1 text-[10px] font-display uppercase tracking-wide text-muted-foreground">OCCTA advisor</div>
                   )}
                   {message.role === "assistant"
-                    ? <AssistantMessage message={message} isLatest={message.id === lastAssistantId && !loading} onAction={onAction} onAttachment={(attachment) => void openAttachment(attachment)} onFeedback={(target, helpful) => void sendFeedback(target, helpful)} />
+                    ? <AssistantMessage message={message} isLatest={message.id === lastAssistantId && !loading} allowHumanOptions={allowHumanOptions} onAction={onAction} onAttachment={(attachment) => void openAttachment(attachment)} onFeedback={(target, helpful) => void sendFeedback(target, helpful)} />
                     : <>
                         <p className="whitespace-pre-wrap break-words">{message.content}</p>
                         {message.attachments?.map((attachment) => (

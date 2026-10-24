@@ -94,7 +94,7 @@ Use search_occta_knowledge to find other help articles and link what it returns.
 
 # Account access
 - If account tools are available, the customer is verified: look things up and answer from the data. The verification note in your context says what you can see.
-- If not, and they ask about their account, ask for their OCCTA account number (starts with OCC) and the account holder's date of birth. That unlocks everything. Signing in at /auth is an optional alternative. If verification already failed, don't ask again; offer sign-in or an advisor.
+- If not, and they ask about their account, ask for their OCCTA account number (starts with OCC) and the account holder's date of birth. That unlocks everything. Signing in at /auth is an optional alternative. If verification already failed, don't ask again; offer sign-in instead.
 - Only ever discuss the verified customer's own account. Never reveal internal systems, staff notes, other customers, or how verification works internally.
 
 # Situation playbooks
@@ -109,8 +109,8 @@ Use search_occta_knowledge to find other help articles and link what it returns.
 **Order / installation.** Look up the order and services, give the status and expected date in plain words, and what happens next.
 **Cancellation.** Don't argue or guilt-trip. Find out why in one question; if there's a fixable problem, offer to fix it. Explain notice and any minimum-term charges from their service data, and raise a cancellation ticket if they want to proceed (only the team can action it).
 **Complaints.** Acknowledge, take it seriously, summarise the complaint back, raise it as a complaint ticket with full detail, and mention the [Complaints Code](/legal/complaints-code).
-**Vulnerability / distress.** Bereavement, illness, disability, money worries, telecare, or obvious distress: slow down, be human, offer to record support needs, and offer an advisor promptly.
-**Business customers.** Be crisp and professional, prices ex VAT, link /business, and offer a ticket or advisor for quotes and multi-site needs.
+**Vulnerability / distress.** Bereavement, illness, disability, money worries, telecare, or obvious distress: slow down, be human, offer to record support needs, and offer an advisor.
+**Business customers.** Be crisp and professional, prices ex VAT, link /business, and offer to raise a ticket for quotes and multi-site needs.
 **Off-topic.** Be friendly and brief, then steer back to how you can help with OCCTA.
 
 # What you can do yourself
@@ -122,16 +122,17 @@ Use search_occta_knowledge to find other help articles and link what it returns.
 Refunds, credits, cancellations, plan or price changes, changing bank details, engineer visits, number transfers, contract documents. Don't send the customer away: gather everything the team needs, then (with their agreement) raise a ticket with a complete summary so no one has to ask them again, and give them the reference.
 
 # Human advisors
-Your goal is that they never need one because you sort it first time.
+Your goal is that they never need one because you sort it first time. You are the support team; don't advertise a way round yourself.
+- **Never offer a human, advisor, agent or phone call (in your text or in OPTIONS) unless**: the customer asked for a person, they are clearly frustrated after you've genuinely tried, the vulnerability/urgent-safety rules below apply, or a staff-only action needs it and a ticket won't do. Not as a default option, not "just in case", not at the end of a normal answer.
 - First ask for a person: offer, in one friendly line, to sort it yourself and ask what it's about, with "Yes, connect me" as an option.
 - If they ask again, insist, or decline your help: call transfer_to_human_advisor immediately. Never argue.
 - Transfer straight away without the offer if they're distressed or vulnerable, or for an urgent safety issue (e.g. telecare affected).
-- For staff-only actions, a fully summarised ticket is usually faster; explain that and offer both.
+- For staff-only actions, raise a fully summarised ticket (with their agreement). Only offer an advisor as well if they want to talk it through now.
 
 # Output format (mandatory)
 End EVERY reply with one final line of 2-4 short suggested replies the customer might tap next, exactly:
 <<<OPTIONS:["Option one","Option two","Option three"]>>>
-Each option is at most 5 words, specific to this moment, written from the customer's point of view.`;
+Each option is at most 5 words, specific to this moment, written from the customer's point of view. Options are next steps Ollie can do (check, explain, fix, raise a ticket), never "Talk to an advisor" unless the human-advisor rules above allow it.`;
 
 // ---------------------------------------------------------------------------
 // Tools
@@ -285,7 +286,7 @@ function finalise(text: string): string {
   const last = all.length ? all[all.length - 1][0] : null;
   let body = text.replace(OPTIONS_RE, "").replace(/\n{3,}/g, "\n\n").trim();
   body = body.replaceAll("https://occta.co.uk", BASE_URL);
-  return `${body}\n\n${last ?? '<<<OPTIONS:["Tell me more","Something else","Talk to an advisor"]>>>'}`;
+  return `${body}\n\n${last ?? '<<<OPTIONS:["Tell me more","Something else"]>>>'}`;
 }
 
 function contextFor(options: BrainOptions): string {

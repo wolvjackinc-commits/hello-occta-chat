@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import CategoryLinks from "@/components/seo/CategoryLinks";
+import PageExplainer from "@/components/seo/PageExplainer";
 import { MotionConfig } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Layout from "@/components/layout/Layout";
@@ -65,6 +67,29 @@ const BusinessSimPage = () => (
       <BusinessLeadBand index="02" title="Rolling out 5+ SIMs?">
         <LeadForm interest="sim" source="business_sim" heading="Rolling out 5+ SIMs?" />
       </BusinessLeadBand>
+      <PageExplainer
+        title="Business SIMs, explained"
+        paragraphs={[
+          "Business SIM plans give each member of your team a mobile line with UK calls, texts and data, billed to the company on one VAT invoice. OCCTA business SIMs are available on the O2, Vodafone and EE networks, so you can choose the coverage that works best where your team works.",
+          "Choose a 30-day rolling plan for flexibility or a 24-month plan for a lower monthly price. eSIM is available on compatible phones, data-only SIMs are available for tablets, laptops and 4G/5G routers, and existing business numbers can usually be ported with a PAC code.",
+        ]}
+        faqs={[
+          { question: "Which networks do OCCTA business SIMs use?", answer: "OCCTA business SIM plans are available on O2, Vodafone and EE, with data-only plans on O2 and Vodafone." },
+          { question: "Can we keep our existing mobile numbers?", answer: "Yes. Request a PAC for each number from your current provider and we'll port them across." },
+          { question: "Are business SIM prices shown with VAT?", answer: "Business prices are shown excluding VAT, and you receive a VAT invoice." },
+          { question: "Can I add or remove lines?", answer: "Yes. Talk to our business team about adding lines. Each line's term, and any charge for ending it early, is set out when you order." },
+          { question: "Do you offer data-only SIMs for routers and tablets?", answer: "Yes. Business mobile broadband SIMs are available on the O2 and Vodafone networks." },
+        ]}
+        schema={[
+          { "@type": "Service", name: "OCCTA business SIMs", serviceType: "Business mobile", url: "https://www.occta.co.uk/business/sim", provider: { "@id": "https://www.occta.co.uk/#organization" }, areaServed: { "@type": "Country", name: "United Kingdom" } },
+          { "@type": "BreadcrumbList", itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://www.occta.co.uk/" },
+            { "@type": "ListItem", position: 2, name: "Business", item: "https://www.occta.co.uk/business" },
+            { "@type": "ListItem", position: 3, name: "Business SIMs", item: "https://www.occta.co.uk/business/sim" },
+          ] },
+        ]}
+      />
+      <CategoryLinks family="business" exclude="/business/sim" />
     </MotionConfig>
   </Layout>
 );

@@ -48,9 +48,9 @@ export default defineConfig(() => ({
           if (id.includes("/src/data/locations") || id.includes("/src/data/locationLocal")) {
             return "locations";
           }
-          if (id.includes("/src/pages/admin/") || id.includes("/src/components/admin/")) {
-            return "admin";
-          }
+          // No manual "admin" chunk: Rollup pulls shared deps (React, Supabase,
+          // UI kit) into a manual chunk, which made every public page preload
+          // ~550KB gz of admin code. Lazy routes already split admin pages.
         },
       },
     },

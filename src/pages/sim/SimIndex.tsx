@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import CategoryLinks from "@/components/seo/CategoryLinks";
 import { Link, useNavigate } from "react-router-dom";
 import { MotionConfig } from "framer-motion";
 import Layout from "@/components/layout/Layout";
@@ -92,7 +93,7 @@ const SimIndex = () => {
                 {" "}<span className="block text-primary">Clear terms.</span>
               </HeroTitle>
               <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
-                eSIM or physical SIM. Keep your number or start fresh. Card or Direct Debit.
+                eSIM or physical SIM. Keep your number or start fresh. Pay by Direct Debit or bank transfer.
                 Admin activates your service before billing starts — no surprise charges.
               </p>
               <a
@@ -110,7 +111,7 @@ const SimIndex = () => {
                   <SimArt className="h-auto w-full max-w-[300px]" />
                 </div>
                 <ul className="border-t-[3px] border-black">
-                  {["eSIM or physical SIM", "Keep your number or start fresh", "Card or Direct Debit"].map((line) => (
+                  {["eSIM or physical SIM", "Keep your number or start fresh", "Direct Debit or bank transfer"].map((line) => (
                     <li key={line} className="flex items-center gap-3 border-b border-black/10 px-5 py-3 text-sm font-semibold text-black last:border-b-0">
                       <span className="inline-flex h-5 w-5 flex-shrink-0 items-center justify-center bg-black text-primary" aria-hidden>
                         <Check className="h-3.5 w-3.5" strokeWidth={3} />
@@ -249,6 +250,7 @@ const SimIndex = () => {
             ))}
           </Reveal>
         </BrandSection>
+        <CategoryLinks family="sim" />
       </MotionConfig>
     </Layout>
   );

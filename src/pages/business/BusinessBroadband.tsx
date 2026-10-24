@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import CategoryLinks from "@/components/seo/CategoryLinks";
 import { MotionConfig, motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
@@ -128,6 +129,7 @@ const BusinessBroadbandPage = () => (
       <BusinessLeadBand index="03" title="Need a specialist instead?">
         <LeadForm interest="broadband" source="business_broadband_fallback" heading="Need a specialist instead?" />
       </BusinessLeadBand>
+      <CategoryLinks family="business" exclude="/business/broadband" />
     </MotionConfig>
   </Layout>
 );

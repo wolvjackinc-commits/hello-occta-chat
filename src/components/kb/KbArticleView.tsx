@@ -94,6 +94,25 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
     { name: articleLabel, url: canonical },
   ]);
   const faqSchema = article.faqs && article.faqs.length > 0 ? createFAQSchema(article.faqs) : null;
+  const pageUrl = `https://www.occta.co.uk${canonical}`;
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": article.kind === "help" ? "TechArticle" : article.kind === "blog" ? "BlogPosting" : "Article",
+    headline: article.title.slice(0, 110),
+    description: article.seo_description || article.summary || undefined,
+    url: pageUrl,
+    mainEntityOfPage: { "@type": "WebPage", "@id": pageUrl },
+    ...(article.last_reviewed_at ? { dateModified: article.last_reviewed_at } : {}),
+    ...(article.hero_image_url ? { image: article.hero_image_url } : { image: "https://www.occta.co.uk/og-image.jpg" }),
+    ...(article.tags?.length ? { keywords: article.tags.join(", ") } : {}),
+    inLanguage: "en-GB",
+    author: { "@type": "Organization", name: "OCCTA LIMITED", url: "https://www.occta.co.uk/" },
+    publisher: {
+      "@type": "Organization",
+      name: "OCCTA LIMITED",
+      logo: { "@type": "ImageObject", url: "https://www.occta.co.uk/pwa-512x512.png" },
+    },
+  };
 
   const reviewedText = article.last_reviewed_at
     ? new Date(article.last_reviewed_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
@@ -108,6 +127,7 @@ export default function KbArticleView({ article }: { article: KbArticle }) {
         type="article"
         image={article.hero_image_url || undefined}
       />
+      <JsonLd data={articleSchema} />
       <JsonLd data={breadcrumb} />
       {faqSchema && <JsonLd data={faqSchema} />}
       {article.structured_data && <JsonLd data={article.structured_data as object} />}

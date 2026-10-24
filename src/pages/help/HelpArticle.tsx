@@ -27,7 +27,24 @@ const HelpArticlePage = () => {
   return (
     <Layout>
       <SEO title={article.metaTitle} description={article.description} canonical={`/help/${article.slug}`} keywords={article.keywords} type="article" />
-      <StructuredData customOnly customSchema={breadcrumb} />
+      <StructuredData
+        customOnly
+        customSchema={{
+          "@context": "https://schema.org",
+          "@graph": [
+            breadcrumb,
+            {
+              "@type": "TechArticle",
+              headline: article.title,
+              description: article.description,
+              url: `https://www.occta.co.uk/help/${article.slug}`,
+              inLanguage: "en-GB",
+              author: { "@type": "Organization", name: "OCCTA LIMITED", url: "https://www.occta.co.uk/" },
+              publisher: { "@id": "https://www.occta.co.uk/#organization" },
+            },
+          ],
+        }}
+      />
 
       <MotionConfig reducedMotion="user">
         <ReadingProgress />

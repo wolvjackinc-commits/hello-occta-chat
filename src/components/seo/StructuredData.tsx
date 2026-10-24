@@ -40,6 +40,29 @@ export const organizationSchema = {
     name: companyConfig.address.country,
   },
   sameAs: companyConfig.socialLinks,
+  '@id': `${BASE_URL}/#organization`,
+  ...(companyConfig.companyNumber ? { identifier: { '@type': 'PropertyValue', propertyID: 'Companies House', value: String(companyConfig.companyNumber) } } : {}),
+  ...(companyConfig.vatNumber ? { vatID: `GB${String(companyConfig.vatNumber).replace(/\s+/g, '')}` } : {}),
+  knowsAbout: ['Broadband', 'Full fibre broadband', 'FTTP', 'SIM only mobile plans', 'eSIM', 'Digital Voice', 'VoIP', 'SIP trunking', 'Leased lines', 'PSTN switch-off'],
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'OCCTA products',
+    itemListElement: [
+      ['Broadband', '/broadband', [['Full fibre broadband', '/full-fibre-broadband'], ['Gigabit broadband', '/gigabit-broadband'], ['Ultrafast broadband', '/ultrafast-broadband'], ['Superfast broadband', '/superfast-broadband'], ['No-contract broadband (Flex 30)', '/no-contract-broadband-uk'], ['Fixed-price broadband (Price Lock 24)', '/fixed-price-broadband'], ['Broadband without a landline', '/broadband-without-landline']]],
+      ['SIM only plans', '/sim', [['Unlimited data SIM', '/unlimited-data-sim'], ['30-day SIM only', '/30-day-sim-only'], ['eSIM', '/esim'], ['Data-only SIM', '/data-only-sim']]],
+      ['Digital Voice home phone', '/landline', [['Broadband and Digital Voice', '/broadband-and-digital-voice']]],
+      ['Business', '/business', [['Business broadband', '/business/broadband'], ['Leased lines', '/business/leased-lines'], ['Hosted VoIP', '/business/voice'], ['SIP trunks', '/business/sip-trunks'], ['Business SIMs', '/business/sim']]],
+    ].map(([name, url, items]) => ({
+      '@type': 'OfferCatalog',
+      name,
+      url: `${BASE_URL}${url}`,
+      itemListElement: (items as string[][]).map(([itemName, itemUrl]) => ({
+        '@type': 'Offer',
+        url: `${BASE_URL}${itemUrl}`,
+        itemOffered: { '@type': 'Service', name: itemName, url: `${BASE_URL}${itemUrl}` },
+      })),
+    })),
+  },
 };
 
 // Local Business Schema - basic info without reviews
@@ -70,6 +93,8 @@ const localBusinessSchema = {
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
+  '@id': `${BASE_URL}/#website`,
+  inLanguage: 'en-GB',
   name: companyConfig.tradingName,
   alternateName: companyConfig.name,
   url: BASE_URL,

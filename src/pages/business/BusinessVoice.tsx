@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import CategoryLinks from "@/components/seo/CategoryLinks";
+import PageExplainer from "@/components/seo/PageExplainer";
 import { MotionConfig } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Layout from "@/components/layout/Layout";
@@ -65,6 +67,44 @@ const BusinessVoicePage = () => (
       <BusinessLeadBand index="02" title="Need help sizing seats?">
         <LeadForm interest="voice" source="business_voice" heading="Need help sizing seats?" />
       </BusinessLeadBand>
+      <PageExplainer
+        title="Hosted VoIP and SIP trunks, explained"
+        paragraphs={[
+          "Hosted VoIP is a cloud phone system. Instead of a phone system box in a cupboard, your extensions, call routing, auto attendant, queues and voicemail run in the cloud, and staff take calls on desk phones, a computer or a mobile app. You pay per user (seat) each month.",
+          "SIP trunks are the alternative when you already own a phone system (PBX) you want to keep. They connect that PBX to the phone network over your internet connection, replacing ISDN and analogue lines, which are being retired as part of the UK's move off the old copper telephone network.",
+          "Both need a reliable business internet connection. OCCTA business broadband and leased lines are designed for voice, and we can quote the connection and phone system together.",
+        ]}
+        faqs={[
+          { question: "What is hosted VoIP?", answer: "A business phone system that runs in the cloud. Calls go over the internet to desk phones, softphone apps or mobiles, with features like auto attendants, call queues, hunt groups and call recording." },
+          { question: "How much does OCCTA hosted VoIP cost?", answer: `From £${businessVoice.find((p) => p.id === "biz-voip-seat")?.priceExVat?.toFixed(2)} per seat per month excluding VAT. SIP trunks start from £${businessVoice.find((p) => p.id === "biz-sip-trunk")?.priceExVat?.toFixed(2)} per trunk per month excluding VAT.` },
+          { question: "Can I keep my business phone numbers?", answer: "Yes. Existing geographic and non-geographic numbers can usually be ported to OCCTA." },
+          { question: "Do I need new phones?", answer: "Not necessarily. Softphone apps work on computers and mobiles, and many existing SIP desk phones can be reused. We'll check during the quote." },
+          { question: "Hosted VoIP or SIP trunks?", answer: "Choose hosted VoIP to move the whole phone system to the cloud. Choose SIP trunks to keep a PBX you already own. See our SIP trunks page for more detail." },
+        ]}
+        schema={[
+          {
+            "@type": "Service",
+            name: "OCCTA hosted VoIP and SIP trunks",
+            serviceType: "Business VoIP",
+            url: "https://www.occta.co.uk/business/voice",
+            provider: { "@id": "https://www.occta.co.uk/#organization" },
+            areaServed: { "@type": "Country", name: "United Kingdom" },
+            offers: businessVoice.filter((p) => p.priceExVat != null).map((p) => ({
+              "@type": "Offer",
+              name: p.name,
+              price: p.priceExVat!.toFixed(2),
+              priceCurrency: "GBP",
+              priceSpecification: { "@type": "UnitPriceSpecification", price: p.priceExVat!.toFixed(2), priceCurrency: "GBP", valueAddedTaxIncluded: false },
+            })),
+          },
+          { "@type": "BreadcrumbList", itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: "https://www.occta.co.uk/" },
+            { "@type": "ListItem", position: 2, name: "Business", item: "https://www.occta.co.uk/business" },
+            { "@type": "ListItem", position: 3, name: "Hosted VoIP & SIP", item: "https://www.occta.co.uk/business/voice" },
+          ] },
+        ]}
+      />
+      <CategoryLinks family="business" exclude="/business/voice" />
     </MotionConfig>
   </Layout>
 );

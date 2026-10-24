@@ -11,6 +11,8 @@ on:
     branches: [main]
     paths-ignore:
       - "seo-snapshots/**"
+      - "public/sitemap.xml"
+      - "public/sitemap-learning.xml"
       - "supabase/**"
       - "docs/**"
       - "**/*.md"
@@ -67,6 +69,11 @@ jobs:
             echo "Snapshots unchanged"
             exit 0
           fi
+          # Bump sitemap <lastmod> for changed pages and ping IndexNow (Bing/ChatGPT search).
+          git diff --cached --name-only --diff-filter=AM -- seo-snapshots > changed.txt
+          node scripts/seo-indexnow.mjs $(cat changed.txt) || echo "IndexNow submission failed (non-blocking)"
+          rm -f changed.txt
+          git add public/sitemap.xml public/sitemap-learning.xml
           git commit -m "chore(seo): refresh prerendered page snapshots"
           for attempt in 1 2 3; do
             git pull --rebase origin main && git push origin HEAD:main && exit 0

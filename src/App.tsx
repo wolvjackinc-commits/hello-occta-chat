@@ -15,11 +15,9 @@ import { captureCampaignFromLocation } from "@/lib/campaignAttribution";
 import { captureReferralFromUrl } from "@/lib/referral";
 import OcctaLoader from "@/components/loading/OcctaLoader";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import OAuthConsent from "./pages/OAuthConsent";
-import Dashboard from "./pages/Dashboard";
-import { ProtectedAdminRoute } from "./components/admin/layout/ProtectedAdminRoute";
-import { AdminLayout } from "./components/admin/layout/AdminLayout";
+const Auth = lazy(() => import("./pages/Auth"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 // Admin pages are lazy-loaded — they ship as separate chunks and are only
 // fetched when staff actually navigate into /admin/*. This keeps them out
 // of the initial customer bundle.
@@ -51,31 +49,31 @@ const AdminWebhookMonitor = lazy(() => import("./pages/admin/WebhookMonitor"));
 const AdminNotificationSettings = lazy(() => import("./pages/admin/NotificationSettings"));
 const AdminNotificationEvents = lazy(() => import("./pages/admin/NotificationEvents"));
 import Broadband from "./pages/Broadband";
-import Pay from "./pages/Pay";
-import PayInternalReturn from "./pages/PayInternalReturn";
-import DDSetup from "./pages/DDSetup";
+const Pay = lazy(() => import("./pages/Pay"));
+const PayInternalReturn = lazy(() => import("./pages/PayInternalReturn"));
+const DDSetup = lazy(() => import("./pages/DDSetup"));
 import Landline from "./pages/Landline";
-import Checkout from "./pages/Checkout";
-import PreCheckout from "./pages/PreCheckout";
-import ThankYou from "./pages/ThankYou";
+const Checkout = lazy(() => import("./pages/Checkout"));
+const PreCheckout = lazy(() => import("./pages/PreCheckout"));
+const ThankYou = lazy(() => import("./pages/ThankYou"));
 import Support from "./pages/Support";
 import Faq from "./pages/Faq";
 import About from "./pages/About";
-import Install from "./pages/Install";
-import Offline from "./pages/Offline";
-import OrderLookup from "./pages/OrderLookup";
+const Install = lazy(() => import("./pages/Install"));
+const Offline = lazy(() => import("./pages/Offline"));
+const OrderLookup = lazy(() => import("./pages/OrderLookup"));
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
-import ServiceStatus from "./pages/ServiceStatus";
+const ServiceStatus = lazy(() => import("./pages/ServiceStatus"));
 import BusinessOffers from "./pages/BusinessOffers";
-import BusinessCheckout from "./pages/BusinessCheckout";
+const BusinessCheckout = lazy(() => import("./pages/BusinessCheckout"));
 import BusinessSales from "./pages/BusinessSales";
 import Complaints from "./pages/Complaints";
-import PayInvoice from "./pages/PayInvoice";
-import PaymentResult from "./pages/PaymentResult";
-import BillingSettings from "./pages/BillingSettings";
+const PayInvoice = lazy(() => import("./pages/PayInvoice"));
+const PaymentResult = lazy(() => import("./pages/PaymentResult"));
+const BillingSettings = lazy(() => import("./pages/BillingSettings"));
 import NoContractBroadband from "./pages/NoContractBroadband";
 import Guides from "./pages/guides/Guides";
 import GuidePage from "./pages/guides/GuidePage";
@@ -87,6 +85,10 @@ const DbHelpArticle = lazy(() => import("./pages/kb/DbHelpArticle"));
 const DbGuidePage = lazy(() => import("./pages/kb/DbGuidePage"));
 const BlogIndex = lazy(() => import("./pages/kb/BlogIndex"));
 const BlogPost = lazy(() => import("./pages/kb/BlogPost"));
+// Admin shell is lazy so the admin bundle never loads on public pages.
+const ProtectedAdminRoute = lazy(() => import("./components/admin/layout/ProtectedAdminRoute").then((m) => ({ default: m.ProtectedAdminRoute })));
+const AdminLayout = lazy(() => import("./components/admin/layout/AdminLayout").then((m) => ({ default: m.AdminLayout })));
+const ProductLanding = lazy(() => import("./pages/ProductLanding"));
 const LearnHub = lazy(() => import("./pages/learn/LearnHub"));
 const LearnPage = lazy(() => import("./pages/learn/LearnPage"));
 const CoverageAreas = lazy(() => import("./pages/CoverageAreas"));
@@ -117,18 +119,18 @@ import FlexBroadband from "./pages/broadband/Flex";
 import ContractSaverBroadband from "./pages/broadband/ContractSaver";
 import SwitchingPage from "./pages/Switching";
 import RewardsPage from "./pages/Rewards";
-import BuildPlan from "./pages/BuildPlan";
+const BuildPlan = lazy(() => import("./pages/BuildPlan"));
 const OrderStart = lazy(() => import("./pages/order/OrderStart"));
 const OrderJourney = lazy(() => import("./pages/order/OrderJourney"));
 const OrderComplete = lazy(() => import("./pages/order/OrderComplete"));
 import QuoteStart from "./pages/quote/QuoteStart";
-import QuoteThankYou from "./pages/quote/QuoteThankYou";
-import UnifiedJourney from "./pages/quote/UnifiedJourney";
-import ContractSummaryView from "./pages/quote/ContractSummaryView";
-import QuotePayment from "./pages/quote/QuotePayment";
+const QuoteThankYou = lazy(() => import("./pages/quote/QuoteThankYou"));
+const UnifiedJourney = lazy(() => import("./pages/quote/UnifiedJourney"));
+const ContractSummaryView = lazy(() => import("./pages/quote/ContractSummaryView"));
+const QuotePayment = lazy(() => import("./pages/quote/QuotePayment"));
 const TwoDocAcceptance = lazy(() => import("./pages/quote/TwoDocAcceptance"));
-import ContractSummaryAuthedView from "./pages/dashboard/ContractSummaryAuthedView";
-import ReceiptView from "./pages/ReceiptView";
+const ContractSummaryAuthedView = lazy(() => import("./pages/dashboard/ContractSummaryAuthedView"));
+const ReceiptView = lazy(() => import("./pages/ReceiptView"));
 const AdminQuoteRequests = lazy(() => import("./pages/admin/QuoteRequests").then(m => ({ default: m.AdminQuoteRequests })));
 const AdminQuotes = lazy(() => import("./pages/admin/Quotes").then(m => ({ default: m.AdminQuotes })));
 const AdminVatSettings = lazy(() => import("./pages/admin/VatSettings").then(m => ({ default: m.AdminVatSettings })));
@@ -238,13 +240,15 @@ const AnimatedRoutes = () => {
       <RouteShutter />
       <CanonicalPath />
       <PrivateRouteNoIndex />
+      {/* Transactional pages are lazy; this boundary covers them. */}
+      <Suspense fallback={null}>
       <Routes location={location}>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/admin/*" element={<ProtectedAdminRoute />}>
-          <Route element={<AdminLayout />}>
+        <Route path="/admin/*" element={<Suspense fallback={<AdminRouteFallback />}><ProtectedAdminRoute /></Suspense>}>
+          <Route element={<Suspense fallback={<AdminRouteFallback />}><AdminLayout /></Suspense>}>
             <Route index element={<Navigate to="overview" replace />} />
             <Route path="overview" element={<Suspense fallback={<AdminRouteFallback />}><AdminOverview /></Suspense>} />
             <Route path="customers" element={<Suspense fallback={<AdminRouteFallback />}><AdminCustomers /></Suspense>} />
@@ -395,6 +399,42 @@ const AnimatedRoutes = () => {
 
         {/* Location broadband pages (50 cities) — explicit routes keep the sitemap and SEO scans in sync. */}
         <Route path="/broadband-london" element={<CityPage />} />
+        <Route path="/broadband-bradford" element={<CityPage />} />
+        <Route path="/broadband-salford" element={<CityPage />} />
+        <Route path="/broadband-solihull" element={<CityPage />} />
+        <Route path="/broadband-southend-on-sea" element={<CityPage />} />
+        <Route path="/broadband-basildon" element={<CityPage />} />
+        <Route path="/broadband-chelmsford" element={<CityPage />} />
+        <Route path="/broadband-colchester" element={<CityPage />} />
+        <Route path="/broadband-watford" element={<CityPage />} />
+        <Route path="/broadband-st-albans" element={<CityPage />} />
+        <Route path="/broadband-slough" element={<CityPage />} />
+        <Route path="/broadband-high-wycombe" element={<CityPage />} />
+        <Route path="/broadband-guildford" element={<CityPage />} />
+        <Route path="/broadband-crawley" element={<CityPage />} />
+        <Route path="/broadband-maidstone" element={<CityPage />} />
+        <Route path="/broadband-canterbury" element={<CityPage />} />
+        <Route path="/broadband-swindon" element={<CityPage />} />
+        <Route path="/broadband-salisbury" element={<CityPage />} />
+        <Route path="/broadband-gloucester" element={<CityPage />} />
+        <Route path="/broadband-worcester" element={<CityPage />} />
+        <Route path="/broadband-lincoln" element={<CityPage />} />
+        <Route path="/broadband-blackburn" element={<CityPage />} />
+        <Route path="/broadband-harrogate" element={<CityPage />} />
+        <Route path="/broadband-halifax" element={<CityPage />} />
+        <Route path="/broadband-rotherham" element={<CityPage />} />
+        <Route path="/broadband-barnsley" element={<CityPage />} />
+        <Route path="/broadband-chester" element={<CityPage />} />
+        <Route path="/broadband-telford" element={<CityPage />} />
+        <Route path="/broadband-shrewsbury" element={<CityPage />} />
+        <Route path="/broadband-carlisle" element={<CityPage />} />
+        <Route path="/broadband-durham" element={<CityPage />} />
+        <Route path="/broadband-newport" element={<CityPage />} />
+        <Route path="/broadband-wrexham" element={<CityPage />} />
+        <Route path="/broadband-torquay" element={<CityPage />} />
+        <Route path="/broadband-inverness" element={<CityPage />} />
+        <Route path="/broadband-stirling" element={<CityPage />} />
+        <Route path="/broadband-paisley" element={<CityPage />} />
         <Route path="/broadband-manchester" element={<CityPage />} />
         <Route path="/broadband-birmingham" element={<CityPage />} />
         <Route path="/broadband-leeds" element={<CityPage />} />
@@ -459,6 +499,22 @@ const AnimatedRoutes = () => {
         <Route path="/broadband-for-gaming" element={<KeywordLanding />} />
         <Route path="/broadband-for-working-from-home" element={<KeywordLanding />} />
         <Route path="/broadband-no-upfront-cost" element={<KeywordLanding />} />
+        {/* Product-category landing pages (src/data/productLandings.ts) */}
+        <Route path="/full-fibre-broadband" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/gigabit-broadband" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/ultrafast-broadband" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/superfast-broadband" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/broadband-without-landline" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/moving-house-broadband" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/unlimited-data-sim" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/30-day-sim-only" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/esim" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/data-only-sim" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/o2-sim-only-deals" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/vodafone-sim-only-deals" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/ee-sim-only-deals" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/business/leased-lines" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
+        <Route path="/business/sip-trunks" element={<Suspense fallback={null}><ProductLanding /></Suspense>} />
         {/* SEO content pages */}
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/coverage" element={<CoveragePage />} />
@@ -483,6 +539,7 @@ const AnimatedRoutes = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </>
   );
 };

@@ -22,6 +22,8 @@ export const POSTCODE_AREA_TO_SLUG: Record<string, string> = {
   IP: "ipswich",    PE: "peterborough",HD: "huddersfield",
   WF: "wakefield",  HU: "hull",       WA: "warrington",DN: "doncaster",
   SK: "stockport",  WN: "wigan",      GL: "cheltenham",
+  // Added towns
+  BD: "bradford", SS: "southend-on-sea", CM: "chelmsford", CO: "colchester", WD: "watford", AL: "st-albans", SL: "slough", HP: "high-wycombe", GU: "guildford", RH: "crawley", ME: "maidstone", CT: "canterbury", SN: "swindon", SP: "salisbury", WR: "worcester", LN: "lincoln", BB: "blackburn", HG: "harrogate", HX: "halifax", CH: "chester", TF: "telford", SY: "shrewsbury", CA: "carlisle", DH: "durham", NP: "newport", LL: "wrexham", TQ: "torquay", IV: "inverness", FK: "stirling", PA: "paisley",
 };
 
 const UK_POSTCODE_AREA = /^([A-Z]{1,2})/i;

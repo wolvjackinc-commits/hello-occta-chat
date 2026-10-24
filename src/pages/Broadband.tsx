@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import CategoryLinks from "@/components/seo/CategoryLinks";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { MotionConfig, motion } from "framer-motion";
 import Layout from "@/components/layout/Layout";
@@ -720,6 +721,7 @@ const BroadbandInner = () => {
           </Reveal>
         </div>
       </BrandSection>
+        <CategoryLinks family="broadband" />
       </MotionConfig>
     </LayoutComponent>
   );

@@ -71,6 +71,13 @@ function locsFromXml(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/g)].map((match) => match[1].trim());
 }
 
+/** Retired pages that public/_redirects 301s away; never render or check them. */
+const RETIRED_PATHS = new Set([
+  "/help/how-to-pay-by-invoice-link",
+  "/guides/invoice-link-payment-guide",
+  "/help/what-to-do-if-your-card-payment-fails",
+]);
+
 function pathnameOf(loc) {
   const url = new URL(loc);
   let pathname = url.pathname || "/";
@@ -93,7 +100,7 @@ function shouldPrerender(pathname) {
     "/install",
     "/offline",
   ]);
-  if (blockedExact.has(pathname)) return false;
+  if (blockedExact.has(pathname) || RETIRED_PATHS.has(pathname)) return false;
   if (pathname.startsWith("/admin") || pathname.startsWith("/dashboard/")) return false;
   if (pathname === "/pay" || pathname.startsWith("/pay/")) return false;
   if (pathname === "/pay-invoice" || pathname === "/payment-result") return false;
@@ -167,14 +174,30 @@ function extractRoot(html) {
 
 function writeSnapshot(pathname, html) {
   const rawHead = html.split("</head>")[0];
-  // JSON-LD: keep only the page's own (Helmet, data-rh) blocks so the shell's
-  // global schema is not duplicated next to the page schema.
-  const pageLd = /<script\s+type="application\/ld\+json"\s+data-rh="true"/i.test(rawHead);
+  // JSON-LD: build-time blocks (no data-rh) and runtime Helmet blocks (data-rh)
+  // can both describe the Organization/LocalBusiness/WebSite. Drop a build-time
+  // block only when Helmet already covers all of its types, so page-specific
+  // Article/FAQPage/Offer/BreadcrumbList schema is kept.
+  const ldTypes = (json) => {
+    try {
+      const data = JSON.parse(json);
+      const items = Array.isArray(data) ? data : data["@graph"] || [data];
+      return items.map((item) => item && item["@type"]).filter(Boolean).flat();
+    } catch {
+      return [];
+    }
+  };
+  const runtimeTypes = new Set();
+  for (const m of rawHead.matchAll(/<script\s+type="application\/ld\+json"\s+data-rh="true"[^>]*>([\s\S]*?)<\/script>/gi)) {
+    for (const type of ldTypes(m[1])) runtimeTypes.add(type);
+  }
   // Helmet prefixes its tags with data-rh; normalise so the patterns match them.
-  const head = (pageLd
-    ? rawHead.replace(/<script\s+type="application\/ld\+json">[\s\S]*?<\/script>/gi, "")
-    : rawHead
-  ).replace(/\s+data-rh="true"/g, "");
+  const head = rawHead
+    .replace(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/gi, (block, json) => {
+      const types = ldTypes(json);
+      return types.length && types.every((type) => runtimeTypes.has(type)) ? "" : block;
+    })
+    .replace(/\s+data-rh="true"/g, "");
   // Helmet writes its tags after the shell's, so the last tag per key wins.
   const byKey = new Map();
   for (const pattern of SNAPSHOT_HEAD_PATTERNS) {
@@ -188,8 +211,9 @@ function writeSnapshot(pathname, html) {
     }
   }
   const tags = [...byKey.values()];
+  // Keep in-body JSON-LD (JsonLd component); drop every executable script.
   const root = extractRoot(html)
-    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+    .replace(/<script\b(?![^>]*type="application\/ld\+json")[\s\S]*?<\/script>/gi, "")
     .replace(/<noscript\b[\s\S]*?<\/noscript>/gi, "");
   if (!root.includes("<h1")) throw new Error(`snapshot for ${pathname} has no H1`);
   fs.mkdirSync(SNAPSHOT_DIR, { recursive: true });
@@ -267,16 +291,19 @@ async function renderPath(browser, pathname) {
       const root = document.querySelector("#root");
       const text = root?.innerText || "";
       if (!document.querySelector("h1")) return false;
-      if (text.includes("Loading…") || text.includes("Loading...")) return false;
+      // Any "Loading…" / "Loading plans…" placeholder means live data is still arriving.
+      if (/Loading[^.…\n]{0,30}(…|\.\.\.)/.test(text)) return false;
       if (text.trim().length <= 20) return false;
       // Helmet appends a description after the shell tags marked above.
       return [...document.querySelectorAll('meta[name="description"]')].some((node) => !node.getAttribute("data-shell-meta"));
     }, { timeout: 45000 });
+    // Let Supabase-backed sections (SIM plans, prices, articles) settle.
+    await page.waitForNetworkIdle({ idleTime: 600, timeout: 15000 }).catch(() => {});
     const h1 = await page.$eval("h1", (el) => (el.textContent || "").trim());
     if (h1 === "404") throw new Error(`rendered the 404 page for ${pathname}`);
     if (pageErrors.length) throw new Error(pageErrors[0]);
     const html = postProcess(await page.content(), pathname);
-    if (!html.includes("<h1") || html.includes("Loading…")) {
+    if (!html.includes("<h1") || /Loading[^.…<]{0,30}(…|\.\.\.)/.test(html.replace(/<script[\s\S]*?<\/script>/gi, ""))) {
       throw new Error(`incomplete HTML for ${pathname}`);
     }
     const file = outputFile(pathname);

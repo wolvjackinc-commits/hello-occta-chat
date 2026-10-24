@@ -58,7 +58,23 @@ export default function LearnPage() {
           },
         },
       }
-    : null;
+    : {
+        // Plain explainers (learnPages.ts) have no publication metadata.
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: page.h1,
+        description: page.metaDescription,
+        mainEntityOfPage: `${SITE_URL}${canonical}`,
+        image: `${SITE_URL}/og-image.jpg`,
+        inLanguage: "en-GB",
+        author: { "@type": "Organization", name: "OCCTA LIMITED", url: SITE_URL },
+        publisher: {
+          "@type": "Organization",
+          name: "OCCTA LIMITED",
+          url: SITE_URL,
+          logo: { "@type": "ImageObject", url: `${SITE_URL}/pwa-512x512.png` },
+        },
+      };
 
   const disclosure = article ? (
     <div className="space-y-3">
@@ -92,7 +108,7 @@ export default function LearnPage() {
 
   return (
     <>
-      {articleSchema && <JsonLd data={articleSchema} />}
+      <JsonLd data={articleSchema} />
       <SeoContentLayout
         title={page.title}
         metaDescription={page.metaDescription}

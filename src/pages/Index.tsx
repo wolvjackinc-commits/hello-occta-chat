@@ -8,6 +8,7 @@ import { useAppMode } from "@/hooks/useAppMode";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO, StructuredData } from "@/components/seo";
 import { getFromPrices } from "@/lib/pricing/engine";
+import { CHARGED_PRICES } from "@/lib/pricing/chargedPrices";
 import { AvailabilityProvider } from "@/contexts/AvailabilityContext";
 
 // Lazy-load below-fold & non-critical components
@@ -64,7 +65,25 @@ const Index = () => {
           keywords="UK broadband, flexible broadband, price lock broadband, affordable internet UK, 5G SIM UK, SIM deals UK, fibre broadband UK, digital home phone UK, OCCTA broadband"
           price={getFromPrices().broadband}
         />
-        <StructuredData type="all" />
+        <StructuredData
+          type="all"
+          customSchema={{
+            "@context": "https://schema.org",
+            "@type": "Service",
+            name: "OCCTA broadband",
+            serviceType: "Broadband",
+            url: "https://www.occta.co.uk/broadband",
+            provider: { "@id": "https://www.occta.co.uk/#organization" },
+            areaServed: { "@type": "Country", name: "United Kingdom" },
+            offers: {
+              "@type": "AggregateOffer",
+              priceCurrency: "GBP",
+              lowPrice: Math.min(...Object.values(CHARGED_PRICES).map((p) => p.lock24)).toFixed(2),
+              highPrice: Math.max(...Object.values(CHARGED_PRICES).map((p) => p.lock24)).toFixed(2),
+              offerCount: Object.keys(CHARGED_PRICES).length,
+            },
+          }}
+        />
         {/* Section reveals honour the visitor's reduced-motion setting */}
         <MotionConfig reducedMotion="user">
           <HeroSection />

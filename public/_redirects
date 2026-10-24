@@ -1,6 +1,12 @@
 https://occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 
+# Retired card-payment articles: OCCTA takes Direct Debit or bank transfer only.
+/help/how-to-pay-by-invoice-link              /pay-by-card  301!
+/guides/invoice-link-payment-guide            /pay-by-card  301!
+/help/what-to-do-if-your-card-payment-fails   /pay-by-card  301!
+
+
 # Serve prerendered route HTML files directly
 /broadband               /broadband/index.html               200
 /sim-plans               /sim-plans/index.html               200

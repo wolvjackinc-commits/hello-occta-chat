@@ -22,6 +22,24 @@ Canonical website: https://www.occta.co.uk/
 - [Help and support](https://www.occta.co.uk/support): Public support and contact routes.
 - [Code of practice](https://www.occta.co.uk/legal/code-of-practice): Regulatory and customer information.
 
+## Product categories
+
+- [Full fibre broadband](https://www.occta.co.uk/full-fibre-broadband): FTTP Superfast, Ultrafast and Gigabit bands with live prices.
+- [Gigabit broadband](https://www.occta.co.uk/gigabit-broadband): Up to 1000Mbps full fibre, Price Lock 24 or Flex 30.
+- [Ultrafast broadband](https://www.occta.co.uk/ultrafast-broadband): Up to 550Mbps full fibre for busy homes.
+- [Superfast broadband](https://www.occta.co.uk/superfast-broadband): Essential (up to 80Mbps) and Superfast (up to 330Mbps) bands.
+- [Broadband without a landline](https://www.occta.co.uk/broadband-without-landline): Broadband only, no line rental; optional Digital Voice.
+- [Moving house broadband](https://www.occta.co.uk/moving-house-broadband): Ordering broadband for a new address.
+- [Unlimited data SIM](https://www.occta.co.uk/unlimited-data-sim): Unlimited data, calls and texts on O2, Vodafone or EE.
+- [30-day SIM only](https://www.occta.co.uk/30-day-sim-only): Rolling monthly SIM-only plans.
+- [eSIM plans](https://www.occta.co.uk/esim): eSIM availability, compatibility and plans.
+- [Data-only SIM](https://www.occta.co.uk/data-only-sim): Mobile broadband SIMs for tablets, laptops and routers.
+- [SIM only on the O2 network](https://www.occta.co.uk/o2-sim-only-deals): OCCTA plans using O2 network coverage.
+- [SIM only on the Vodafone network](https://www.occta.co.uk/vodafone-sim-only-deals): OCCTA plans using Vodafone network coverage.
+- [SIM only on the EE network](https://www.occta.co.uk/ee-sim-only-deals): OCCTA plans using EE network coverage.
+- [Business leased lines](https://www.occta.co.uk/business/leased-lines): Dedicated symmetric connectivity, priced by quote.
+- [SIP trunks](https://www.occta.co.uk/business/sip-trunks): SIP trunking to keep an existing PBX and replace ISDN.
+
 ## 2027 landline switch and older-customer guides
 
 - [UK landline switch-off 2027](https://www.occta.co.uk/learn/landline-switch-off-2027-uk)

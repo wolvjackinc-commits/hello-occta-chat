@@ -13,6 +13,27 @@ function locsFromXml(xml) {
   return [...xml.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/g)].map((match) => match[1].trim());
 }
 
+/** Retired pages that public/_redirects 301s away; never render or check them. */
+const RETIRED_PATHS = new Set([
+  "/help/how-to-pay-by-invoice-link",
+  "/guides/invoice-link-payment-guide",
+  "/help/what-to-do-if-your-card-payment-fails",
+]);
+
+/** Product-category landing pages that must expose Offer schema. */
+const PRODUCT_PATHS = new Set([
+  "/full-fibre-broadband", "/gigabit-broadband", "/ultrafast-broadband", "/superfast-broadband",
+  "/broadband-without-landline", "/moving-house-broadband", "/fixed-price-broadband",
+  "/unlimited-data-sim", "/30-day-sim-only", "/esim", "/data-only-sim",
+  "/o2-sim-only-deals", "/vodafone-sim-only-deals", "/ee-sim-only-deals",
+  "/business/sip-trunks", "/business/voice",
+]);
+
+/** City pages (/broadband-<slug>) read from src/data/locations.ts. */
+const CITY_PATHS = new Set(
+  [...fs.readFileSync(path.resolve("src/data/locations.ts"), "utf8").matchAll(/slug: "([a-z-]+)"/g)].map((m) => `/broadband-${m[1]}`),
+);
+
 function pathnameOf(loc) {
   const url = new URL(loc);
   let pathname = url.pathname || "/";
@@ -52,6 +73,7 @@ async function pathsToCheck() {
     const url = new URL(loc);
     if (url.hostname !== "www.occta.co.uk") throw new Error(`non-canonical sitemap loc ${loc}`);
     const pathname = pathnameOf(loc);
+    if (RETIRED_PATHS.has(pathname)) continue;
     if (seen.has(pathname)) throw new Error(`duplicate sitemap path ${pathname}`);
     seen.add(pathname);
     paths.push(pathname);
@@ -86,7 +108,7 @@ for (const pathname of paths) {
   const descriptions = [...html.matchAll(/<meta\s+name="description"\s+content="([^"]*)"/gi)].map((match) => match[1].trim());
   const canonicals = [...html.matchAll(/<link\s+rel="canonical"\s+href="([^"]+)"/gi)].map((match) => match[1]);
   const h1s = [...stripScripts(html).matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)];
-  const ld = [...html.matchAll(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/gi)];
+  const ld = [...html.matchAll(/<script\s+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)];
   const expected = `${SITE}${pathname === "/" ? "/" : pathname}`;
 
   if (titlesInPage.length !== 1 || !titlesInPage[0]) errors.push(`${pathname}: expected one title, found ${titlesInPage.length}`);
@@ -104,8 +126,17 @@ for (const pathname of paths) {
       errors.push(`${pathname}: invalid JSON-LD (${error instanceof Error ? error.message : error})`);
     }
   }
+  // Page-type schema guards: product pages must carry offers, articles must
+  // carry Article schema (a snapshot change once silently dropped both).
+  const ldText = ld.map((block) => block[1]).join(" ");
+  const isArticle = /^\/(learn|guides|blog|help)\/[^/]+$/.test(pathname);
+  const isProduct = pathname === "/" || pathname === "/broadband" || CITY_PATHS.has(pathname) || PRODUCT_PATHS.has(pathname);
+  if (isArticle && !/"@type":"(Article|TechArticle|BlogPosting|HowTo)"/.test(ldText)) errors.push(`${pathname}: article page missing Article schema`);
+  if (isProduct && !/"@type":"(Offer|AggregateOffer)"/.test(ldText)) errors.push(`${pathname}: product page missing Offer schema`);
+  if (!/"@type":"BreadcrumbList"/.test(ldText) && (isArticle || (isProduct && pathname !== "/"))) errors.push(`${pathname}: missing BreadcrumbList schema`);
+
   const body = textOf(html);
-  if (body.includes("Loading…") || body.includes("Loading...")) errors.push(`${pathname}: prerender still contains Loading`);
+  if (/Loading[^.…]{0,30}(…|\.\.\.)/.test(body)) errors.push(`${pathname}: prerender still contains Loading`);
   if (body.length < 40) errors.push(`${pathname}: body text is too short`);
   if ((html.match(/&amp;amp;/g) || []).length) errors.push(`${pathname}: double-encoded &amp;amp;`);
 

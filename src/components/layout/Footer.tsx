@@ -22,7 +22,7 @@ const Footer = () => {
     services: [
       { name: "Broadband", path: "/broadband" },
       { name: "Fixed-Price Broadband", path: "/fixed-price-broadband" },
-      { name: "SIM Plans", path: "/sim-plans" },
+      { name: "SIM Plans", path: "/sim" },
       { name: "Digital Voice (Home Phone)", path: "/landline" },
       { name: "Business", path: "/business" },
     ],
@@ -69,6 +69,34 @@ const Footer = () => {
       { name: "All Guides", path: "/guides" },
       { name: "Help Centre", path: "/help" },
       { name: "Blog", path: "/blog" },
+    ],
+    popular: [
+      { name: "Full fibre broadband", path: "/full-fibre-broadband" },
+      { name: "Gigabit broadband", path: "/gigabit-broadband" },
+      { name: "Ultrafast broadband", path: "/ultrafast-broadband" },
+      { name: "Superfast broadband", path: "/superfast-broadband" },
+      { name: "Broadband deals", path: "/best-broadband-deals-uk" },
+      { name: "No-contract broadband", path: "/no-contract-broadband-uk" },
+      { name: "Broadband without a landline", path: "/broadband-without-landline" },
+      { name: "Moving house broadband", path: "/moving-house-broadband" },
+      { name: "Broadband and home phone", path: "/broadband-and-digital-voice" },
+      { name: "Unlimited data SIM", path: "/unlimited-data-sim" },
+      { name: "30-day SIM only", path: "/30-day-sim-only" },
+      { name: "eSIM plans", path: "/esim" },
+      { name: "Data-only SIM", path: "/data-only-sim" },
+      { name: "SIM only on O2", path: "/o2-sim-only-deals" },
+      { name: "SIM only on Vodafone", path: "/vodafone-sim-only-deals" },
+      { name: "SIM only on EE", path: "/ee-sim-only-deals" },
+      { name: "Business leased lines", path: "/business/leased-lines" },
+      { name: "SIP trunks", path: "/business/sip-trunks" },
+      { name: "Compare providers", path: "/compare/no-contract-broadband" },
+      { name: "Broadband by area", path: "/coverage-areas" },
+      { name: "Broadband London", path: "/broadband-london" },
+      { name: "Broadband Manchester", path: "/broadband-manchester" },
+      { name: "Broadband Birmingham", path: "/broadband-birmingham" },
+      { name: "Broadband Leeds", path: "/broadband-leeds" },
+      { name: "Broadband Glasgow", path: "/broadband-glasgow" },
+      { name: "Broadband Bristol", path: "/broadband-bristol" },
     ],
     learn: [
       { name: "Learn Hub", path: "/learn" },
@@ -187,6 +215,22 @@ const Footer = () => {
             ))}
           </div>
         </div>
+
+        {/* Popular products and areas: crawlable links to every category hub */}
+        <nav aria-label="Popular products and areas" className="mt-14 border-t border-white/10 pt-8">
+          <h4 className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+            Popular products &amp; areas
+          </h4>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
+            {footerLinks.popular.map((link) => (
+              <li key={link.path}>
+                <Link to={link.path} className="text-white/60 transition-colors hover:text-primary">
+                  {link.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         {/* Compliance row */}
         <div className="mt-14 border-t border-white/10 pt-8">

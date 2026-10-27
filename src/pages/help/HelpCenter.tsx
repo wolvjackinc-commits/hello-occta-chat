@@ -10,10 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { ArticleCard, BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
 import { revealItem } from "@/components/brand/motion";
 import { SupportChatArt } from "@/components/brand/illustrations";
+import { CONTACT_PHONE_DISPLAY } from "@/lib/constants";
 
 type DbArticle = { id: string; slug: string; title: string; summary: string | null; kind: string; read_minutes: number | null };
 
 const pad = (n: number) => String(n).padStart(2, "0");
+const anchor = (c: string) => c.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const HelpCenter = () => {
   const [extra, setExtra] = useState<DbArticle[]>([]);
@@ -38,9 +40,9 @@ const HelpCenter = () => {
     <Layout>
       <SEO
         title="OCCTA Help Centre for broadband and SIM"
-        description="Self-service guides for OCCTA customers. Getting started, billing, Wi-Fi fixes, Digital Voice, moving home and more. No queues, no jargon."
+        description={`${helpArticles.length}+ self-service guides for OCCTA broadband, mobile and home phone: setup, faults, Wi-Fi, SIM, billing, moving, switching, complaints and extra help.`}
         canonical="/help"
-        keywords="occta help, broadband help uk, self service broadband, occta support"
+        keywords="occta help, broadband help uk, sim help, self service broadband, occta support, report broadband fault"
       />
       <StructuredData customOnly customSchema={breadcrumb} />
 
@@ -54,11 +56,18 @@ const HelpCenter = () => {
               {" "}<span className="text-primary">fast.</span>
             </HeroTitle>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
-              Most issues are fixed in under five minutes. Find your topic, follow the steps, and you're sorted.
+              Step-by-step guides written by the OCCTA team. Find your topic, follow the steps, and if you still need us, we're a message away.
             </p>
             <div className="mt-8 max-w-xl">
-              <KbSearchBar />
+              <KbSearchBar size="lg" placeholder="Search e.g. ‘router lights’, ‘eSIM’, ‘cancel’…" />
             </div>
+            <nav aria-label="Help topics" className="mt-6 flex flex-wrap gap-2">
+              {categories.map(({ cat, items }) => (
+                <a key={cat} href={`#${anchor(cat)}`} className="border-2 border-white/30 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:border-primary hover:text-primary">
+                  {cat} <span className="text-white/50">({items.length})</span>
+                </a>
+              ))}
+            </nav>
           </div>
         </PosterStage>
 
@@ -79,7 +88,7 @@ const HelpCenter = () => {
             </div>
           )}
           {categories.map(({ cat, items }, i) => (
-            <div key={cat} className="mb-16 last:mb-0">
+            <div key={cat} id={anchor(cat)} className="mb-16 scroll-mt-24 last:mb-0">
               <Reveal>
                 <SectionEyebrow index={pad(i + 1 + offset)} label="Topic" />
                 <h2 className="mt-5 font-display text-4xl uppercase leading-none sm:text-5xl">{cat}</h2>
@@ -100,10 +109,18 @@ const HelpCenter = () => {
             <div>
               <SectionEyebrow index={pad(categories.length + 1 + offset)} label="Talk to us" tone="dark" />
               <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Still stuck?</h2>
-              <p className="mt-4 max-w-xl text-lg text-white/70">Chat with Ollie (bottom-right) or email hello@occta.co.uk — we reply within a few hours, no scripts.</p>
-              <Link to="/guides" className="mt-7 inline-flex items-center gap-2 border-[3px] border-white px-5 py-3 font-display text-lg uppercase text-white transition-colors hover:border-primary hover:bg-primary hover:text-black">
-                <BookOpen className="w-5 h-5" /> Browse guides
-              </Link>
+              <p className="mt-4 max-w-xl text-lg text-white/70">Chat with Ollie (bottom-right) any time, raise a tracked ticket, email hello@occta.co.uk or call {CONTACT_PHONE_DISPLAY} (Mon–Fri, 8am–6pm).</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link to="/support" className="inline-flex items-center gap-2 border-[3px] border-primary bg-primary px-5 py-3 font-display text-lg uppercase text-black transition-colors hover:bg-transparent hover:text-primary">
+                  <MessageCircle className="w-5 h-5" /> Contact support
+                </Link>
+                <Link to="/status" className="inline-flex items-center gap-2 border-[3px] border-white px-5 py-3 font-display text-lg uppercase text-white transition-colors hover:border-primary hover:text-primary">
+                  Service status
+                </Link>
+                <Link to="/guides" className="inline-flex items-center gap-2 border-[3px] border-white px-5 py-3 font-display text-lg uppercase text-white transition-colors hover:border-primary hover:text-primary">
+                  <BookOpen className="w-5 h-5" /> Browse guides
+                </Link>
+              </div>
             </div>
             <div className="border-[3px] border-white/25 bg-[hsl(0_0%_10%)] p-6">
               <div className="mb-4 flex items-center gap-2 font-sans text-[11px] font-semibold uppercase tracking-[0.2em] text-white/55">

@@ -1,4 +1,5 @@
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
+import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
 import { MotionConfig, motion } from "framer-motion";
 import { Clock, MessageCircle } from "lucide-react";
 import Layout from "@/components/layout/Layout";
@@ -100,10 +101,19 @@ const HelpArticlePage = () => {
                     </div>
                   </section>
                 )}
-                <div className="flex items-start gap-3 border-[3px] border-foreground bg-[hsl(0_0%_5%)] p-5 text-white">
-                  <MessageCircle className="mt-0.5 h-6 w-6 flex-shrink-0 text-primary" />
-                  <p className="text-sm leading-relaxed">Still stuck? Open the chat bubble (bottom-right) and Ollie will help.</p>
+                <div className="border-[3px] border-foreground bg-[hsl(0_0%_5%)] p-5 text-white">
+                  <div className="flex items-start gap-3">
+                    <MessageCircle className="mt-0.5 h-6 w-6 flex-shrink-0 text-primary" />
+                    <div className="text-sm leading-relaxed">
+                      <p className="font-display text-lg uppercase leading-none">Still stuck?</p>
+                      <p className="mt-2 text-white/75">Ask Ollie in the chat bubble any time, or talk to our UK team.</p>
+                      <p className="mt-3"><a href={CONTACT_PHONE_TEL} className="font-semibold text-primary hover:underline">{CONTACT_PHONE_DISPLAY}</a> <span className="text-white/55">· Mon–Fri, 8am–6pm</span></p>
+                      <p className="mt-1"><a href="mailto:hello@occta.co.uk" className="font-semibold text-primary hover:underline">hello@occta.co.uk</a></p>
+                      <Link to="/support#tickets" className="mt-4 inline-flex border-2 border-white px-3 py-1.5 font-display text-sm uppercase hover:border-primary hover:text-primary">Raise a ticket</Link>
+                    </div>
+                  </div>
                 </div>
+                <p className="text-xs text-muted-foreground">Was this article helpful? Tell Ollie or email us — we review every help article regularly.</p>
               </aside>
             </div>
           </BrandSection>

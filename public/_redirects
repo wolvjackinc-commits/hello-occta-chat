@@ -7,6 +7,11 @@ http://www.occta.co.uk/*  https://www.occta.co.uk/:splat  301!
 /help/what-to-do-if-your-card-payment-fails   /pay-by-card  301!
 
 
+# Legacy business pages (invented prices) retired 2026-10-28: point to the quote-led business hub.
+/business-offers     /business/bundles        301!
+/business-sales      /business/contact-sales  301!
+/business-checkout   /business/quote          301!
+
 # Serve prerendered route HTML files directly
 /broadband               /broadband/index.html               200
 /sim-plans               /sim-plans/index.html               200

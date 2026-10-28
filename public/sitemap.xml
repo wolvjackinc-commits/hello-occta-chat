@@ -43,12 +43,6 @@
     <priority>0.75</priority>
   </url>
 <url>
-    <loc>https://www.occta.co.uk/rewards</loc>
-    <lastmod>2026-10-24</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.60</priority>
-  </url>
-<url>
     <loc>https://www.occta.co.uk/order</loc>
     <lastmod>2026-10-24</lastmod>
     <changefreq>monthly</changefreq>
@@ -77,8 +71,6 @@
 <url><loc>https://www.occta.co.uk/business/contact-sales</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/business/line-check</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/business/quote</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
-<url><loc>https://www.occta.co.uk/business/support</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
-<url><loc>https://www.occta.co.uk/business/billing</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
 <url><loc>https://www.occta.co.uk/business/industries/cafes</loc><lastmod>2026-10-27</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/business/industries/salons</loc><lastmod>2026-10-27</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/business/industries/offices</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
@@ -179,12 +171,6 @@
     <lastmod>2026-10-26</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
-  </url>
-<url>
-    <loc>https://www.occta.co.uk/business-offers</loc>
-    <lastmod>2026-10-27</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.80</priority>
   </url>
 <url>
     <loc>https://www.occta.co.uk/about</loc>
@@ -428,7 +414,6 @@
 <url><loc>https://www.occta.co.uk/guides/working-from-home-broadband</loc><lastmod>2026-10-27</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
 <url><loc>https://www.occta.co.uk/guides/no-credit-check-broadband-uk</loc><lastmod>2026-10-24</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/guides/broadband-for-renters</loc><lastmod>2026-10-27</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
-<url><loc>https://www.occta.co.uk/business-sales</loc><lastmod>2026-10-27</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/learn</loc><lastmod>2026-10-24</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
 <url><loc>https://www.occta.co.uk/learn/what-is-fttp</loc><lastmod>2026-10-27</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/learn/broadband-speed-guide</loc><lastmod>2026-10-27</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { contractLabel } from "@/lib/dashboard/contractLabel";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -143,7 +144,7 @@ export function PackagesTab({ userId }: { userId: string }) {
             ) : (
               <div className="space-y-3">
                 {items.map((s) => {
-                  const contract = s.contract_type || (s.plan_name || "").toLowerCase().includes("saver") ? "Contract Saver" : "Flex";
+                  const contract = contractLabel(s);
                   const inMinTerm =
                     s.minimum_term_end_date && new Date(s.minimum_term_end_date) > new Date();
                   return (

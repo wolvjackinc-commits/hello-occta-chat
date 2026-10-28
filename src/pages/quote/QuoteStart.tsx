@@ -29,8 +29,8 @@ const SERVICE_INTERESTS = [
 ] as const;
 
 const PLAN_PREFS = [
-  { value: "flex", label: "Flex (30-day rolling)" },
-  { value: "contract_saver", label: "Contract Saver" },
+  { value: "flex", label: "Flex 30 (30-day rolling)" },
+  { value: "contract_saver", label: "Price Lock 24 (fixed price)" },
   { value: "not_sure", label: "Not sure yet" },
 ] as const;
 

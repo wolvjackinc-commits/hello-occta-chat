@@ -14,6 +14,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import { Loader2, Paperclip, PlusCircle, Ticket, X, Download, Clock, Files } from "lucide-react";
 import { TicketAttachmentList } from "@/components/business/TicketAttachmentList";
+import { BusinessPortalSignedOut } from "@/components/business/BusinessPortalSignedOut";
 
 type BizTicket = {
   id: string;
@@ -153,12 +154,12 @@ const BusinessSupport = () => {
 
   return (
     <Layout>
-      <SEO title="OCCTA business support and tickets" description="Raise an OCCTA business support ticket and track fault, billing and account updates in one place." canonical="/business/support" />
+      <SEO title="OCCTA business support and tickets" description="Raise an OCCTA business support ticket and track fault, billing and account updates in one place." canonical="/business/support" noIndex />
       <section className="container mx-auto px-4 py-12 max-w-5xl">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
           <div>
             <h1 className="font-display text-4xl mb-2">Business support</h1>
-            <p className="text-muted-foreground">Raise tickets, attach evidence, and track status. UK-based support, 4-hour fix target on Enhanced SLA.</p>
+            <p className="text-muted-foreground">Raise tickets, attach evidence and track every update. UK-based support, with target fix times set by the care level on your contract.</p>
           </div>
           <Button variant="hero" size="lg" onClick={() => user ? setOpen(true) : navigate("/auth?next=/business/support")}>
             <PlusCircle className="w-4 h-4 mr-2" /> Raise a ticket
@@ -174,10 +175,23 @@ const BusinessSupport = () => {
         )}
 
         {!user && !loading && (
-          <div className="border-4 border-foreground bg-secondary p-6 shadow-brutal text-center">
-            <p className="mb-4">Sign in to view and raise business tickets.</p>
-            <Link to="/auth?next=/business/support"><Button variant="hero">Sign in</Button></Link>
-          </div>
+          <BusinessPortalSignedOut
+            next="/business/support"
+            heading="Sign in to raise and track tickets"
+            intro="Business customers raise faults, billing and account requests here. Every ticket gets a reference, a full activity history and email updates, and you can attach screenshots, speed tests or documents."
+            points={[
+              { title: "Raise a ticket", body: "Choose a category and priority, describe the issue and attach evidence. Tell us which site and service is affected." },
+              { title: "We triage it", body: "Our UK team checks the service, runs line tests where relevant and raises faults with the network if needed." },
+              { title: "Track every update", body: "Status, replies and engineer bookings appear on the ticket's activity timeline, and we email you at each step." },
+              { title: "Care level applies", body: "Target fix times depend on the care level in your contract. Enhanced care is available where faster restoration matters." },
+            ]}
+            links={[
+              { to: "/status", label: "Service status" },
+              { to: "/help/report-a-fault", label: "How to report a fault" },
+              { to: "/business/billing", label: "Business billing" },
+              { to: "/complaints", label: "Make a complaint" },
+            ]}
+          />
         )}
 
         {user && loading && <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>}

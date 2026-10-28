@@ -5,6 +5,20 @@ import { Link } from "react-router-dom";
 import { logClientEvent } from "@/lib/activityLog";
 import { BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage } from "@/components/brand/kit";
 
+const POLICIES = [
+  { to: "/terms", label: "Terms of Service" },
+  { to: "/legal/code-of-practice", label: "Code of Practice" },
+  { to: "/legal/complaints-code", label: "Complaints Code" },
+  { to: "/legal/price-transparency", label: "Price Transparency" },
+  { to: "/legal/switching-policy", label: "Switching Policy" },
+  { to: "/legal/vulnerable-customers", label: "Vulnerable Customers Policy" },
+  { to: "/legal/accessibility", label: "Accessibility Statement" },
+  { to: "/legal/network-management", label: "Traffic Management" },
+  { to: "/legal/acceptable-use", label: "Acceptable Use Policy" },
+  { to: "/legal/modern-slavery", label: "Modern Slavery Statement" },
+  { to: "/privacy", label: "Privacy Policy" },
+];
+
 interface Props {
   title: string;
   description: string;
@@ -33,7 +47,7 @@ export default function LegalPage({ title, description, canonical, lastUpdated, 
 
         <BrandSection tone="paper">
           <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-20">
-            <div className="prose prose-base max-w-3xl text-foreground [&_a]:font-medium [&_a]:underline [&_a]:decoration-primary [&_a]:decoration-2 [&_a]:underline-offset-4 [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:border-t-[3px] [&_h2]:border-foreground [&_h2]:pt-6 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:uppercase [&_h2]:leading-none [&_h2:first-child]:mt-0 [&_li]:text-foreground/75 [&_p]:text-foreground/75 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5">
+            <div className="prose prose-base max-w-3xl text-foreground [&_a]:font-medium [&_a]:underline [&_a]:decoration-primary [&_a]:decoration-2 [&_a]:underline-offset-4 [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:border-t-[3px] [&_h2]:border-foreground [&_h2]:pt-6 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:uppercase [&_h2]:leading-none [&_h2:first-child]:mt-0 [&_li]:text-foreground/75 [&_p]:text-foreground/75 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5 [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:font-display [&_h3]:text-xl [&_h3]:uppercase [&_table]:w-full [&_table]:text-sm [&_th]:border-b-2 [&_th]:border-foreground [&_th]:py-2 [&_th]:text-left [&_td]:border-b [&_td]:border-foreground/15 [&_td]:py-2 [&_td]:pr-4 [&_td]:align-top">
               {children}
             </div>
 
@@ -47,6 +61,14 @@ export default function LegalPage({ title, description, canonical, lastUpdated, 
                   contact <a href="mailto:hello@occta.co.uk" className="font-medium text-foreground underline decoration-primary decoration-2 underline-offset-4">hello@occta.co.uk</a>.
                 </p>
               </div>
+              <nav aria-label="Policies" className="mt-5 border-[3px] border-foreground bg-card">
+                <p className="border-b-[3px] border-foreground px-5 py-2.5 font-sans text-[11px] font-bold uppercase tracking-[0.2em]">Related policies</p>
+                <ul className="divide-y-2 divide-foreground/10 text-sm">
+                  {POLICIES.filter((x) => x.to !== canonical).map((x) => (
+                    <li key={x.to}><Link to={x.to} className="block px-5 py-2.5 hover:bg-secondary hover:underline">{x.label}</Link></li>
+                  ))}
+                </ul>
+              </nav>
             </aside>
           </div>
         </BrandSection>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { contractLabel } from "@/lib/dashboard/contractLabel";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -15,6 +16,8 @@ type Service = {
   status: string;
   activation_date: string | null;
   price_monthly: number | null;
+  contract_type: string | null;
+  minimum_term_months: number | null;
 };
 
 export function ServicesTab({ userId }: { userId: string }) {
@@ -26,7 +29,7 @@ export function ServicesTab({ userId }: { userId: string }) {
       // Phase 7: customer-safe — never expose supplier_reference / supplier_*
       const { data } = await supabase
         .from("customer_services" as any)
-        .select("id,service_type,plan_name,status,activation_date,price_monthly")
+        .select("id,service_type,plan_name,status,activation_date,price_monthly,contract_type,minimum_term_months")
         .order("created_at", { ascending: false });
       setServices(((data as unknown) as Service[]) || []);
       setLoading(false);
@@ -59,7 +62,7 @@ export function ServicesTab({ userId }: { userId: string }) {
     <div className="space-y-3">
       {liveServices.map((s) => {
         const hasVoice = (s.service_type || "").toLowerCase().includes("voice") || (s.service_type || "").toLowerCase().includes("landline");
-        const contractType = (s.plan_name || "").toLowerCase().includes("saver") ? "Contract Saver" : "Flex";
+        const contractType = contractLabel(s);
         return (
           <div key={s.id} className="border-4 border-foreground bg-background p-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">

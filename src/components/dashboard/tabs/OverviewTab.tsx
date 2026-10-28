@@ -5,7 +5,7 @@ import {
   Package,
   Receipt,
   LifeBuoy,
-  Gift,
+  BookOpen,
   AlertTriangle,
   MessageCircle,
   Sparkles,
@@ -149,7 +149,7 @@ export function OverviewTab(p: Props) {
         <Card icon={Package} label="Latest order" value={p.latestOrderStatus} empty="No orders" href="/dashboard?tab=orders" />
         <Card icon={Receipt} label="Unpaid" value={p.unpaidInvoices ? `£${p.unpaidTotal.toFixed(2)} (${p.unpaidInvoices})` : null} empty="No unpaid invoices" href="/dashboard?tab=invoices" accent={hasUnpaid} />
         <Card icon={LifeBuoy} label="Open tickets" value={p.openTickets || null} empty="No open tickets" href="/dashboard?tab=tickets" />
-        <Card icon={Gift} label="Rewards" value={null} empty="Coming soon" />
+        <Card icon={BookOpen} label="Help Centre" value={null} empty="Guides & fixes" href="/help" />
       </div>
 
       <div className="p-4 border-4 border-foreground bg-background flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

@@ -94,7 +94,7 @@ const SimIndex = () => {
               </HeroTitle>
               <p className="mt-6 max-w-[560px] text-lg leading-relaxed text-white/70">
                 eSIM or physical SIM. Keep your number or start fresh. Pay by Direct Debit or bank transfer.
-                Admin activates your service before billing starts — no surprise charges.
+                Your SIM is activated and confirmed before billing starts — no surprise charges.
               </p>
               <a
                 href="#plans"
@@ -167,12 +167,20 @@ const SimIndex = () => {
 
           {!loading && !isOpen && (
             <div className="mt-10 max-w-2xl border-[3px] border-foreground bg-card p-8 shadow-[8px_8px_0_0_hsl(var(--foreground))]">
-              <h3 className="mb-2 font-display text-3xl uppercase leading-none">Not currently available</h3>
-              <p className="mb-5 text-muted-foreground">
-                SIM-only plans are not open for online ordering right now. Our team can confirm
-                current availability and options for you.
+              <h3 className="mb-2 font-display text-3xl uppercase leading-none">Order your SIM with our team</h3>
+              <p className="mb-4 text-muted-foreground">
+                Online plan listings are temporarily unavailable. Our UK team can take your SIM order by phone or email,
+                recommend the best network for your area and arrange your number transfer.
               </p>
-              <Link to="/support"><Button variant="hero">Contact support</Button></Link>
+              <ul className="mb-5 space-y-1.5 text-sm">
+                <li><strong>Call:</strong> <a href="tel:08002606626" className="underline">0800 260 6626</a> (Mon–Fri, 8am–6pm)</li>
+                <li><strong>Email:</strong> <a href="mailto:hello@occta.co.uk" className="underline">hello@occta.co.uk</a> with "SIM order" in the subject</li>
+                <li><strong>Keeping your number?</strong> Text PAC to 65075 first and have the code ready.</li>
+              </ul>
+              <div className="flex flex-wrap gap-3">
+                <a href="tel:08002606626"><Button variant="hero">Call to order</Button></a>
+                <Link to="/help/keep-your-mobile-number-pac"><Button variant="outline">Keeping your number</Button></Link>
+              </div>
             </div>
           )}
 

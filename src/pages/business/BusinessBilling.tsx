@@ -12,6 +12,7 @@ import { Download, FileText, Loader2, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
+import { BusinessPortalSignedOut } from "@/components/business/BusinessPortalSignedOut";
 
 type Invoice = {
   id: string;
@@ -100,18 +101,31 @@ const BusinessBilling = () => {
 
   return (
     <Layout>
-      <SEO title="Business billing and invoices" description="View OCCTA business invoices, payment history and downloads for your company account." canonical="/business/billing" />
+      <SEO title="Business billing and invoices" description="View OCCTA business invoices, payment history and downloads for your company account." canonical="/business/billing" noIndex />
       <section className="container mx-auto px-4 py-12 max-w-6xl">
         <div className="mb-8">
           <h1 className="font-display text-4xl mb-2">Business billing</h1>
-          <p className="text-muted-foreground">One place for all your invoices. Auto-emailed on the 1st of every month. Ex-VAT figures on your quote; VAT itemised here.</p>
+          <p className="text-muted-foreground">Every business invoice in one place, emailed to your billing contact when issued. Prices are quoted ex-VAT; VAT is itemised on each invoice.</p>
         </div>
 
         {!user && !loading && (
-          <div className="border-4 border-foreground bg-secondary p-6 shadow-brutal text-center">
-            <p className="mb-4">Sign in to view your business invoices.</p>
-            <Link to="/auth?next=/business/billing"><Button variant="hero">Sign in</Button></Link>
-          </div>
+          <BusinessPortalSignedOut
+            next="/business/billing"
+            heading="Sign in to see your invoices"
+            intro="Business customers can view, search and download every invoice, see what's outstanding and track payments for the year."
+            points={[
+              { title: "Billed in advance", body: "Recurring charges are billed in advance once each service is live. One-off charges agreed in your quote appear on the first invoice." },
+              { title: "VAT itemised", body: "Business prices are quoted ex-VAT. Each invoice shows the net amount, VAT and gross total, with our VAT number." },
+              { title: "Two ways to pay", body: "Pay by Direct Debit, protected by the Direct Debit Guarantee, or by bank transfer quoting your account number. We don't take card or phone payments." },
+              { title: "Query an invoice", body: "Raise a billing ticket with the invoice number. A genuinely disputed amount is reviewed in good faith before any action." },
+            ]}
+            links={[
+              { to: "/help/pay-by-bank-transfer", label: "Bank transfer details" },
+              { to: "/help/direct-debit-setup-help", label: "Set up Direct Debit" },
+              { to: "/business/support", label: "Business support tickets" },
+              { to: "/legal/price-transparency", label: "Price transparency" },
+            ]}
+          />
         )}
 
         {user && loading && <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="w-4 h-4 animate-spin" /> Loading…</div>}

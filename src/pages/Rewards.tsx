@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { SEO } from "@/components/seo";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { MotionConfig, motion } from "framer-motion";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 import { logClientEvent } from "@/lib/activityLog";
@@ -20,12 +20,12 @@ type PublicBenefit = {
 const facts = [
   "Rewards will be tied to cleared payments, not sign-ups.",
   "Eligibility rules and fraud checks will be transparent and published.",
-  "Contract Saver customers will have stronger rewards eligibility than Flex customers.",
+  "Price Lock 24 customers will have stronger rewards eligibility than Flex 30 customers.",
   "You'll see your reward status inside your customer dashboard once the programme is live.",
 ];
 
 export default function RewardsPage() {
-  const { rewardsEnabled } = usePlatformSettings();
+  const { rewardsEnabled, isLoading } = usePlatformSettings();
   const [benefits, setBenefits] = useState<PublicBenefit[]>([]);
 
   useEffect(() => {
@@ -36,6 +36,10 @@ export default function RewardsPage() {
       setBenefits((data ?? []) as PublicBenefit[]);
     })();
   }, []);
+
+  // Until the programme is switched on, a "launching soon" page is all we'd
+  // have to show. Send visitors to the live switching cashback offer instead.
+  if (!isLoading && !rewardsEnabled) return <Navigate to="/broadband-cashback-offer" replace />;
 
   return (
     <Layout>

@@ -51,7 +51,7 @@ export default function SmallBusinessTelecomPage() {
         { label: "How to pay your bill", to: "/pay-by-card" },
       ]}
       primaryCta={{ label: "Check business availability", to: "/business" }}
-      secondaryCta={{ label: "Talk to business sales", to: "/business-sales" }}
+      secondaryCta={{ label: "Talk to business sales", to: "/business/contact-sales" }}
       compliance={
         <p>OCCTA LIMITED is a UK telecom provider. Business prices exclude VAT. Cancellation and notice depend on the business agreement you accept.</p>
       }

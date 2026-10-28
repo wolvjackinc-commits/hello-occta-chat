@@ -112,6 +112,7 @@ const navSections: NavSection[] = [
     label: "Support", icon: Ticket, children: [
       { label: "Tickets",          to: "/admin/tickets" },
       { label: "Complaints",       to: "/admin/complaints" },
+      { label: "Service Status",   to: "/admin/service-status" },
       { label: "Communications",   to: "/admin/communications" },
       { label: "Chat Transcripts", to: "/admin/chat-transcripts" },
       { label: "Live Chat",        to: "/admin/live-chat" },

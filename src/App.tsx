@@ -67,9 +67,6 @@ import CookiePolicy from "./pages/CookiePolicy";
 import TermsOfService from "./pages/TermsOfService";
 import NotFound from "./pages/NotFound";
 const ServiceStatus = lazy(() => import("./pages/ServiceStatus"));
-import BusinessOffers from "./pages/BusinessOffers";
-const BusinessCheckout = lazy(() => import("./pages/BusinessCheckout"));
-import BusinessSales from "./pages/BusinessSales";
 import Complaints from "./pages/Complaints";
 const PayInvoice = lazy(() => import("./pages/PayInvoice"));
 const PaymentResult = lazy(() => import("./pages/PaymentResult"));
@@ -144,6 +141,7 @@ const AdminReferrals = lazy(() => import("./pages/admin/Referrals").then(m => ({
 const AdminContractBenefits = lazy(() => import("./pages/admin/ContractBenefits").then(m => ({ default: m.AdminContractBenefits })));
 const AdminCampaigns = lazy(() => import("./pages/admin/Campaigns").then(m => ({ default: m.AdminCampaigns })));
 const AdminComplaints = lazy(() => import("./pages/admin/Complaints").then(m => ({ default: m.AdminComplaints })));
+const AdminServiceStatus = lazy(() => import("./pages/admin/ServiceStatusAdmin"));
 const AdminKnowledgeBase = lazy(() => import("./pages/admin/KnowledgeBase").then(m => ({ default: m.AdminKnowledgeBase })));
 const AdminBlogEditor = lazy(() => import("./pages/admin/BlogEditor").then(m => ({ default: m.AdminBlogEditor })));
 const AdminFairPricing = lazy(() => import("./pages/admin/FairPricing").then(m => ({ default: m.AdminFairPricing })));
@@ -294,6 +292,7 @@ const AnimatedRoutes = () => {
             <Route path="contract-benefits" element={<Suspense fallback={<AdminRouteFallback />}><AdminContractBenefits /></Suspense>} />
             <Route path="campaigns" element={<Suspense fallback={<AdminRouteFallback />}><AdminCampaigns /></Suspense>} />
             <Route path="complaints" element={<Suspense fallback={<AdminRouteFallback />}><AdminComplaints /></Suspense>} />
+            <Route path="service-status" element={<Suspense fallback={<AdminRouteFallback />}><AdminServiceStatus /></Suspense>} />
             <Route path="knowledge-base" element={<Suspense fallback={<AdminRouteFallback />}><AdminKnowledgeBase /></Suspense>} />
             <Route path="blog" element={<Suspense fallback={<AdminRouteFallback />}><AdminBlogEditor /></Suspense>} />
             <Route path="fair-pricing" element={<Suspense fallback={<AdminRouteFallback />}><AdminFairPricing /></Suspense>} />
@@ -378,9 +377,9 @@ const AnimatedRoutes = () => {
         <Route path="/business/contacts" element={<Suspense fallback={<AdminRouteFallback />}><BusinessContactsPage /></Suspense>} />
         <Route path="/business/notifications" element={<Suspense fallback={<AdminRouteFallback />}><BusinessNotificationPreferencesPage /></Suspense>} />
         <Route path="/business-legacy" element={<Navigate to="/business" replace />} />
-        <Route path="/business-offers" element={<BusinessOffers />} />
-        <Route path="/business-checkout" element={<BusinessCheckout />} />
-        <Route path="/business-sales" element={<BusinessSales />} />
+        <Route path="/business-offers" element={<Navigate to="/business/bundles" replace />} />
+        <Route path="/business-checkout" element={<Navigate to="/business/quote" replace />} />
+        <Route path="/business-sales" element={<Navigate to="/business/contact-sales" replace />} />
         <Route path="/complaints" element={<Complaints />} />
         <Route path="/pay-invoice" element={<PayInvoice />} />
         <Route path="/payment-result" element={<PaymentResult />} />

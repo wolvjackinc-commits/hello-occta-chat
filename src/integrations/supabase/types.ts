@@ -3776,6 +3776,39 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_standing_events: {
+        Row: {
+          created_at: string
+          customer_id: string
+          details: Json
+          id: number
+          kind: string
+          occurred_at: string
+          recorded_by: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          details?: Json
+          id?: never
+          kind: string
+          occurred_at?: string
+          recorded_by?: string | null
+          source: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          details?: Json
+          id?: never
+          kind?: string
+          occurred_at?: string
+          recorded_by?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       customer_vulnerability_reviews: {
         Row: {
           contract_acceptance_id: string | null
@@ -10982,41 +11015,231 @@ export type Database = {
           },
         ]
       }
+      referral_binding_errors: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: number
+          order_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: never
+          order_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: never
+          order_id?: string | null
+        }
+        Relationships: []
+      }
+      referral_clicks: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          ip_hash: string | null
+          landing_url: string | null
+          referral_code_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          landing_url?: string | null
+          referral_code_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          landing_url?: string | null
+          referral_code_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_clicks_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "customer_referral_codes_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_clicks_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referral_codes: {
         Row: {
           code: string
           created_at: string
           customer_id: string | null
+          customer_type: string | null
           expires_at: string | null
           id: string
           max_uses: number | null
           partner_id: string | null
           status: Database["public"]["Enums"]["referral_code_status"]
+          terms_shown_at: string | null
+          terms_version: string | null
           usage_count: number
         }
         Insert: {
           code: string
           created_at?: string
           customer_id?: string | null
+          customer_type?: string | null
           expires_at?: string | null
           id?: string
           max_uses?: number | null
           partner_id?: string | null
           status?: Database["public"]["Enums"]["referral_code_status"]
+          terms_shown_at?: string | null
+          terms_version?: string | null
           usage_count?: number
         }
         Update: {
           code?: string
           created_at?: string
           customer_id?: string | null
+          customer_type?: string | null
           expires_at?: string | null
           id?: string
           max_uses?: number | null
           partner_id?: string | null
           status?: Database["public"]["Enums"]["referral_code_status"]
+          terms_shown_at?: string | null
+          terms_version?: string | null
           usage_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_terms_version_fkey"
+            columns: ["terms_version"]
+            isOneToOne: false
+            referencedRelation: "referral_terms_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      referral_credit_movements: {
+        Row: {
+          actor_id: string | null
+          amount_minor: number
+          created_at: string
+          customer_id: string
+          id: number
+          invoice_id: string | null
+          invoice_line_id: string | null
+          kind: string
+          reason: string | null
+          reward_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          amount_minor: number
+          created_at?: string
+          customer_id: string
+          id?: never
+          invoice_id?: string | null
+          invoice_line_id?: string | null
+          kind: string
+          reason?: string | null
+          reward_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          amount_minor?: number
+          created_at?: string
+          customer_id?: string
+          id?: never
+          invoice_id?: string | null
+          invoice_line_id?: string | null
+          kind?: string
+          reason?: string | null
+          reward_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_credit_movements_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_credit_movements_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "referral_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_disputes: {
+        Row: {
+          created_at: string
+          customer_id: string
+          details: string
+          id: string
+          kind: string
+          opened_by: string
+          outcome_reason: string | null
+          ref: string
+          referral_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          details: string
+          id?: string
+          kind: string
+          opened_by: string
+          outcome_reason?: string | null
+          ref?: string
+          referral_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          details?: string
+          id?: string
+          kind?: string
+          opened_by?: string
+          outcome_reason?: string | null
+          ref?: string
+          referral_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_disputes_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_events: {
         Row: {
@@ -11075,6 +11298,442 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "referral_codes"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_message_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          customer_id: string
+          first_attempt_at: string | null
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_token: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          payload: Json
+          provider_message_id: string | null
+          referral_id: string | null
+          reward_id: string | null
+          sent_at: string | null
+          status: string
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          customer_id: string
+          first_attempt_at?: string | null
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          lease_token?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          payload: Json
+          provider_message_id?: string | null
+          referral_id?: string | null
+          reward_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          customer_id?: string
+          first_attempt_at?: string | null
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          lease_token?: string | null
+          locked_until?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          provider_message_id?: string | null
+          referral_id?: string | null
+          reward_id?: string | null
+          sent_at?: string | null
+          status?: string
+          template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_message_outbox_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_message_outbox_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "referral_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_recon_runs: {
+        Row: {
+          created_at: string
+          findings: Json
+          id: number
+          issues: number
+          kind: string
+        }
+        Insert: {
+          created_at?: string
+          findings: Json
+          id?: never
+          issues: number
+          kind: string
+        }
+        Update: {
+          created_at?: string
+          findings?: Json
+          id?: never
+          issues?: number
+          kind?: string
+        }
+        Relationships: []
+      }
+      referral_reward_events: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string
+          created_at: string
+          details: Json
+          event_type: string
+          from_status: string | null
+          id: number
+          reason: string | null
+          referral_id: string | null
+          request_id: string | null
+          reward_id: string | null
+          terms_version: string | null
+          to_status: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind?: string
+          created_at?: string
+          details?: Json
+          event_type: string
+          from_status?: string | null
+          id?: never
+          reason?: string | null
+          referral_id?: string | null
+          request_id?: string | null
+          reward_id?: string | null
+          terms_version?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          created_at?: string
+          details?: Json
+          event_type?: string
+          from_status?: string | null
+          id?: never
+          reason?: string | null
+          referral_id?: string | null
+          request_id?: string | null
+          reward_id?: string | null
+          terms_version?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_reward_events_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_reward_events_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "referral_rewards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_rewards: {
+        Row: {
+          amount: number
+          amount_basis: string
+          approved_at: string | null
+          approved_by: string | null
+          booked_at: string | null
+          created_at: string
+          credit_gross_minor: number
+          customer_id: string
+          dispute_id: string | null
+          expires_at: string | null
+          hold_reason: string | null
+          id: string
+          live_at: string | null
+          manual_hold: boolean
+          needs_review: boolean
+          qualifies_at: string | null
+          ref: string
+          referral_id: string | null
+          review_reasons: string[]
+          role: string
+          status: string
+          status_reason: string | null
+          terms_version: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          amount: number
+          amount_basis: string
+          approved_at?: string | null
+          approved_by?: string | null
+          booked_at?: string | null
+          created_at?: string
+          credit_gross_minor: number
+          customer_id: string
+          dispute_id?: string | null
+          expires_at?: string | null
+          hold_reason?: string | null
+          id?: string
+          live_at?: string | null
+          manual_hold?: boolean
+          needs_review?: boolean
+          qualifies_at?: string | null
+          ref?: string
+          referral_id?: string | null
+          review_reasons?: string[]
+          role: string
+          status?: string
+          status_reason?: string | null
+          terms_version: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          amount?: number
+          amount_basis?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          booked_at?: string | null
+          created_at?: string
+          credit_gross_minor?: number
+          customer_id?: string
+          dispute_id?: string | null
+          expires_at?: string | null
+          hold_reason?: string | null
+          id?: string
+          live_at?: string | null
+          manual_hold?: boolean
+          needs_review?: boolean
+          qualifies_at?: string | null
+          ref?: string
+          referral_id?: string | null
+          review_reasons?: string[]
+          role?: string
+          status?: string
+          status_reason?: string | null
+          terms_version?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_rewards_referral_id_fkey"
+            columns: ["referral_id"]
+            isOneToOne: false
+            referencedRelation: "referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_rewards_terms_version_fkey"
+            columns: ["terms_version"]
+            isOneToOne: false
+            referencedRelation: "referral_terms_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      referral_settings: {
+        Row: {
+          click_hash_salt: string
+          current_terms_version: string
+          goodwill_monthly_budget: number
+          singleton: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          click_hash_salt?: string
+          current_terms_version: string
+          goodwill_monthly_budget?: number
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          click_hash_salt?: string
+          current_terms_version?: string
+          goodwill_monthly_budget?: number
+          singleton?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_settings_current_terms_version_fkey"
+            columns: ["current_terms_version"]
+            isOneToOne: false
+            referencedRelation: "referral_terms_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      referral_terms_versions: {
+        Row: {
+          created_at: string
+          effective_from: string
+          rules: Json
+          summary: string
+          terms_url: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from: string
+          rules: Json
+          summary: string
+          terms_url?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          rules?: Json
+          summary?: string
+          terms_url?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      referrals: {
+        Row: {
+          attribution_method: string
+          click_id: string | null
+          created_at: string
+          evidence: Json
+          friend_customer_id: string | null
+          friend_order_id: string
+          friend_session_id: string | null
+          friend_type: string
+          id: string
+          manual_attach_reason: string | null
+          manual_attached_by: string | null
+          order_created_at: string
+          ref: string
+          referral_code_id: string
+          referrer_id: string
+          referrer_type: string
+          rules: Json
+          terms_version: string
+        }
+        Insert: {
+          attribution_method: string
+          click_id?: string | null
+          created_at?: string
+          evidence: Json
+          friend_customer_id?: string | null
+          friend_order_id: string
+          friend_session_id?: string | null
+          friend_type: string
+          id?: string
+          manual_attach_reason?: string | null
+          manual_attached_by?: string | null
+          order_created_at: string
+          ref?: string
+          referral_code_id: string
+          referrer_id: string
+          referrer_type: string
+          rules: Json
+          terms_version: string
+        }
+        Update: {
+          attribution_method?: string
+          click_id?: string | null
+          created_at?: string
+          evidence?: Json
+          friend_customer_id?: string | null
+          friend_order_id?: string
+          friend_session_id?: string | null
+          friend_type?: string
+          id?: string
+          manual_attach_reason?: string | null
+          manual_attached_by?: string | null
+          order_created_at?: string
+          ref?: string
+          referral_code_id?: string
+          referrer_id?: string
+          referrer_type?: string
+          rules?: Json
+          terms_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "referral_clicks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_friend_order_id_fkey"
+            columns: ["friend_order_id"]
+            isOneToOne: true
+            referencedRelation: "customer_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_friend_order_id_fkey"
+            columns: ["friend_order_id"]
+            isOneToOne: true
+            referencedRelation: "manual_fulfilment_eligible_orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "referrals_friend_order_id_fkey"
+            columns: ["friend_order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "customer_referral_codes_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_terms_version_fkey"
+            columns: ["terms_version"]
+            isOneToOne: false
+            referencedRelation: "referral_terms_versions"
+            referencedColumns: ["version"]
           },
         ]
       }
@@ -16083,6 +16742,201 @@ export type Database = {
       recompute_reward_balances: {
         Args: { _customer_id: string }
         Returns: undefined
+      }
+      referral_addr_key: {
+        Args: { p_line1: string; p_line2: string; p_postcode: string }
+        Returns: string
+      }
+      referral_admin_action: {
+        Args: {
+          p_action: string
+          p_expected_version: number
+          p_notify?: boolean
+          p_reason: string
+          p_request_id: string
+          p_reward_id: string
+        }
+        Returns: Json
+      }
+      referral_admin_detail: { Args: { p_referral: string }; Returns: Json }
+      referral_admin_dispute: {
+        Args: {
+          p_action: string
+          p_customer: string
+          p_dispute: string
+          p_kind: string
+          p_referral: string
+          p_text: string
+        }
+        Returns: Json
+      }
+      referral_admin_goodwill: {
+        Args: {
+          p_amount: number
+          p_customer: string
+          p_dispute?: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      referral_admin_list: { Args: { p_filter?: string }; Returns: Json }
+      referral_admin_manual_attach: {
+        Args: {
+          p_code: string
+          p_order: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      referral_admin_overview: { Args: never; Returns: Json }
+      referral_admin_record_standing: {
+        Args: {
+          p_customer: string
+          p_kind: string
+          p_note: string
+          p_occurred_at: string
+        }
+        Returns: Json
+      }
+      referral_apply_credit_to_invoice: {
+        Args: { p_apply?: boolean; p_invoice: string }
+        Returns: Json
+      }
+      referral_bind_order: { Args: { p_order: string }; Returns: string }
+      referral_check_code: { Args: { p_code: string }; Returns: Json }
+      referral_claim_messages: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          customer_id: string
+          first_attempt_at: string | null
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          lease_token: string | null
+          locked_until: string | null
+          next_attempt_at: string
+          payload: Json
+          provider_message_id: string | null
+          referral_id: string | null
+          reward_id: string | null
+          sent_at: string | null
+          status: string
+          template: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "referral_message_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      referral_create: {
+        Args: {
+          p_admin?: string
+          p_admin_reason?: string
+          p_click: string
+          p_code_id: string
+          p_evidence: Json
+          p_method: string
+          p_order: string
+          p_session: string
+        }
+        Returns: string
+      }
+      referral_credit_balance: { Args: { p_reward: string }; Returns: number }
+      referral_customer_live: { Args: { p_customer: string }; Returns: boolean }
+      referral_customer_type: { Args: { p_customer: string }; Returns: string }
+      referral_dispatch_messages: { Args: never; Returns: boolean }
+      referral_dry_run: { Args: never; Returns: Json }
+      referral_enabled: { Args: never; Returns: boolean }
+      referral_ensure_friend_reward: {
+        Args: { p_referral: string }
+        Returns: undefined
+      }
+      referral_evaluate: { Args: { p_referral: string }; Returns: Json }
+      referral_evaluate_all: { Args: never; Returns: number }
+      referral_expire_credits: { Args: never; Returns: Json }
+      referral_finish_message: {
+        Args: {
+          p_error?: string
+          p_id: string
+          p_lease: string
+          p_provider_id?: string
+        }
+        Returns: boolean
+      }
+      referral_first_invoices: {
+        Args: {
+          p_customer: string
+          p_grace?: number
+          p_n: number
+          p_order: string
+        }
+        Returns: {
+          due_date: string
+          due_passed: boolean
+          invoice_id: string
+          invoice_number: string
+          on_time: boolean
+          owed: number
+          paid_full_on: string
+          paid_unverified: boolean
+        }[]
+      }
+      referral_friend_leaving: {
+        Args: { p_customer: string; p_order: string }
+        Returns: string
+      }
+      referral_friend_prior_footprint: {
+        Args: { p_customer: string; p_lookback_months: number; p_order: string }
+        Returns: string
+      }
+      referral_hold_for_friend: {
+        Args: { p_customer: string; p_reason: string }
+        Returns: number
+      }
+      referral_ip_hash: { Args: { p_ip: string }; Returns: string }
+      referral_is_finance: { Args: { p_uid: string }; Returns: boolean }
+      referral_is_staff: { Args: { p_uid: string }; Returns: boolean }
+      referral_message_still_relevant: {
+        Args: { p_message: string }
+        Returns: boolean
+      }
+      referral_monthly_report: { Args: { p_month: string }; Returns: Json }
+      referral_my_code: { Args: never; Returns: Json }
+      referral_my_overview: { Args: never; Returns: Json }
+      referral_nightly: { Args: never; Returns: Json }
+      referral_norm_phone: { Args: { p: string }; Returns: string }
+      referral_payment_history_issue: {
+        Args: {
+          p_customer: string
+          p_from: string
+          p_grace?: number
+          p_to: string
+        }
+        Returns: string
+      }
+      referral_public_terms: { Args: never; Returns: Json }
+      referral_reconcile: { Args: { p_kind?: string }; Returns: Json }
+      referral_record_click: {
+        Args: { p_code: string; p_landing_url?: string }
+        Returns: string
+      }
+      referral_refresh_ledger_status: {
+        Args: { p_reward: string }
+        Returns: string
+      }
+      referral_review_signals: {
+        Args: { p_referral: string }
+        Returns: string[]
+      }
+      referral_self_referral: {
+        Args: { p_friend: string; p_order: string; p_referrer: string }
+        Returns: string
       }
       resolve_customer_vulnerability_review: {
         Args: { _note?: string; _review_id: string; _status: string }

@@ -63,6 +63,8 @@
 <url><loc>https://www.occta.co.uk/legal/price-transparency</loc><lastmod>2026-10-28</lastmod><changefreq>yearly</changefreq><priority>0.50</priority></url>
 <url><loc>https://www.occta.co.uk/legal/switching-policy</loc><lastmod>2026-10-28</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
 <url><loc>https://www.occta.co.uk/legal/network-management</loc><lastmod>2026-10-28</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+<url><loc>https://www.occta.co.uk/legal/refer-a-friend-terms</loc><lastmod>2026-10-31</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
+<url><loc>https://www.occta.co.uk/refer-a-friend</loc><lastmod>2026-10-31</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/business</loc><lastmod>2026-10-24</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
 <url><loc>https://www.occta.co.uk/business/broadband</loc><lastmod>2026-10-24</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
 <url><loc>https://www.occta.co.uk/business/voice</loc><lastmod>2026-10-24</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
@@ -369,6 +371,7 @@
 <url><loc>https://www.occta.co.uk/help/digital-voice-setup</loc><lastmod>2026-10-28</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/help/direct-debit-setup-help</loc><lastmod>2026-10-28</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
 <url><loc>https://www.occta.co.uk/help/first-invoice-explained-help</loc><lastmod>2026-10-28</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>
+<url><loc>https://www.occta.co.uk/help/refer-a-friend-help</loc><lastmod>2026-10-31</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
 <url><loc>https://www.occta.co.uk/help/move-home</loc><lastmod>2026-10-28</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/help/cancel-or-switch</loc><lastmod>2026-10-28</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/help/vulnerable-customer-support</loc><lastmod>2026-10-28</lastmod><changefreq>monthly</changefreq><priority>0.65</priority></url>

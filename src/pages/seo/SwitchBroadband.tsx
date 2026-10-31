@@ -29,7 +29,7 @@ export default function SwitchBroadbandSeo() {
         { label: "Leaving Sky", to: "/learn/leaving-sky", description: "Sky-specific switching notes." },
         { label: "Leaving Virgin Media", to: "/learn/leaving-virgin", description: "Virgin-to-Openreach move." },
         { label: "Broadband plans", to: "/broadband-plans", description: "Pick a plan to switch to." },
-        { label: "£50 switch cashback", to: "/broadband-cashback-offer", description: "SWITCH50 offer terms and how to claim." },
+        { label: "Broadband plans", to: "/broadband-plans", description: "Current plans and prices for your address." },
         { label: "Coverage check", to: "/coverage-areas", description: "Confirm your address is served." },
       ]}
       afterContent={

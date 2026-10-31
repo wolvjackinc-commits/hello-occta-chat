@@ -43,6 +43,7 @@ const Footer = () => {
       { name: "AI Assistant", path: "/support#ai-help" },
       { name: isSignedIn ? "My OCCTA (Dashboard)" : "My OCCTA (Customer Login)", path: accountPath },
       { name: "Network Status", path: "/status" },
+      { name: "Refer a Friend", path: "/refer-a-friend" },
       { name: "Contact Us", path: "/support#contact" },
     ],
     legal: [
@@ -59,6 +60,7 @@ const Footer = () => {
       { name: "Switching Policy", path: "/legal/switching-policy" },
       { name: "Acceptable Use", path: "/legal/acceptable-use" },
       { name: "Network Management", path: "/legal/network-management" },
+      { name: "Refer a Friend Terms", path: "/legal/refer-a-friend-terms" },
       { name: "Accessibility", path: "/legal/accessibility" },
       { name: "Modern Slavery", path: "/legal/modern-slavery" },
       { name: "Digital Voice & Emergency Calls", path: "/guides/digital-voice-uk" },

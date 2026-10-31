@@ -8,7 +8,24 @@
 // VAT: a referral credit is a reduction in the price of OCCTA's own supply, so
 // it reduces the VAT on the bill (net = round(gross / 1.2), same rounding as
 // itemiseInvoice). Business credits are net amounts and their VAT falls too.
-import type { ComputedLine, ComputedTotals } from "./billingHelpers.ts";
+// Structural copies of billingHelpers' ComputedLine / ComputedTotals, kept here
+// so this module stays free of Deno and PDF imports (it is unit-tested in Node).
+export type ComputedLine = {
+  description: string;
+  period_label: string | null;
+  net_minor: number;
+  vat_minor: number;
+  gross_minor: number;
+  vat_rate: number;
+};
+export type ComputedTotals<V = string> = {
+  lines: ComputedLine[];
+  subtotal_net_minor: number;
+  vat_total_minor: number;
+  total_gross_minor: number;
+  vat_mode: V;
+  vat_rate: number;
+};
 
 export type ReferralCreditRow = {
   reward_id: string;
@@ -38,7 +55,7 @@ export function parseReferralCreditRows(data: unknown): ReferralCreditRow[] {
 }
 
 /** Append credit lines to computed totals. Never lets the total go below zero. */
-export function mergeReferralCredit(totals: ComputedTotals, rows: ReferralCreditRow[]): ComputedTotals {
+export function mergeReferralCredit<T extends ComputedTotals<unknown>>(totals: T, rows: ReferralCreditRow[]): T {
   if (!rows.length) return totals;
   const credit: ComputedLine[] = rows.map((r) => ({
     description: r.description,

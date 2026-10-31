@@ -299,7 +299,9 @@ serve(async (req) => {
         `)
         .eq('due_date', dateStr)
         // Drafts were never sent to the customer, so there is nothing to chase.
-        .in('status', ['sent', 'overdue']);
+        .in('status', ['sent', 'overdue'])
+        // A bill fully covered by refer-a-friend credit owes nothing.
+        .gt('total', 0);
 
       if (invError) {
         console.error(`Error fetching invoices for ${dateStr}:`, invError);

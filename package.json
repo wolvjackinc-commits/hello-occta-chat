@@ -22,7 +22,8 @@
     "test:dd": "vitest run src/lib/dd/__tests__/db/dd-manual-providers.db.test.ts",
     "test:switch50-db": "node --test scripts/switch50-db.test.mjs",
     "test:switch50": "vitest run src/lib/switch50/__tests__",
-    "test:outreach-db": "node --test scripts/outreach-db.test.mjs"
+    "test:outreach-db": "node --test scripts/outreach-db.test.mjs",
+    "test:referral-db": "node --test scripts/referral-db.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

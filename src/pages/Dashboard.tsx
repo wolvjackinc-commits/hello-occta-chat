@@ -30,6 +30,7 @@ import { SupportTab } from "@/components/dashboard/tabs/SupportTab";
 import { ChatHistoryTab } from "@/components/dashboard/tabs/ChatHistoryTab";
 import { ComplaintsTab } from "@/components/dashboard/tabs/ComplaintsTab";
 import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
+import ReferFriendTab from "@/components/dashboard/tabs/ReferFriendTab";
 import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
 import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
@@ -180,12 +181,24 @@ const Dashboard = () => {
     complaints: { outer: "support", inner: "complaints" },
     vuln: { outer: "support", inner: "vuln" },
     ...(REWARDS_TAB_ENABLED ? { rewards: { outer: "rewards" } } : {}),
+    // Always routable (emails link here); the trigger only shows once the scheme is open.
+    refer: { outer: "refer" },
     account: { outer: "account" },
     // App-mode-only sections keep working as deep links on desktop too.
     notifications: { outer: "account" },
     privacy: { outer: "account" },
     settings: { outer: "account" },
   }), []);
+
+  // Refer a friend shows in the tab bar only once the scheme is switched on.
+  const [referOpen, setReferOpen] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void (supabase.rpc as unknown as (fn: string) => Promise<{ data: { enabled?: boolean } | null }>)("referral_public_terms")
+      .then(({ data }) => { if (live) setReferOpen(data?.enabled === true); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   const initialTabParam = searchParams.get("tab");
   const initialResolved = (initialTabParam && TAB_PARENT[initialTabParam]) || { outer: "overview" };
@@ -728,6 +741,7 @@ const Dashboard = () => {
                 ["documents", "Documents", true],
                 ["support", "Support", true],
                 ["rewards", "Rewards", REWARDS_TAB_ENABLED],
+                ["refer", "Refer a friend", referOpen || outerTab === "refer"],
                 ["account", "Account", true],
               ] as [string, string, boolean][]).filter(([,,on]) => on).map(([v, l]) => (
                 <TabsTrigger
@@ -817,6 +831,7 @@ const Dashboard = () => {
               <TabsContent value="rewards"><RewardsTab /></TabsContent>
             )}
 
+            <TabsContent value="refer"><ReferFriendTab /></TabsContent>
             <TabsContent value="account"><AccountSettingsTab profile={profile as any} /></TabsContent>
           </Tabs>
         </motion.div>

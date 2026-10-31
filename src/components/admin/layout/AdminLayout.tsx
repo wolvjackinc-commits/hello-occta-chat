@@ -71,7 +71,6 @@ type NavSection = { label: string; icon: typeof LayoutGrid; to?: string; childre
 // Toggle by setting VITE_FEATURE_REWARDS / VITE_FEATURE_REFERRALS /
 // VITE_FEATURE_CAMPAIGNS to "true". Default = hidden.
 const env = (import.meta as any).env ?? {};
-const FEATURE_REFERRALS  = String(env.VITE_FEATURE_REFERRALS ?? "")  === "true";
 const FEATURE_CAMPAIGNS  = String(env.VITE_FEATURE_CAMPAIGNS ?? "")  === "true";
 
 const navSections: NavSection[] = [
@@ -131,7 +130,7 @@ const navSections: NavSection[] = [
       { label: "VAT",               to: "/admin/vat-settings" },
       { label: "Contract Benefits", to: "/admin/contract-benefits" },
       { label: "Rewards & cash payouts", to: "/admin/rewards" },
-      ...(FEATURE_REFERRALS ? [{ label: "Referrals", to: "/admin/referrals" }] : []),
+      { label: "Refer a friend", to: "/admin/referrals" },
     ],
   },
   {

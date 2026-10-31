@@ -146,3 +146,9 @@ They include an opening balance with uninvoiced months, a cancelled AccessPay ma
 Merging this branch does not deploy `admin-payment-recon-import` and does not apply the migration to production. No GitHub Actions workflow path includes `supabase/functions/admin-payment-recon-import/**`, `supabase/functions/_shared/paymentReconEngine.ts`, `supabase/config.toml`, or `supabase/migrations/20261008201000_payment_reconciliation.sql`. CI still runs on the pull request and applies every migration to its local Supabase database only.
 
 The admin screens are part of the web app. They become reachable at `/admin/billing/payment-reconciliation` and `/admin/billing/payment-details` only after a later frontend publish, and they stay empty until the migration is applied. Until then the page says reconciliation storage is not available. Imports never update `invoices`, `payment_attempts`, `dd_mandates`, `profiles`, or allocations, and they do not send email.
+
+## Refer-a-friend credit
+
+The top of the Payment reconciliation page shows refer-a-friend bill credit: the outstanding credit liability, rewards awaiting approval and the last nightly credit reconciliation. Credit is a negative invoice line (`invoice_lines.metadata.kind = 'referral_credit'`), never money received, so it is never matched against bank statement or AccessPay rows and never marks an invoice paid. A bill fully covered by credit has a total of £0.00 and nothing is collected.
+
+The nightly job `referral_nightly()` expires unused credit after 12 months and runs `referral_reconcile()`, which checks that every booked credit ties to its ledger, every applied credit ties to an invoice line of the same amount, no referral credit line lacks a ledger movement, invoice totals equal their lines, and flags credit used on an invoice that is past due and unpaid. The monthly report and CSV are on **Products & Pricing → Refer a friend → Reports**.

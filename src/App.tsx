@@ -184,6 +184,8 @@ import CodeOfPractice from "./pages/legal/CodeOfPractice";
 import PriceTransparency from "./pages/legal/PriceTransparency";
 import SwitchingPolicy from "./pages/legal/SwitchingPolicy";
 import NetworkManagement from "./pages/legal/NetworkManagement";
+import ReferAFriendTerms from "./pages/legal/ReferAFriendTerms";
+import ReferAFriend from "./pages/ReferAFriend";
 import { MotionConfig } from "framer-motion";
 import RouteShutter from "@/components/brand/RouteShutter";
 import Layout from "@/components/layout/Layout";
@@ -343,6 +345,8 @@ const AnimatedRoutes = () => {
         <Route path="/legal/price-transparency" element={<PriceTransparency />} />
         <Route path="/legal/switching-policy" element={<SwitchingPolicy />} />
         <Route path="/legal/network-management" element={<NetworkManagement />} />
+        <Route path="/legal/refer-a-friend-terms" element={<ReferAFriendTerms />} />
+        <Route path="/refer-a-friend" element={<ReferAFriend />} />
         <Route path="/sim-plans" element={<Navigate to="/sim" replace />} />
         <Route path="/sim" element={<Suspense fallback={<AdminRouteFallback />}><SimIndex /></Suspense>} />
         <Route path="/sim/checkout" element={<Suspense fallback={<AdminRouteFallback />}><SimCheckout /></Suspense>} />

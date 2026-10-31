@@ -7,7 +7,7 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04  # pinned: the local Supabase stack fails to start on the Ubuntu 26 image
 
     env:
       # The local Supabase stack: real Postgres with auth/storage/extensions and
@@ -121,6 +121,9 @@ jobs:
 
       - name: Outreach campaign manager PostgreSQL tests
         run: npm run test:outreach-db
+
+      - name: Refer-a-friend PostgreSQL tests
+        run: npm run test:referral-db
 
       - name: Install browser libraries used by the HTML prerender
         run: |

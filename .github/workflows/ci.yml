@@ -122,6 +122,9 @@ jobs:
       - name: Outreach campaign manager PostgreSQL tests
         run: npm run test:outreach-db
 
+      - name: Refer-a-friend PostgreSQL tests
+        run: npm run test:referral-db
+
       - name: Install browser libraries used by the HTML prerender
         run: |
           sudo apt-get update

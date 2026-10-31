@@ -91,3 +91,6 @@ verify_jwt = false
 
 [functions.admin-payment-recon-import]
 verify_jwt = true
+
+[functions.referral-message-worker]
+verify_jwt = false

@@ -1,4 +1,5 @@
 import { getStoredCampaignCode, normaliseReferenceCode } from "@/lib/campaignAttribution";
+import ReferralCodeNotice from "@/components/referral/ReferralCodeNotice";
 import { contactError } from "@/lib/journey2/conversion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -283,6 +284,7 @@ export default function DetailsStep({
           placeholder="For example LOCK-A"
         />
         <p className="mt-1 text-[10px] text-muted-foreground">If your flyer or QR code included a reference, it is filled in here. You can change it or leave it blank.</p>
+        <ReferralCodeNotice code={offerCode} />
       </div>
 
       <div className="flex items-start gap-3 border-2 border-border p-4">

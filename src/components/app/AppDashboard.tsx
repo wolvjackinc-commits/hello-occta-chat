@@ -45,6 +45,7 @@ import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsT
 import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab";
 import { DirectDebitOverview } from "@/components/dashboard/DirectDebitOverview";
 import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
+import ReferFriendTab from "@/components/dashboard/tabs/ReferFriendTab";
 import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
 import { formatGbp, formatUkDate } from "@/lib/dashboard/format";
 import type { QuoteCounts } from "@/lib/dashboard/quoteCounts";
@@ -317,6 +318,7 @@ const AppDashboard = ({
     privacy: "Privacy",
     settings: "Settings",
     ...(REWARDS_ENABLED ? { rewards: "Rewards" } : {}),
+    refer: "Refer a friend",
   };
 
   const activeSection = requestedSection && sectionTitle[requestedSection] ? requestedSection : "home";
@@ -384,6 +386,8 @@ const AppDashboard = ({
         return <VulnerableSupportTab userId={userId} />;
       case "rewards":
         return <RewardsTab />;
+      case "refer":
+        return <ReferFriendTab />;
       case "account":
         return (
           <AccountSettingsTab

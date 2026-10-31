@@ -18,6 +18,7 @@ import {
 } from "../_shared/billingHelpers.ts";
 import { assertServiceLive } from "../_shared/billingGate.ts";
 import { buildContractMonthlyLines } from "../_shared/contractMonthlyLines.ts";
+import { mergeReferralCredit, parseReferralCreditRows } from "../_shared/referralCredit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -201,8 +202,16 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
         vatRate: 20,
       }).lines;
 
-      const totals = itemiseInvoice(rawLines, vatMode, 20);
-      const total = totals.total_gross_minor / 100;
+      const baseTotals = itemiseInvoice(rawLines, vatMode, 20);
+      let totals = baseTotals;
+
+      // Refer-a-friend credit already on an existing invoice for this period.
+      // Read-only: credit is only ever added when the invoice is first created.
+      if (existingInv) {
+        const { data: credited, error: creditErr } = await supabase.rpc("referral_apply_credit_to_invoice", { p_invoice: existingInv.id, p_apply: false });
+        if (creditErr) throw new Error(`referral_credit_failed:${creditErr.message}`);
+        totals = mergeReferralCredit(baseTotals, parseReferralCreditRows(credited));
+      }
 
       // An invoice already issued for this period keeps its own amounts; never
       // email totals that differ from what was stored on it.
@@ -242,7 +251,7 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
           vat_total: totals.vat_total_minor / 100,
           vat_enabled: true,
           vat_rate: totals.vat_rate,
-          total,
+          total: totals.total_gross_minor / 100,
           notes: `Monthly invoice for billing period ${periodStart} to ${periodEnd} (billed in advance)`,
         }).select("id").single();
         if (invErr) throw invErr;
@@ -258,7 +267,15 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
             vat_rate: l.vat_rate,
           })),
         );
+
+        // Apply any approved refer-a-friend credit while the invoice is still a
+        // draft. The database writes the negative lines, the ledger and the new
+        // totals together; we mirror the same lines onto the PDF and email.
+        const { data: credited, error: creditErr } = await supabase.rpc("referral_apply_credit_to_invoice", { p_invoice: invoiceId });
+        if (creditErr) throw new Error(`referral_credit_failed:${creditErr.message}`);
+        totals = mergeReferralCredit(baseTotals, parseReferralCreditRows(credited));
       }
+      const total = totals.total_gross_minor / 100;
 
       // PDF (idempotent)
       if (!pdfStorageKey) {
@@ -296,10 +313,13 @@ Deno.serve(perfServe("process-recurring-billing", async (req) => {
         // nothing to create: the customer pays by bank transfer
       } else if (pmMethod === "direct_debit") {
         if (ddActive) {
-          await supabase.from("invoices").update({
-            status: "awaiting_dd_collection",
-          }).eq("id", invoiceId);
-          invoiceStatus = "awaiting_dd_collection";
+          // A bill fully covered by referral credit has nothing to collect.
+          if (totals.total_gross_minor > 0) {
+            await supabase.from("invoices").update({
+              status: "awaiting_dd_collection",
+            }).eq("id", invoiceId);
+            invoiceStatus = "awaiting_dd_collection";
+          }
         } else if (!existingInv) {
           // Once per invoice — retries (e.g. after an email failure) must not
           // open a fresh task every day.

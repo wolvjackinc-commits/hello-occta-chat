@@ -6,6 +6,7 @@ import { matchAccountToProfile, type ProfileRef } from "@/lib/paymentRecon/engin
 import { fetchLiveInvoiceBalances, fetchReconState, importReconFile, linkReconSubject, markReconDraftDue } from "@/lib/paymentRecon/db";
 import { PaymentReconScreen } from "@/components/admin/paymentRecon/PaymentReconScreen";
 import type { FileKind } from "@/lib/paymentRecon/engine";
+import { ReferralCreditPanel } from "@/components/admin/paymentRecon/ReferralCreditPanel";
 
 export function AdminPaymentReconPage({ initialTab }: { initialTab?: string }) {
   const { toast } = useToast();
@@ -44,6 +45,8 @@ export function AdminPaymentReconPage({ initialTab }: { initialTab?: string }) {
   }
 
   return (
+    <>
+    <ReferralCreditPanel />
     <PaymentReconScreen
       state={query.data.state}
       profiles={query.data.profiles}
@@ -60,6 +63,7 @@ export function AdminPaymentReconPage({ initialTab }: { initialTab?: string }) {
       )}
       onMarkDraft={(rowKey) => run(() => markReconDraftDue(rowKey), "Draft marked due. No email was sent.")}
     />
+    </>
   );
 }
 

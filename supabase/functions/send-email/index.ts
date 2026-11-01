@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 import { buildInvoiceSentEmailHtml, invoiceEmailSubject } from "../_shared/invoiceEmail.ts";
+import { getStandardFooter, HELPFUL_LINKS_SLOT } from "../_shared/emailFooter.ts";
 import { bankTransferBoxHtml, bankTransferReference } from "../_shared/paymentOptions.ts";
 import { parseAttachmentRefs, resolveAttachments, type ResolvedAttachment } from "../_shared/emailAttachments.ts";
 
@@ -68,52 +69,6 @@ const escapeHtml = (unsafe: unknown): string => {
 const sanitizeNumber = (value: unknown): string => {
   const num = parseFloat(String(value));
   return isNaN(num) ? '0.00' : num.toFixed(2);
-};
-
-// UK Companies Act 2006 compliant footer - GDPR & Professional Standards
-const getStandardFooter = (options?: { showUnsubscribe?: boolean; accentColor?: string }) => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
-  const accentColor = options?.accentColor || '#facc15';
-  const currentYear = new Date().getFullYear();
-  
-  return `
-    <div class="footer" style="background: #0d0d0d; padding: 32px;">
-      <div class="footer-content" style="text-align: center;">
-        <div class="footer-logo" style="font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 4px; color: ${accentColor};">OCCTA</div>
-        
-        <div class="footer-links" style="margin: 20px 0;">
-          <a href="${siteUrl}/support" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Support</a>
-          <a href="${siteUrl}/dashboard" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Dashboard</a>
-          <a href="${siteUrl}/privacy-policy" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Privacy Policy</a>
-          <a href="${siteUrl}/terms-of-service" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Terms</a>
-        </div>
-        
-        <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
-          <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
-            Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
-          </p>
-          <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
-            Lines open Monday–Friday, 8am–6pm
-          </p>
-        </div>
-        
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333;">
-          <p style="color: #666; font-size: 10px; margin: 0 0 6px 0; line-height: 1.6;">
-            © ${currentYear} OCCTA Limited. All rights reserved.
-          </p>
-          <p style="color: #555; font-size: 9px; margin: 0; line-height: 1.5;">
-            OCCTA Limited is a company registered in England and Wales (Company No. 13828933).<br>
-            Registered office: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom
-          </p>
-        </div>
-        
-        ${options?.showUnsubscribe ? `
-        <div style="margin-top: 16px;">
-          <a href="${siteUrl}/dashboard" style="color: #666; font-size: 10px; text-decoration: underline;">Manage email preferences</a>
-        </div>
-        ` : ''}
-      </div>
-    </div>`;
 };
 
 // Common email styles shared across all templates
@@ -1394,11 +1349,13 @@ const handler = async (req: Request): Promise<Response> => {
     try {
       const key = HELP_LINK_KEY_BY_TYPE[type];
       if (key) {
-        const block = await fetchHelpfulLinksHtml(supabaseAdmin, key);
+        const block = await fetchHelpfulLinksHtml(supabaseAdmin, key, { inset: html.includes(HELPFUL_LINKS_SLOT) });
         if (block) {
-          html = html.includes("</body>")
-            ? html.replace("</body>", `${block}</body>`)
-            : `${html}${block}`;
+          html = html.includes(HELPFUL_LINKS_SLOT)
+            ? html.replace(HELPFUL_LINKS_SLOT, block)
+            : html.includes("</body>")
+              ? html.replace("</body>", `${block}</body>`)
+              : `${html}${block}`;
         }
       }
     } catch (_e) { /* non-fatal */ }

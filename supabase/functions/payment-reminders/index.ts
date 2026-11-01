@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { getStandardFooter as sharedFooter, HELPFUL_LINKS_SLOT } from "../_shared/emailFooter.ts";
 import { bankTransferBoxHtml, bankTransferReference } from "../_shared/paymentOptions.ts";
 import { invoicePaymentRoute } from "../_shared/ddCollection.ts";
 
@@ -35,42 +36,7 @@ const sanitizeNumber = (value: unknown): string => {
   return isNaN(num) ? '0.00' : num.toFixed(2);
 };
 
-const getStandardFooter = (accentColor: string = '#facc15') => {
-  const siteUrl = Deno.env.get("SITE_URL") || "https://www.occta.co.uk";
-  const currentYear = new Date().getFullYear();
-  
-  return `
-    <div style="background: #0d0d0d; padding: 32px;">
-      <div style="text-align: center;">
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 4px; color: ${accentColor};">OCCTA</div>
-        
-        <div style="margin: 20px 0;">
-          <a href="${siteUrl}/support" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Support</a>
-          <a href="${siteUrl}/dashboard" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Dashboard</a>
-          <a href="${siteUrl}/privacy-policy" style="color: #ffffff; text-decoration: none; font-size: 12px; margin: 0 12px; text-transform: uppercase; letter-spacing: 1px;">Privacy</a>
-        </div>
-        
-        <div style="margin: 24px 0; padding-top: 20px; border-top: 1px solid #333;">
-          <p style="color: #888; font-size: 12px; margin: 0 0 8px 0; line-height: 1.6;">
-            Need help? Call <strong style="color: #fff;">0800 260 6626</strong> or email <a href="mailto:hello@occta.co.uk" style="color: ${accentColor}; text-decoration: none;">hello@occta.co.uk</a>
-          </p>
-          <p style="color: #666; font-size: 11px; margin: 0; line-height: 1.6;">
-            Lines open Monday–Friday, 8am–6pm
-          </p>
-        </div>
-        
-        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #333;">
-          <p style="color: #666; font-size: 10px; margin: 0 0 6px 0; line-height: 1.6;">
-            © ${currentYear} OCCTA Limited. All rights reserved.
-          </p>
-          <p style="color: #555; font-size: 9px; margin: 0; line-height: 1.5;">
-            OCCTA Limited is a company registered in England and Wales (Company No. 13828933).<br>
-            Registered office: 22 Pavilion View, Huddersfield, HD3 3WU, United Kingdom
-          </p>
-        </div>
-      </div>
-    </div>`;
-};
+const getStandardFooter = (accentColor: string = '#facc15') => sharedFooter({ accentColor });
 
 const getTemplateConfig = (template: ReminderTemplate): { subject: string; urgencyColor: string; icon: string; title: string; bodyText: string } => {
   switch (template) {
@@ -388,10 +354,12 @@ serve(async (req) => {
 
         // Append 2-4 helpful KB links (fails soft; empty string when no mapping)
         const helpKey = template.startsWith('overdue_') ? 'overdue_reminder' : 'payment_reminder';
-        const helpfulHtml = await fetchHelpfulLinksHtml(supabase, helpKey);
-        const htmlWithHelp = helpfulHtml && html.includes('</body>')
-          ? html.replace('</body>', `${helpfulHtml}</body>`)
-          : html;
+        const helpfulHtml = await fetchHelpfulLinksHtml(supabase, helpKey, { inset: true });
+        const htmlWithHelp = html.includes(HELPFUL_LINKS_SLOT)
+          ? html.replace(HELPFUL_LINKS_SLOT, helpfulHtml)
+          : helpfulHtml && html.includes('</body>')
+            ? html.replace('</body>', `${helpfulHtml}</body>`)
+            : html;
 
         try {
           const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "billing@occta.co.uk";

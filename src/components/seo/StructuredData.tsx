@@ -138,7 +138,7 @@ export const createServiceSchema = ({
     '@type': 'Country',
     name: companyConfig.address.country,
   },
-  termsOfService: `${BASE_URL}/terms-of-service`,
+  termsOfService: `${BASE_URL}/terms`,
   ...(price && {
     offers: {
       '@type': 'Offer',

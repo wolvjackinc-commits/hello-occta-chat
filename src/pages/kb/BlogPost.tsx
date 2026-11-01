@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { publicSupabase as supabase } from "@/integrations/supabase/publicClient";
 import KbArticleView, { type KbArticle } from "@/components/kb/KbArticleView";
 import NotFound from "@/pages/NotFound";
 import Layout from "@/components/layout/Layout";

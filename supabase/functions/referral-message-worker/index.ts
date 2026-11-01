@@ -1,9 +1,16 @@
 import { getServiceClient } from "../_shared/quoteHelpers.ts";
+import { isCronSecret } from "../_shared/cronSecret.ts";
 import { handleReferralDelivery } from "../_shared/referralDelivery.ts";
 
+// Called every 5 minutes by referral_dispatch_messages() through
+// invoke_edge_function_from_cron(), which sends a single-use token minted by
+// the database. Sends nothing while the scheme is switched off.
 Deno.serve((req) => handleReferralDelivery(req, {
-  secret: Deno.env.get("REFERRAL_WORKER_SECRET"),
-  enabled: Deno.env.get("REFERRAL_EMAILS_ENABLED"),
+  authorize: (header) => isCronSecret(header),
+  enabled: async () => {
+    const { data, error } = await getServiceClient().rpc("referral_enabled");
+    return !error && data === true;
+  },
   apiKey: Deno.env.get("RESEND_API_KEY"),
   send: fetch,
   getStore: () => {

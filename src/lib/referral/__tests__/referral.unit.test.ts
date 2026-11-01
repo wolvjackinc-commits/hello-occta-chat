@@ -5,7 +5,7 @@ import {
   REFERRAL_RULES, REFERRAL_TERMS_SUMMARY, REFERRAL_TERMS_VERSION, referralLink, referralReasonLabel, referralStatusLabel, formatReward,
 } from "@/lib/referral/terms";
 import { allowedActions, disputeReply, monthlyReportCsv, type MonthlyReport } from "@/lib/referral/admin";
-import { REFERRAL_TEMPLATES, referralCopy, renderReferralMessage, isReferralWorkerAuthorized } from "../../../../supabase/functions/_shared/referralMessages";
+import { REFERRAL_TEMPLATES, referralCopy, renderReferralMessage } from "../../../../supabase/functions/_shared/referralMessages";
 import { mergeReferralCredit, parseReferralCreditRows } from "../../../../supabase/functions/_shared/referralCredit";
 import { handleReferralDelivery } from "../../../../supabase/functions/_shared/referralDelivery";
 
@@ -90,22 +90,17 @@ describe("emails: only five, and no promise before approval", () => {
       expect(text).not.toMatch(/\bcard\b|pay by phone|pay now/);
     }
   });
-  it("worker secret must be long and exact", () => {
-    expect(isReferralWorkerAuthorized("x", "x")).toBe(false);
-    const s = "a".repeat(40);
-    expect(isReferralWorkerAuthorized(s, s)).toBe(true);
-    expect(isReferralWorkerAuthorized(null, s)).toBe(false);
-  });
 });
 
 describe("delivery worker", () => {
-  const secret = "s".repeat(40);
-  const req = () => new Request("https://x/referral-message-worker", { method: "POST", headers: { "x-cron-secret": secret } });
+  const token = "a".repeat(64);
+  const req = (h = token) => new Request("https://x/referral-message-worker", { method: "POST", headers: { "x-cron-secret": h } });
+  const authorize = async (h: string | null) => h === token;
   it("re-checks relevance right before sending and suppresses held messages", async () => {
     const finish = vi.fn(async () => true);
     const send = vi.fn();
     const res = await handleReferralDelivery(req(), {
-      secret, enabled: "true", apiKey: "k", send: send as unknown as typeof fetch,
+      authorize, enabled: async () => true, apiKey: "k", send: send as unknown as typeof fetch,
       getStore: () => ({
         claim: async () => ({ messages: [{ id: "m1", lease_token: "l1", template: "reward_credited", payload: { recipient_email: "a@b.c", amount: 25, amount_basis: "gross" } }] }),
         stillRelevant: async () => false,
@@ -116,9 +111,13 @@ describe("delivery worker", () => {
     expect(finish).toHaveBeenCalledWith("m1", "l1", null, "superseded");
     expect(await res.json()).toMatchObject({ ok: true, suppressed: 1, sent: 0 });
   });
-  it("does nothing while emails are switched off", async () => {
-    const res = await handleReferralDelivery(req(), { secret, enabled: "false", apiKey: "k", send: fetch, getStore: () => { throw new Error("must not run"); } });
+  it("does nothing while the scheme is switched off", async () => {
+    const res = await handleReferralDelivery(req(), { authorize, enabled: async () => false, apiKey: "k", send: fetch, getStore: () => { throw new Error("must not run"); } });
     expect(await res.json()).toMatchObject({ disabled: true });
+  });
+  it("refuses a call without a valid single-use token", async () => {
+    const res = await handleReferralDelivery(req("bad"), { authorize, enabled: async () => true, apiKey: "k", send: fetch, getStore: () => { throw new Error("must not run"); } });
+    expect(res.status).toBe(401);
   });
 });
 

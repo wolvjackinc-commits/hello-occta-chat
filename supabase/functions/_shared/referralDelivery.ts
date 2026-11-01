@@ -1,4 +1,4 @@
-import { renderReferralMessage, isReferralWorkerAuthorized, type ReferralPayload } from "./referralMessages.ts";
+import { renderReferralMessage, type ReferralPayload } from "./referralMessages.ts";
 
 type Message = { id: string; lease_token: string; template: string; payload: ReferralPayload };
 export type ReferralDeliveryStore = {
@@ -7,7 +7,11 @@ export type ReferralDeliveryStore = {
   finish: (id: string, lease: string, providerId: string | null, error: string | null) => Promise<boolean>;
 };
 type Options = {
-  secret?: string; enabled?: string; apiKey?: string;
+  /** Spends the single-use token minted by the database for this call. */
+  authorize: (header: string | null) => Promise<boolean>;
+  /** The scheme's own on/off switch (platform_settings.rewards_enabled). */
+  enabled: () => Promise<boolean>;
+  apiKey?: string;
   getStore: () => ReferralDeliveryStore;
   send: typeof fetch;
 };
@@ -19,8 +23,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
  *  before each send, so a hold or reversal after queueing still wins. */
 export async function handleReferralDelivery(req: Request, options: Options) {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-  if (!isReferralWorkerAuthorized(req.headers.get("x-cron-secret"), options.secret)) return json({ error: "unauthorized" }, 401);
-  if (options.enabled !== "true") return json({ ok: true, disabled: true });
+  if (!await options.authorize(req.headers.get("x-cron-secret"))) return json({ error: "unauthorized" }, 401);
+  if (!await options.enabled().catch(() => false)) return json({ ok: true, disabled: true });
   if (!options.apiKey) return json({ error: "email_provider_not_configured" }, 503);
 
   let store: ReferralDeliveryStore; let messages: Message[];

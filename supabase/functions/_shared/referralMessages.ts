@@ -142,7 +142,3 @@ export function renderReferralMessage(template: string, p: ReferralPayload) {
   });
   return { subject: c.subject, text, html };
 }
-
-export function isReferralWorkerAuthorized(header: string | null, expected: string | undefined) {
-  return !!expected && expected.length >= 32 && header === expected;
-}

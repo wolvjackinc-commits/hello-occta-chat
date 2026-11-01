@@ -5,6 +5,7 @@
 
 import { OCCTA_COMPANY, splitStoredDescription } from "./billingDocument.ts";
 import { bankTransferBoxHtml, bankTransferReference, DD_NOT_COLLECTING_TEXT, paymentMethodLabel } from "./paymentOptions.ts";
+import { phoneLinkHtml } from "./emailFooter.ts";
 
 export interface InvoiceEmailData {
   customer_name?: unknown;
@@ -67,7 +68,9 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
   // Invoices recorded without VAT (vat_total 0) show a single total line.
   const showVat = Number(data.vat_total ?? 0) !== 0;
   const lines = Array.isArray(data.lines) ? data.lines as Array<{ description?: unknown; qty?: unknown; line_total?: unknown }> : [];
-  const dashboardUrl = safeUrl(data.dashboard_url) ?? `${opts.siteUrl}/dashboard`;
+  // Land on the Billing > Invoices tab rather than the account overview.
+  const givenDashboard = safeUrl(data.dashboard_url);
+  const dashboardUrl = givenDashboard && givenDashboard.includes("?") ? givenDashboard : `${opts.siteUrl}/dashboard?tab=invoices`;
   const pdfUrl = safeUrl(data.invoice_pdf_url);
   const due = data.due_date ? esc(data.due_date) : "on receipt";
   const firstName = esc(String(data.customer_name ?? "").trim().split(/\s+/)[0] || "there");
@@ -87,7 +90,7 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
 
   const factRow = (k: string, v: string) => v ? `
       <tr>
-        <td style="${FONT}padding:9px 16px;font-size:13px;color:#666666;border-top:1px solid #e6e6df;">${k}</td>
+        <td style="${FONT}padding:9px 16px;font-size:13px;color:#666666;border-top:1px solid #e6e6df;white-space:nowrap;">${k}</td>
         <td align="right" style="${FONT}padding:9px 16px;font-size:13px;font-weight:bold;color:#0d0d0d;border-top:1px solid #e6e6df;">${v}</td>
       </tr>` : "";
 
@@ -153,7 +156,8 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
 
   <tr><td align="center" style="padding:6px 22px 14px;">
     ${pdfUrl ? button(pdfUrl, "Download PDF bill", true) : ""}
-    ${button(dashboardUrl, "View my account", false)}
+    ${button(dashboardUrl, "View in my account", false)}
+    ${pdfUrl ? `<div style="${FONT}font-size:12px;line-height:18px;color:#888888;padding-top:8px;">The download link works for 14 days. Your bills are always in your account.</div>` : ""}
   </td></tr>
 
   <tr><td style="padding:10px 28px;">
@@ -197,7 +201,7 @@ export function buildInvoiceSentEmailHtml(data: InvoiceEmailData, opts: { siteUr
         ${dd
           ? `<strong style="color:#0d0d0d;">Paying by Direct Debit</strong><br>There's nothing you need to do. Payments are protected by the Direct Debit Guarantee.`
           : `<strong style="color:#0d0d0d;">How to pay</strong><br>${data.payment_method === "direct_debit" ? DD_NOT_COLLECTING_TEXT + " The details are below." : "Please pay by bank transfer using the details below, or set up a Direct Debit from <a href=\"" + esc(dashboardUrl) + "\" style=\"color:#0d0d0d;\">your account</a>."} We do not take card or phone payments. Can't pay on time? Call us before the due date and we'll help.`}
-        <br><br><strong style="color:#0d0d0d;">Questions about your bill?</strong> Call ${OCCTA_COMPANY.phone} (${OCCTA_COMPANY.phoneHours}) or email <a href="mailto:${OCCTA_COMPANY.email}" style="color:#0d0d0d;">${OCCTA_COMPANY.email}</a>.
+        <br><br><strong style="color:#0d0d0d;">Questions about your bill?</strong> Call ${phoneLinkHtml()} <span style="white-space:nowrap;">(${OCCTA_COMPANY.phoneHours})</span> or email <a href="mailto:${OCCTA_COMPANY.email}" style="color:#0d0d0d;white-space:nowrap;">${OCCTA_COMPANY.email}</a>.
       </td></tr>
     </table>
   </td></tr>

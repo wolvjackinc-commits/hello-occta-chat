@@ -28,6 +28,27 @@ function slugToPath(slug: string, kind: string): string {
 
 export interface HelpfulLink { title: string; url: string; summary?: string | null }
 
+// OCCTA takes Direct Debit or bank transfer only. These old KB articles describe
+// card / Worldpay payment links, so emails always point at the current pages
+// instead, even if a template mapping still names the old slug.
+const RETIRED_ARTICLE_REPLACEMENTS: Record<string, HelpfulLink> = {
+  "how-to-pay-by-invoice-link": {
+    title: "How to pay your OCCTA bill",
+    url: `${APP_BASE}/help/pay-by-bank-transfer`,
+    summary: "Direct Debit or bank transfer: our bank details and the reference to use.",
+  },
+  "invoice-link-payment-guide": {
+    title: "How to pay your OCCTA bill",
+    url: `${APP_BASE}/help/pay-by-bank-transfer`,
+    summary: "Direct Debit or bank transfer: our bank details and the reference to use.",
+  },
+  "what-to-do-if-your-card-payment-fails": {
+    title: "Missed a payment or finding it hard to pay?",
+    url: `${APP_BASE}/help/missed-payment-help`,
+    summary: "How to put a missed payment right, and the help we can offer.",
+  },
+};
+
 export async function fetchHelpfulLinks(
   supabase: any,
   templateKey: string,
@@ -52,10 +73,14 @@ export async function fetchHelpfulLinks(
     const bySlug = new Map<string, any>();
     for (const a of articles ?? []) bySlug.set(a.slug, a);
     const out: HelpfulLink[] = [];
+    const seen = new Set<string>();
     for (const s of slugs) {
+      const retired = RETIRED_ARTICLE_REPLACEMENTS[s];
       const a = bySlug.get(s);
-      if (!a) continue;
-      out.push({ title: a.title, url: slugToPath(a.slug, a.kind), summary: a.summary });
+      const link = retired ?? (a ? { title: a.title, url: slugToPath(a.slug, a.kind), summary: a.summary } : null);
+      if (!link || seen.has(link.url)) continue;
+      seen.add(link.url);
+      out.push(link);
       if (out.length >= max) break;
     }
     return out;
@@ -64,27 +89,42 @@ export async function fetchHelpfulLinks(
   }
 }
 
-/** Brutalist card of helpful links, matching brutalistEmailShell aesthetics. */
-export function renderHelpfulLinksBlock(links: HelpfulLink[]): string {
+/**
+ * "Helpful reading" card. Whole rows are tappable. Pass inset:true when it is
+ * dropped straight into a 600px email card (send-email's footer slot) so it
+ * gets the same 28px side padding as the content above it.
+ */
+export function renderHelpfulLinksBlock(links: HelpfulLink[], opts: { inset?: boolean } = {}): string {
   if (!links.length) return "";
-  const items = links.map((l) => `
-    <tr><td style="padding:8px 0;border-top:1px solid #eee;">
-      <a href="${esc(l.url)}" style="display:block;font:600 14px/1.4 Arial,Helvetica,sans-serif;color:#111;text-decoration:none;">${esc(l.title)} →</a>
-      ${l.summary ? `<div style="font:12px/1.5 Arial,Helvetica,sans-serif;color:#555;margin-top:2px;">${esc(l.summary)}</div>` : ""}
-    </td></tr>`).join("");
+  const font = "font-family:Helvetica,Arial,sans-serif;";
+  const items = links.map((l, i) => `
+          <tr><td style="padding:0;${i ? "border-top:1px solid #e6e6df;" : ""}">
+            <a href="${esc(l.url)}" style="display:block;padding:14px 18px;text-decoration:none;color:#0d0d0d;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="${font}">
+                  <div style="font-size:15px;line-height:21px;font-weight:bold;color:#0d0d0d;">${esc(l.title)}</div>
+                  ${l.summary ? `<div style="font-size:13px;line-height:19px;color:#555555;padding-top:3px;">${esc(l.summary)}</div>` : ""}
+                </td>
+                <td width="28" align="right" valign="middle" style="${font}font-size:18px;font-weight:bold;color:#0d0d0d;">&rsaquo;</td>
+              </tr></table>
+            </a>
+          </td></tr>`).join("");
   return `
-    <div style="margin:22px 0 4px 0;padding:16px 18px;border:2px solid #111;background:#fafafa;">
-      <div style="font:700 10px/1 Arial,Helvetica,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#666;margin:0 0 6px 0;">Helpful reading</div>
-      <table role="presentation" cellpadding="0" cellspacing="0" width="100%">${items}</table>
-    </div>`;
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr><td style="padding:${opts.inset ? "4px 28px 28px" : "16px 0 4px"};">
+        <div style="${font}font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#666666;padding:0 0 10px 2px;">Helpful reading</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e6e6df;border-radius:8px;border-collapse:separate;background:#ffffff;">${items}
+        </table>
+      </td></tr>
+    </table>`;
 }
 
 /** Convenience: fetch + render in one call. Returns "" on empty / error. */
 export async function fetchHelpfulLinksHtml(
   supabase: any,
   templateKey: string,
-  opts: { max?: number } = {},
+  opts: { max?: number; inset?: boolean } = {},
 ): Promise<string> {
   const links = await fetchHelpfulLinks(supabase, templateKey, opts);
-  return renderHelpfulLinksBlock(links);
+  return renderHelpfulLinksBlock(links, { inset: opts.inset });
 }

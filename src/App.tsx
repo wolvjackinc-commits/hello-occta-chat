@@ -364,6 +364,7 @@ const AnimatedRoutes = () => {
         <Route path="/unsubscribe" element={<Suspense fallback={<AdminRouteFallback />}><Unsubscribe /></Suspense>} />
         <Route path="/cookies" element={<CookiePolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/terms-of-service" element={<Navigate to="/terms" replace />} />
         <Route path="/status" element={<ServiceStatus />} />
         <Route path="/offline" element={<Offline />} />
         <Route path="/track-order" element={<OrderLookup />} />
@@ -396,6 +397,10 @@ const AnimatedRoutes = () => {
         <Route path="/guides/:slug" element={<Suspense fallback={null}><DbGuidePage /></Suspense>} />
         <Route path="/help" element={<HelpCenter />} />
         <Route path="/help/own-router-setup" element={<OwnRouterSetup />} />
+        {/* Retired card / Worldpay payment articles linked from older emails. */}
+        <Route path="/help/how-to-pay-by-invoice-link" element={<Navigate to="/help/pay-by-bank-transfer" replace />} />
+        <Route path="/help/what-to-do-if-your-card-payment-fails" element={<Navigate to="/help/missed-payment-help" replace />} />
+        <Route path="/guides/invoice-link-payment-guide" element={<Navigate to="/help/pay-by-bank-transfer" replace />} />
         <Route path="/help/:slug" element={<Suspense fallback={null}><DbHelpArticle /></Suspense>} />
         <Route path="/blog" element={<Suspense fallback={null}><BlogIndex /></Suspense>} />
         <Route path="/blog/:slug" element={<Suspense fallback={null}><BlogPost /></Suspense>} />

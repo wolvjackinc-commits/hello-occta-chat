@@ -86,8 +86,15 @@ export function NewPhoneOrderDialog({
           call_notes: f.call_notes || null,
         },
       });
-      const err = (data as any)?.error || error?.message;
-      if (err) throw new Error((data as any)?.details?.fieldErrors ? JSON.stringify((data as any).details.fieldErrors) : err);
+      if (error || (data as any)?.error) {
+        const payload = (error as any)?.context instanceof Response
+          ? await (error as any).context.json().catch(() => null)
+          : data;
+        const fe = payload?.details?.fieldErrors as Record<string, string[]> | undefined;
+        throw new Error(fe && Object.keys(fe).length
+          ? Object.entries(fe).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v.join(", ")}`).join(" · ")
+          : payload?.details || payload?.error || error?.message || "Request failed");
+      }
       const res = data as PhoneOrderCreated & { existing_account?: string | null };
       toast({
         title: res.replayed ? `Already logged: ${res.reference}` : `Phone order ${res.reference} started`,

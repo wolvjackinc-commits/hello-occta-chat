@@ -47,6 +47,20 @@ const STATUS_COLORS: Record<string, string> = {
   converted: "bg-primary text-primary-foreground",
 };
 
+/** Turns an edge-function error body into a message an agent can act on. */
+function describeFunctionError(payload: any, fallback?: string): string {
+  if (!payload) return fallback || "Request failed";
+  const fieldErrors = payload?.details?.fieldErrors as Record<string, string[]> | undefined;
+  if (fieldErrors && Object.keys(fieldErrors).length) {
+    return Object.entries(fieldErrors)
+      .map(([field, msgs]) => `${field.replace(/_/g, " ")}: ${(msgs ?? []).join(", ")}`)
+      .join(" · ");
+  }
+  const formErrors = payload?.details?.formErrors as string[] | undefined;
+  if (formErrors?.length) return formErrors.join(" · ");
+  return payload?.message || (typeof payload?.details === "string" ? payload.details : null) || payload?.error || fallback || "Request failed";
+}
+
 export const AdminQuoteRequests = () => {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -376,13 +390,20 @@ export const AdminQuoteRequests = () => {
         supplier_product_id: draft.supplier_product_id || null,
         supplier_name: draft.supplier_name || null,
         admin_notes: draft.bucket_override_reason ? `[BUCKET OVERRIDE] ${draft.bucket_override_reason}` : null,
-        estimated_download_speed: draft.download_estimate ? Number(draft.download_estimate) : null,
-        estimated_upload_speed: draft.upload_estimate ? Number(draft.upload_estimate) : null,
-        speed_disclaimer: draft.speed_disclaimer || null,
+        // The server only accepts whole Mbps values.
+        estimated_download_speed: draft.download_estimate ? Math.round(Number(draft.download_estimate)) : null,
+        estimated_upload_speed: draft.upload_estimate ? Math.round(Number(draft.upload_estimate)) : null,
+        speed_disclaimer: draft.speed_disclaimer ? draft.speed_disclaimer.slice(0, 800) : null,
         extra_line_items: extras,
       };
       const { data, error } = await supabase.functions.invoke("create-quote", { body });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      if (error || (data as any)?.error) {
+        // On a non-2xx response supabase-js leaves `data` empty; read the real reason.
+        const payload = (error as any)?.context instanceof Response
+          ? await (error as any).context.json().catch(() => null)
+          : data;
+        throw new Error(describeFunctionError(payload, error?.message));
+      }
       const created = data as any;
       toast({ title: `Quote ${created.quote_number} created` });
       if (created.public_token) {

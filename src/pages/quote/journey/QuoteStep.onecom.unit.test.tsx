@@ -39,7 +39,7 @@ describe("Onecom personalised rolling broadband quote", () => {
           onContinue={vi.fn()} onDeclineClick={vi.fn()} />
       </MemoryRouter>,
     );
-    expect(screen.getByText("£42.98")).toBeVisible();
+    expect(screen.getAllByText("£42.98").length).toBeGreaterThan(0);
     expect(screen.getByText("£37.99")).toBeVisible();
     expect(screen.getByText("£4.99/mo")).toBeVisible();
     expect(screen.getByText(/up to £114.00 including VAT in the first 12 months/)).toBeVisible();

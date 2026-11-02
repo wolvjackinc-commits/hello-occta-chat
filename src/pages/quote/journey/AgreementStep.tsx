@@ -258,6 +258,7 @@ export default function AgreementStep({
         },
       });
       if (error || (data as any)?.error) {
+        const body = ((data as any)?.error ? data : (error ? await readFunctionErrorBody(error) : null)) as any;
         const recovered = await loadDetail();
         if (recovered?.accepted_at) {
           setAcceptedAt(recovered.accepted_at);
@@ -268,7 +269,7 @@ export default function AgreementStep({
         }
         toast({
           title: "We couldn't record your acceptance",
-          description: (data as any)?.message || (data as any)?.error || error?.message || "Please try again.",
+          description: body?.message || body?.error || error?.message || "Please try again.",
           variant: "destructive",
         });
       } else {

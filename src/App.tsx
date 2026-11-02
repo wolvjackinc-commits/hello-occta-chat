@@ -157,6 +157,13 @@ const AdminBusinessActivityLog = lazy(() => import("./pages/admin/BusinessActivi
 const AdminRolesPermissions = lazy(() => import("./pages/admin/RolesPermissions"));
 const AdminOutreach = lazy(() => import("./pages/admin/Outreach"));
 const AdminPartners = lazy(() => import("./pages/admin/Partners"));
+const AdminCare = lazy(() => import("./pages/admin/Care"));
+const CareLanding = lazy(() => import("./pages/care/CareLanding"));
+const CareJoin = lazy(() => import("./pages/care/CareJoin"));
+const CareHowItWorks = lazy(() => import("./pages/care/CareInfoPages").then((m) => ({ default: m.CareHowItWorks })));
+const CareFaqPage = lazy(() => import("./pages/care/CareInfoPages").then((m) => ({ default: m.CareFaqPage })));
+const CareKeyFactsPage = lazy(() => import("./pages/care/CareInfoPages").then((m) => ({ default: m.CareKeyFactsPage })));
+const OcctaCareTerms = lazy(() => import("./pages/legal/OcctaCareTerms"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 // New business hub (replaces legacy /business page)
 const BusinessHub = lazy(() => import("./pages/business/BusinessHub"));
@@ -291,6 +298,7 @@ const AnimatedRoutes = () => {
             <Route path="margin-rules" element={<Suspense fallback={<AdminRouteFallback />}><AdminMarginRules /></Suspense>} />
             <Route path="rewards" element={<Suspense fallback={<AdminRouteFallback />}><AdminRewards /></Suspense>} />
             <Route path="referrals" element={<Suspense fallback={<AdminRouteFallback />}><AdminReferrals /></Suspense>} />
+            <Route path="care" element={<Suspense fallback={<AdminRouteFallback />}><AdminCare /></Suspense>} />
             <Route path="contract-benefits" element={<Suspense fallback={<AdminRouteFallback />}><AdminContractBenefits /></Suspense>} />
             <Route path="campaigns" element={<Suspense fallback={<AdminRouteFallback />}><AdminCampaigns /></Suspense>} />
             <Route path="complaints" element={<Suspense fallback={<AdminRouteFallback />}><AdminComplaints /></Suspense>} />
@@ -347,6 +355,12 @@ const AnimatedRoutes = () => {
         <Route path="/legal/network-management" element={<NetworkManagement />} />
         <Route path="/legal/refer-a-friend-terms" element={<ReferAFriendTerms />} />
         <Route path="/refer-a-friend" element={<ReferAFriend />} />
+        <Route path="/care" element={<Suspense fallback={null}><CareLanding /></Suspense>} />
+        <Route path="/care/join" element={<Suspense fallback={null}><CareJoin /></Suspense>} />
+        <Route path="/care/how-it-works" element={<Suspense fallback={null}><CareHowItWorks /></Suspense>} />
+        <Route path="/care/faq" element={<Suspense fallback={null}><CareFaqPage /></Suspense>} />
+        <Route path="/care/key-facts" element={<Suspense fallback={null}><CareKeyFactsPage /></Suspense>} />
+        <Route path="/legal/occta-care-terms" element={<Suspense fallback={null}><OcctaCareTerms /></Suspense>} />
         <Route path="/sim-plans" element={<Navigate to="/sim" replace />} />
         <Route path="/sim" element={<Suspense fallback={<AdminRouteFallback />}><SimIndex /></Suspense>} />
         <Route path="/sim/checkout" element={<Suspense fallback={<AdminRouteFallback />}><SimCheckout /></Suspense>} />

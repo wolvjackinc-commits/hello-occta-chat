@@ -15,6 +15,7 @@ const POLICIES = [
   { to: "/legal/accessibility", label: "Accessibility Statement" },
   { to: "/legal/network-management", label: "Traffic Management" },
   { to: "/legal/refer-a-friend-terms", label: "Refer a Friend Terms" },
+  { to: "/legal/occta-care-terms", label: "OCCTA Care Terms" },
   { to: "/legal/acceptable-use", label: "Acceptable Use Policy" },
   { to: "/legal/modern-slavery", label: "Modern Slavery Statement" },
   { to: "/privacy", label: "Privacy Policy" },

@@ -46,6 +46,7 @@ import { OrdersTimelineTab } from "@/components/dashboard/tabs/OrdersTimelineTab
 import { DirectDebitOverview } from "@/components/dashboard/DirectDebitOverview";
 import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
 import ReferFriendTab from "@/components/dashboard/tabs/ReferFriendTab";
+import CareTab from "@/components/dashboard/tabs/CareTab";
 import { generateInvoicePdf, invoiceDataFromRows } from "@/lib/generateInvoicePdf";
 import { formatGbp, formatUkDate } from "@/lib/dashboard/format";
 import type { QuoteCounts } from "@/lib/dashboard/quoteCounts";
@@ -319,6 +320,7 @@ const AppDashboard = ({
     settings: "Settings",
     ...(REWARDS_ENABLED ? { rewards: "Rewards" } : {}),
     refer: "Refer a friend",
+    care: "OCCTA Care",
   };
 
   const activeSection = requestedSection && sectionTitle[requestedSection] ? requestedSection : "home";
@@ -335,6 +337,7 @@ const AppDashboard = ({
     { icon: HelpCircle, label: "Support tickets", description: "Raised tickets & replies", link: "/dashboard?tab=tickets", badge: openTicketCount || undefined },
     { icon: MessageSquare, label: "Complaints", description: "Raise or track a complaint", link: "/dashboard?tab=complaints" },
     { icon: FileText, label: "Documents", description: "Downloads and paperwork", link: "/dashboard?tab=documents" },
+    { icon: HelpCircle, label: "OCCTA Care", description: "Tech help, letters and your Care plan", link: "/dashboard?tab=care" },
     ...(REWARDS_ENABLED
       ? [{ icon: Gift, label: "Rewards", description: "Points and referrals", link: "/dashboard?tab=rewards" }]
       : []),
@@ -388,6 +391,8 @@ const AppDashboard = ({
         return <RewardsTab />;
       case "refer":
         return <ReferFriendTab />;
+      case "care":
+        return <CareTab />;
       case "account":
         return (
           <AccountSettingsTab

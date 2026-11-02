@@ -120,6 +120,7 @@ const popularTasks: { icon: LucideIcon; label: string; to: string }[] = [
   { icon: Landmark, label: "Pay a bill by bank transfer", to: "/help/pay-by-bank-transfer" },
   { icon: Receipt, label: "Set up Direct Debit", to: "/help/direct-debit-setup-help" },
   { icon: Package, label: "Track my order", to: "/track-order" },
+  { icon: HeartHandshake, label: "OCCTA Care tech help", to: "/care" },
   { icon: Repeat, label: "Keep my mobile number", to: "/help/keep-your-mobile-number-pac" },
   { icon: Truck, label: "Moving home", to: "/help/move-home" },
   { icon: KeyRound, label: "Reset my password", to: "/help/sign-in-and-password" },

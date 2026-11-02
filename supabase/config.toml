@@ -9,6 +9,8 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.admin-create-customer]
     verify_jwt = false
+  [functions.admin-create-phone-quote-request]
+    verify_jwt = false
   [functions.admin-notify]
     verify_jwt = false
   [functions.ai-chat]

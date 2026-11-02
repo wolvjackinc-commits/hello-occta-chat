@@ -22,7 +22,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy } from "lucide-react";
+import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy, PhoneCall } from "lucide-react";
+import { NewPhoneOrderDialog, type PhoneOrderCreated } from "@/components/admin/NewPhoneOrderDialog";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 import { ComposeQuoteEmailDialog } from "@/components/admin/ComposeQuoteEmailDialog";
 import { QuoteFollowUps, NextFollowUpBadge } from "@/components/admin/QuoteFollowUps";
@@ -92,6 +93,7 @@ export const AdminQuoteRequests = () => {
   const [shareDialog, setShareDialog] = useState<{ open: boolean; url?: string; quoteNumber?: string }>({ open: false });
   const [csBusy, setCsBusy] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [phoneOrderOpen, setPhoneOrderOpen] = useState(false);
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const fetchSupplierProduct = async (identifier?: string | null) => {
@@ -319,6 +321,21 @@ export const AdminQuoteRequests = () => {
     });
     loadProducts();
     setQuoteDialogOpen(true);
+  };
+
+  // After logging a caller, jump straight into the normal Create quote dialog
+  // for their new request so the agent can price it while still on the call.
+  const startQuoteForPhoneOrder = async (res: PhoneOrderCreated) => {
+    setStatus("all");
+    setSearch(res.reference);
+    const { data: row } = await (supabase as any)
+      .from("quote_requests")
+      .select("*, customer:profiles!quote_requests_customer_id_fkey(id, full_name, email, account_number)")
+      .eq("id", res.quote_request_id)
+      .maybeSingle();
+    await qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
+    setSelectedId(res.quote_request_id);
+    if (row && !res.replayed) openQuoteDialog(row);
   };
 
   const createQuote = async () => {
@@ -554,11 +571,16 @@ export const AdminQuoteRequests = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display">Quote Requests</h1>
-          <p className="text-muted-foreground">Incoming quote requests from the website.</p>
+          <p className="text-muted-foreground">Quote requests from the website and phone orders taken by the team.</p>
         </div>
-        <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="border-2 border-foreground">
-          <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="hero" onClick={() => setPhoneOrderOpen(true)}>
+            <PhoneCall className="w-4 h-4 mr-2" /> New phone order
+          </Button>
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="border-2 border-foreground">
+            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
       <Card className="border-2 border-foreground p-4">
@@ -611,7 +633,14 @@ export const AdminQuoteRequests = () => {
                 <TableRow key={r.id} className="cursor-pointer border-b-2 border-foreground/10 hover:bg-muted/40"
                   onClick={() => setSelectedId(r.id)}>
                   <TableCell className="text-sm">{format(new Date(r.created_at), "dd MMM HH:mm")}</TableCell>
-                  <TableCell className="text-xs font-mono">{r.reference}</TableCell>
+                  <TableCell className="text-xs font-mono">
+                    {r.reference}
+                    {r.source === "phone" && (
+                      <Badge variant="outline" className="ml-1 border-foreground text-[10px] px-1 py-0 align-middle">
+                        <PhoneCall className="w-3 h-3 mr-1" />Phone
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-sm">{r.full_name}</TableCell>
                   <TableCell className="text-xs">
                     {r.email ? (
@@ -1138,6 +1167,12 @@ export const AdminQuoteRequests = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <NewPhoneOrderDialog
+        open={phoneOrderOpen}
+        onOpenChange={setPhoneOrderOpen}
+        onCreated={(res) => { void startQuoteForPhoneOrder(res); }}
+      />
 
       <ComposeQuoteEmailDialog
         open={composeOpen}

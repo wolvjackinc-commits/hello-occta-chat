@@ -223,7 +223,6 @@ Deno.serve(async (req) => {
     bpFields.supplier_availability_sha256 = planEstimateHash;
     bpFields.supplier_availability_source = "OCCTA_PLAN_ESTIMATE";
     bpFields.supplier_availability_retrieved_at = planEstimate?.retrieved_at ?? null;
-    bpFields.network_validation_status = "plan_estimate_used";
     bpFields.likely_service_date = i.likely_service_date ?? null;
   }
 

@@ -41,22 +41,21 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.98.0
-      - name: Confirm deployment credential exists
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
-            echo "SUPABASE_ACCESS_TOKEN is not configured in GitHub Actions. Nothing was deployed."
-            exit 1
-          fi
-      - name: Deploy phone order function
+      # The backend is Lovable Cloud, which deploys edge functions itself when
+      # it syncs main. A CLI deploy only runs if a token is ever configured.
+      - name: Deploy phone order function (only if a CLI token exists)
+        if: env.SUPABASE_ACCESS_TOKEN != ''
         run: supabase functions deploy admin-create-phone-quote-request --project-ref "$PROJECT_REF"
-      - name: Verify it rejects unauthenticated calls
+      - name: Verify the live function exists and rejects unauthenticated calls
         shell: bash
         run: |
           set -euo pipefail
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
-            "https://${PROJECT_REF}.supabase.co/functions/v1/admin-create-phone-quote-request" \
-            -H 'Content-Type: application/json' -d '{}')
-          echo "unauthenticated status: $code"
-          [ "$code" = "401" ] || { echo "expected 401"; exit 1; }
+          url="https://${PROJECT_REF}.supabase.co/functions/v1/admin-create-phone-quote-request"
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$url" -H 'Content-Type: application/json' -d '{}' || true)
+            echo "attempt $i: HTTP $code"
+            [ "$code" = "401" ] && { echo "live and locked to staff"; exit 0; }
+            sleep 30
+          done
+          echo "function is not live (expected 401 from an unauthenticated call)"
+          exit 1

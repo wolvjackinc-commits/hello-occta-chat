@@ -5,7 +5,7 @@ import { derivePlanEstimateBucket, manualExitBasis, planEstimatePatch, sendReadi
 const alan = {
   customer_type: "residential", service_type: "broadband", plan_type: "flex", plan_name: "Flex",
   estimated_download_speed: 80, estimated_upload_speed: 20, speed_bucket: null, plan_term: null,
-  cease_fee_gross: null, contract_length_months: null, notice_period_days: 30,
+  cease_fee_gross: null, contract_length_months: null, notice_period: "30 days",
 };
 
 Deno.test("80/20 maps to essential plan estimate; other speeds do not", () => {

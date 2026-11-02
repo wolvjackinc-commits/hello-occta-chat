@@ -43,3 +43,20 @@ Deno.test("customer service date must be 1..90 days ahead", () => {
   assertEquals(validateCustomerServiceDate("2027-02-01", now), null);
   assertEquals(validateCustomerServiceDate("2026-02-30", now), null);
 });
+
+import { offerConsistencyBlockers } from "./manualQuoteContract.ts";
+
+Deno.test("placeholder link text in notes blocks sending", () => {
+  const b = offerConsistencyBlockers({ monthly_gross: 42.98, customer_notes: "Use [INSERT YOUR SECURE OCCTA QUOTATION LINK]" });
+  if (!b.some((x) => x.code === "placeholder_text")) throw new Error("expected placeholder_text");
+});
+
+Deno.test("notes quoting £42.98/month on a £37.99 quote block sending", () => {
+  const b = offerConsistencyBlockers({ monthly_gross: 37.99, customer_notes: "Total £42.98 per month including router" });
+  if (!b.some((x) => x.code === "monthly_price_mismatch")) throw new Error("expected mismatch");
+});
+
+Deno.test("notes matching the headline monthly price pass", () => {
+  const b = offerConsistencyBlockers({ monthly_gross: 42.98, customer_notes: "Total £42.98/month. Max charge £114 including VAT." });
+  if (b.length) throw new Error(JSON.stringify(b));
+});

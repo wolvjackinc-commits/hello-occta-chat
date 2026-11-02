@@ -39,11 +39,38 @@ export function manualExitBasis(q: any): "fixed_fee" | "benchmark_capped_flex" |
 }
 
 /**
+ * Customer-facing text must not contain template placeholders, and any monthly
+ * price written in the notes must equal the quote's headline monthly total.
+ * Applies to every quote type: a quote whose words and numbers disagree is not signable.
+ */
+export function offerConsistencyBlockers(q: any): { code: string; message: string }[] {
+  const out: { code: string; message: string }[] = [];
+  const text = [q?.customer_notes, q?.notes].filter((t) => typeof t === "string").join("\n");
+  if (/\[\s*(insert|add|placeholder|tbc|todo)[^\]]*\]/i.test(text)) {
+    out.push({ code: "placeholder_text", message: "Customer notes still contain placeholder text in [brackets]. Remove it before sending." });
+  }
+  const headline = Number(q?.monthly_gross);
+  if (Number.isFinite(headline) && headline > 0) {
+    const re = /£\s*(\d{1,4}(?:\.\d{2})?)\s*(?:\/\s*(?:mo|month)|per\s+month|a\s+month|monthly)/gi;
+    const mismatched = new Set<string>();
+    for (const m of text.matchAll(re)) {
+      const v = Number(m[1]);
+      if (Math.abs(v - headline) > 0.005) mismatched.add(`£${v.toFixed(2)}`);
+    }
+    if (mismatched.size) {
+      out.push({ code: "monthly_price_mismatch", message: `Notes mention ${[...mismatched].join(", ")} per month but the quote's monthly total is £${headline.toFixed(2)}. Recurring charges (e.g. router rental) must be in the quote's monthly price, not only in the notes.` });
+    }
+  }
+  return out;
+}
+
+/**
  * Blockers that staff must resolve before a consumer broadband quote is sent.
  * The likely service date is not a send blocker: the customer picks it.
  */
 export function sendReadinessBlockers(q: any): { code: string; message: string }[] {
   const out: { code: string; message: string }[] = [];
+  out.push(...offerConsistencyBlockers(q));
   if (q?.customer_type === "business" || q?.service_type !== "broadband") return out;
   if (!resolveNoticePeriod(q)) out.push({ code: "notice_period_unresolved", message: "Set the notice period on the quote." });
   if (!isManualConsumerBroadband(q)) return out;

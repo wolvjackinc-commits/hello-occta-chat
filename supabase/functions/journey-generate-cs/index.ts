@@ -194,7 +194,6 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
         }
         const { error: dErr } = await supabase.from("quotes").update({ likely_service_date: chosen }).eq("id", fq.id).is("likely_service_date", null);
         if (dErr) return jsonResponse({ error: "service_date_save_failed", retryable: true }, 503);
-        await supabase.from("order_journeys").update({ preferred_start_date: chosen, start_date_selected_at: new Date().toISOString() }).eq("id", journey.id).is("preferred_start_date", null);
       }
     }
   }

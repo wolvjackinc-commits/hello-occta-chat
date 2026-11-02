@@ -1,5 +1,6 @@
 import { corsHeaders, jsonResponse, getServiceClient, requireStaff, sendResendEmail, brutalistEmailShell, escapeHtml, generateTokenPair } from "../_shared/quoteHelpers.ts";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { sendReadinessBlockers } from "../_shared/manualQuoteContract.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -32,6 +33,15 @@ Deno.serve(async (req) => {
   const unifiedJourney = body?.unified_journey !== false;
   if (quote.plan_type === "contract_saver" && !quote.contract_length_months) {
     return jsonResponse({ error: "contract_length_required" }, 400);
+  }
+
+  // Contract readiness: never send a consumer broadband quote whose contract
+  // documents could not be issued when the customer clicks through.
+  if (!previewOnly) {
+    const blockers = sendReadinessBlockers(quote);
+    if (blockers.length) {
+      return jsonResponse({ error: "contract_not_ready", message: `Quote can't be sent yet: ${blockers.map((b) => b.message).join(" ")}`, blockers }, 409);
+    }
   }
 
   // Margin guard: block sending if latest margin check is red without override.

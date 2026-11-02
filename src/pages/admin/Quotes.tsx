@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { readFunctionErrorBody } from "@/lib/functionErrorBody";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -188,7 +189,8 @@ export const AdminQuotes = () => {
   const sendQuote = async (id: string, quoteNumber: string) => {
     setBusyId(id);
     try {
-      const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: id, rotate_token: true } });
+      const { data: rawData, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: id, rotate_token: true } });
+      const data = rawData ?? (error ? await readFunctionErrorBody(error) : null);
       if (error || (data as any)?.error) {
         const msg = (data as any)?.message || (data as any)?.error || error?.message;
         if ((data as any)?.error === "blocked_low_margin") {
@@ -252,13 +254,14 @@ export const AdminQuotes = () => {
     if (!composeDialog.quoteId || !composeDialog.quoteNumber) return;
     setComposeDialog((s) => ({ ...s, sending: true }));
     try {
-      const { data, error } = await supabase.functions.invoke("send-quote-email", {
+      const { data: rawData, error } = await supabase.functions.invoke("send-quote-email", {
         body: {
           quote_id: composeDialog.quoteId,
           rotate_token: true,
           custom_message: composeDialog.customMessage,
         },
       });
+      const data = rawData ?? (error ? await readFunctionErrorBody(error) : null);
       if (error || (data as any)?.error) {
         const msg = (data as any)?.message || (data as any)?.error || error?.message;
         if ((data as any)?.error === "blocked_low_margin") {

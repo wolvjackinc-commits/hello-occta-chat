@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { readFunctionErrorBody } from "@/lib/functionErrorBody";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -507,7 +508,8 @@ export const AdminQuoteRequests = () => {
     if (!latestQuote) return;
     setBusy("send_quote");
     try {
-      const { data, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: latestQuote.id, rotate_token: true } });
+      const { data: rawData, error } = await supabase.functions.invoke("send-quote-email", { body: { quote_id: latestQuote.id, rotate_token: true } });
+      const data = rawData ?? (error ? await readFunctionErrorBody(error) : null);
       if (error || (data as any)?.error) {
         const err = (data as any)?.error || error?.message;
         if (err === "blocked_low_margin") {

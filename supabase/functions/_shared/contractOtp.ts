@@ -121,6 +121,9 @@ export async function requireVerifiedOtp(opts: {
     .eq("phone_hash", phoneHash)
     .not("verified_at", "is", null)
     .is("consumed_at", null)
+    // The database acceptance guard rejects expired verifications; match it
+    // here so the customer is asked for a fresh code instead of a hard error.
+    .gt("expires_at", new Date().toISOString())
     .order("verified_at", { ascending: false })
     .limit(1)
     .maybeSingle();

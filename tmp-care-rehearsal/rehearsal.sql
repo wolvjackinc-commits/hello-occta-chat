@@ -821,7 +821,7 @@ CREATE OR REPLACE FUNCTION public.care_submit_application(p_application uuid, p_
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   app record; elig jsonb; ver record; vrf record; pr record; sub_id uuid; sub_ref text; mandate_id uuid;
-  review text[]; status_ text; cooling timestamptz; hold timestamptz; consent_id uuid; first_end date;
+  review text[]; status_ text; cooling timestamptz; hold timestamptz; consent_id uuid; first_end date; first_start date;
   test boolean := coalesce((p->>'is_test')::boolean, false); holder text; name_match boolean;
 BEGIN
   SELECT * INTO app FROM public.care_applications WHERE id = p_application FOR UPDATE;
@@ -925,10 +925,12 @@ BEGIN
     p->>'enc_key_id', 'AES-256-GCM', now(), public.care_add_working_days(current_date, 10), test)
   RETURNING id INTO mandate_id;
 
-  first_end := (app.first_collection_date + make_interval(months => public.care_period_months(app.frequency)) - interval '1 day')::date;
+  -- Periods run from the NOMINAL day (1st or 15th); only the debit moves to the next working day.
+  first_start := make_date(extract(year FROM app.first_collection_date)::int, extract(month FROM app.first_collection_date)::int, app.collection_day);
+  first_end := (first_start + make_interval(months => public.care_period_months(app.frequency)) - interval '1 day')::date;
   INSERT INTO public.care_collections(subscription_id, mandate_id, kind, due_date, amount_minor, period_start, period_end,
     notice_sent_at, notice_kind, is_test)
-  VALUES (sub_id, mandate_id, 'first', app.first_collection_date, app.price_minor, app.first_collection_date, first_end,
+  VALUES (sub_id, mandate_id, 'first', app.first_collection_date, app.price_minor, first_start, first_end,
     now(), 'dd_confirmation', test);
 
   UPDATE public.care_applications SET status = 'submitted', submitted_at = now() WHERE id = app.id;
@@ -1234,7 +1236,7 @@ END $$;
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.care_nightly() RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE s record; c record; m record; nxt date; nxt_end date; due date; n_sched int := 0; n_notice int := 0; n_ready int := 0;
+DECLARE s record; c record; m record; nxt date; nxt_end date; due date; nominal date; n_sched int := 0; n_notice int := 0; n_ready int := 0;
   n_resched int := 0; n_usage int := 0; n_end int := 0; n_tasks int := 0; mths int; used int;
 BEGIN
   UPDATE public.care_applications SET status = 'expired' WHERE status = 'draft' AND expires_at < now();
@@ -1315,9 +1317,13 @@ BEGIN
       UPDATE public.care_collections SET status = 'ready', mandate_id = m.id WHERE id = c.id;
       n_ready := n_ready + 1;
     ELSIF c.sub_status IN ('pending_review','pending_mandate','active') THEN
-      due := public.care_next_working_day(public.care_day_on_or_after(public.care_add_working_days(current_date, 15), c.collection_day));
-      UPDATE public.care_collections SET due_date = due, period_start = due,
-        period_end = (due + make_interval(months => public.care_period_months(c.frequency)) - interval '1 day')::date,
+      nominal := public.care_day_on_or_after(public.care_add_working_days(current_date, 15), c.collection_day);
+      due := public.care_next_working_day(nominal);
+      -- A re-try keeps the period it was for; anything else starts its period on the new nominal day.
+      UPDATE public.care_collections SET due_date = due,
+        period_start = CASE WHEN c.kind = 'represent' THEN period_start ELSE nominal END,
+        period_end = CASE WHEN c.kind = 'represent' THEN period_end
+                          ELSE (nominal + make_interval(months => public.care_period_months(c.frequency)) - interval '1 day')::date END,
         notice_sent_at = now(), notice_kind = 'change_notice', reschedule_count = reschedule_count + 1
        WHERE id = c.id;
       UPDATE public.care_subscriptions SET first_collection_date = due WHERE id = c.subscription_id AND c.kind = 'first';
@@ -1999,13 +2005,6 @@ BEGIN
 END $$;
 
 -- ---------------------------------------------------------------------------
--- Existing systems: allow Care categories and Care OTP challenges
--- ---------------------------------------------------------------------------
-ALTER TABLE public.sms_otp_challenges DROP CONSTRAINT IF EXISTS sms_otp_challenges_journey_type_check;
-ALTER TABLE public.sms_otp_challenges ADD CONSTRAINT sms_otp_challenges_journey_type_check
-  CHECK (journey_type IN ('journey_1','journey_2','care'));
-
--- ---------------------------------------------------------------------------
 -- Storage: private bucket for letters, evidence packs and print batches
 -- ---------------------------------------------------------------------------
 INSERT INTO storage.buckets(id, name, public) VALUES ('care-documents', 'care-documents', false) ON CONFLICT (id) DO NOTHING;
@@ -2075,6 +2074,7 @@ DO $$ BEGIN
 EXCEPTION WHEN others THEN NULL; END $$;
 SELECT cron.schedule('care-nightly', '10 3 * * *', 'SELECT public.care_nightly()');
 SELECT cron.schedule('care-messages', '*/5 * * * *', 'SELECT public.care_dispatch_messages()');
+
 
 DO $test$
 DECLARE
@@ -2203,5 +2203,12 @@ BEGIN
   res := res || jsonb_build_object('tasks', (SELECT jsonb_agg(title) FROM public.admin_tasks WHERE title ILIKE '%Care%' AND created_at > now() - interval '1 minute'));
   res := res || jsonb_build_object('catalogue', public.care_public_catalogue());
   res := res || jsonb_build_object('wd', jsonb_build_object('xmas', public.care_add_working_days('2026-12-23', 2), 'first_from_today', public.care_first_collection_date(current_date, 1)));
+  res := res || jsonb_build_object('bucket', (SELECT count(*) FROM storage.buckets WHERE id = 'care-documents'),
+    'cron', (SELECT jsonb_agg(jobname) FROM cron.job WHERE jobname LIKE 'care-%'),
+    'nominal_period_ok', (SELECT bool_and(extract(day FROM period_start)::int = s.collection_day) FROM public.care_collections c JOIN public.care_subscriptions s ON s.id = c.subscription_id WHERE c.kind = 'first'),
+    'anon_cannot_list', NOT has_function_privilege('anon', 'public.care_admin_list(text,text)', 'execute'),
+    'anon_catalogue', has_function_privilege('anon', 'public.care_public_catalogue()', 'execute'),
+    'auth_cannot_submit', NOT has_function_privilege('authenticated', 'public.care_submit_application(uuid,uuid,jsonb)', 'execute'),
+    'auth_no_table_access', NOT has_table_privilege('authenticated', 'public.care_mandates', 'select'));
   RAISE EXCEPTION 'CARE_REHEARSAL_RESULT %', res;
 END $test$;

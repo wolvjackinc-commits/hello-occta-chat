@@ -31,6 +31,7 @@ import { ChatHistoryTab } from "@/components/dashboard/tabs/ChatHistoryTab";
 import { ComplaintsTab } from "@/components/dashboard/tabs/ComplaintsTab";
 import { RewardsTab } from "@/components/dashboard/tabs/RewardsTab";
 import ReferFriendTab from "@/components/dashboard/tabs/ReferFriendTab";
+import CareTab from "@/components/dashboard/tabs/CareTab";
 import { DocumentsTab } from "@/components/dashboard/tabs/DocumentsTab";
 import { AccountSettingsTab } from "@/components/dashboard/tabs/AccountSettingsTab";
 import { VulnerableSupportTab } from "@/components/dashboard/tabs/VulnerableSupportTab";
@@ -183,6 +184,7 @@ const Dashboard = () => {
     ...(REWARDS_TAB_ENABLED ? { rewards: { outer: "rewards" } } : {}),
     // Always routable (emails link here); the trigger only shows once the scheme is open.
     refer: { outer: "refer" },
+    care: { outer: "care" },
     account: { outer: "account" },
     // App-mode-only sections keep working as deep links on desktop too.
     notifications: { outer: "account" },
@@ -741,6 +743,7 @@ const Dashboard = () => {
                 ["documents", "Documents", true],
                 ["support", "Support", true],
                 ["rewards", "Rewards", REWARDS_TAB_ENABLED],
+                ["care", "OCCTA Care", true],
                 ["refer", "Refer a friend", referOpen || outerTab === "refer"],
                 ["account", "Account", true],
               ] as [string, string, boolean][]).filter(([,,on]) => on).map(([v, l]) => (
@@ -831,6 +834,7 @@ const Dashboard = () => {
               <TabsContent value="rewards"><RewardsTab /></TabsContent>
             )}
 
+            <TabsContent value="care"><CareTab /></TabsContent>
             <TabsContent value="refer"><ReferFriendTab /></TabsContent>
             <TabsContent value="account"><AccountSettingsTab profile={profile as any} /></TabsContent>
           </Tabs>

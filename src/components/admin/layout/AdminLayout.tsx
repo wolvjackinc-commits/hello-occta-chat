@@ -33,6 +33,7 @@ import {
   ChevronDown,
   Plus,
   FileCog,
+  LifeBuoy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -87,6 +88,7 @@ const navSections: NavSection[] = [
     ],
   },
   { label: "Customers", icon: Users, to: "/admin/customers" },
+  { label: "OCCTA Care", icon: LifeBuoy, to: "/admin/care" },
   {
     label: "Orders", icon: ClipboardList, children: [
       { label: "All Orders",             to: "/admin/orders" },

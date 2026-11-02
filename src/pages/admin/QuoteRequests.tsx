@@ -449,20 +449,20 @@ export const AdminQuoteRequests = () => {
   };
 
   const _approveFinal = async () => {
-    if (!latestQuote) return;
+    if (!latestQuote) return false;
     // Guard: require linked supplier product + wholesale cost before approval.
     if (!latestQuote.supplier_product_id) {
       toast({ title: "Cannot approve — supplier product not linked", description: "Pick the exact active wholesale supplier product so margin and terms can be verified.", variant: "destructive" });
-      return;
+      return false;
     }
     const sp = await fetchSupplierProduct(latestQuote.supplier_product_id);
     if (!sp || sp.supplier_monthly_net == null) {
       toast({ title: "Cannot approve — supplier cost missing", description: `Wholesale monthly cost is missing for ${sp?.product_name ?? "this product"}. Update the supplier catalogue before approval.`, variant: "destructive" });
-      return;
+      return false;
     }
     if (sp.active === false) {
       toast({ title: "Cannot approve — supplier product inactive", description: "Activate the verified supplier product before approval.", variant: "destructive" });
-      return;
+      return false;
     }
     setBusy("approve");
     try {
@@ -471,8 +471,10 @@ export const AdminQuoteRequests = () => {
       toast({ title: "Final quote approved" });
       qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
       if (selected) await loadLatestQuote(selected.id);
+      return true;
     } catch (e: any) {
       toast({ title: "Approve failed", description: e?.message, variant: "destructive" });
+      return false;
     } finally { setBusy(null); }
   };
 
@@ -506,7 +508,8 @@ export const AdminQuoteRequests = () => {
     setBusy("send_quote");
     try {
       if (latestQuote.status !== "approved") {
-        await _approveFinal();
+        const approved = await _approveFinal();
+        if (!approved) return;
         if (selected?.id) await loadLatestQuote(selected.id);
       }
       setComposeOpen(true);

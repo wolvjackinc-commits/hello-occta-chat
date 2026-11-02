@@ -119,9 +119,9 @@ Deno.serve(async (req) => {
       const { data: qrPc } = await supabase.from("quote_requests").select("postcode").eq("id", q.quote_request_id).maybeSingle();
       const patch = await planEstimatePatch(q, qrPc?.postcode);
       if (patch) {
-        const { error: pErr } = await supabase.from("quotes").update(patch).eq("id", q.id).is("supplier_availability_sha256", null);
+        const { data: saved, error: pErr } = await supabase.from("quotes").update(patch).eq("id", q.id).is("supplier_availability_sha256", null).select("speed_bucket, supplier_availability_snapshot, supplier_availability_sha256").maybeSingle();
         if (pErr) return jsonResponse({ error: "speed_snapshot_save_failed", retryable: true }, 503);
-        Object.assign(q, patch);
+        if (saved) Object.assign(q, saved);
       }
     }
     const speedGate = buildContractSpeedMatrix(q.supplier_availability_snapshot, q.speed_bucket);

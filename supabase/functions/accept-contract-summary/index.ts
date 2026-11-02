@@ -410,7 +410,17 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
         }
       : null,
   }).select("id").single();
-  if (aErr) return jsonResponse({ error: "accept_failed", details: aErr.message }, 500);
+  if (aErr) {
+    console.error("[accept-contract-summary] acceptance insert rejected", aErr.message);
+    const otpProblem = /otp/i.test(aErr.message);
+    return jsonResponse({
+      error: "accept_failed",
+      details: aErr.message,
+      message: otpProblem
+        ? "Your text-message code has expired. Please request a new code and try again."
+        : "We couldn't record your acceptance because a contract detail failed a final check. OCCTA has been alerted — please contact us and we'll fix it straight away.",
+    }, otpProblem ? 403 : 409);
+  }
   const acceptanceId = accInsert?.id;
 
   // Mark the SMS verification as consumed so it can never be replayed, and link

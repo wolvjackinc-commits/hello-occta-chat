@@ -7,10 +7,17 @@ import { OCCTA_CONTACT } from "./careLetters.ts";
 
 // jsPDF's built-in fonts are WinAnsi: keep text inside that set.
 export function pdfSafe(s: string): string {
-  return String(s ?? "")
-    .replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
-    .replace(/[–—]/g, "-").replace(/→/g, "->").replace(/…/g, "...")
-    .replace(/[^\x09\x0A\x0D\x20-\x7E£ -ÿ]/g, "");
+  const swaps: Record<number, string> = {
+    0x2018: "'", 0x2019: "'", 0x201c: '"', 0x201d: '"', 0x2013: "-", 0x2014: "-", 0x2192: "->", 0x2026: "...", 0x00a0: " ",
+  };
+  let out = "";
+  for (const ch of String(s ?? "")) {
+    const code = ch.codePointAt(0) ?? 0;
+    if (swaps[code] !== undefined) out += swaps[code];
+    // Keep tab/newline, printable ASCII and Latin-1 (which includes the pound sign).
+    else if (code === 9 || code === 10 || code === 13 || (code >= 0x20 && code <= 0x7e) || (code >= 0xa1 && code <= 0xff)) out += ch;
+  }
+  return out;
 }
 
 const A4 = { w: 210, h: 297 };

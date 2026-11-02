@@ -324,7 +324,10 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
     contract_length: contractLength,
     contract_type: contractType,
     customer_type_v2: customerTypeV2,
-    minimum_term_months: q.plan_term === "price_lock_24" ? 24 : (q.plan_term === "flex_30" ? 0 : (q.contract_length_months ?? null)),
+    // Must agree with contract_type above: Flex 30 has no minimum term (0).
+    // A null here made the database acceptance guard reject admin-built Flex
+    // quotes (plan_term unset) with mandatory_contract_snapshot_incomplete.
+    minimum_term_months: contractType === "fixed_term" ? 24 : 0,
     notice_period: notice.text,
     notice_period_days: notice.days,
     etf_policy_snapshot: etfPolicySnapshot,

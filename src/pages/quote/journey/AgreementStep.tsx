@@ -8,6 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import FullContractTermsBlock from "@/components/legal/FullContractTermsBlock";
 import ContractSmsVerification from "@/components/contract/ContractSmsVerification";
+import { readFunctionErrorBody } from "@/lib/functionErrorBody";
+
+const GENERATION_ERROR_COPY: Record<string, string> = {
+  rate_limited: "Too many attempts in a short time. Please wait a minute and retry.",
+  quote_not_found: "This quote link is no longer valid. Please contact OCCTA support for a fresh link.",
+  journey_declined: "This quote was declined. Please contact OCCTA support if you'd like a new quote.",
+};
 
 const RECEIVED_CONFIRMATION =
   "I confirm that I received and can access my Contract Summary and Contract Information & Customer Agreement Pack.";
@@ -106,6 +113,9 @@ export default function AgreementStep({
   const [termsAndConsentConfirmed, setTermsAndConsentConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [startedAt] = useState(() => Date.now());
+  const [needsServiceDate, setNeedsServiceDate] = useState(false);
+  const [serviceDate, setServiceDate] = useState("");
+  const [serviceDateInvalid, setServiceDateInvalid] = useState(false);
 
   useEffect(() => {
     if (dateOfBirth) setDob(dateOfBirth);
@@ -117,7 +127,7 @@ export default function AgreementStep({
     return data as any;
   }, [token]);
 
-  const ensureCs = useCallback(async () => {
+  const ensureCs = useCallback(async (likelyServiceDate?: string) => {
     setGenerating(true); setGenError(null);
     try {
       // A Journey 2 prepare call may already have generated the documents.
@@ -127,9 +137,24 @@ export default function AgreementStep({
         (!detail?.contract_information_required || !!detail?.contract_information_ready);
 
       if (!alreadyReady) {
-        const { data: gen, error: genErr } = await supabase.functions.invoke("journey-generate-cs", { body: { token } });
-        if (genErr || (gen as any)?.error) {
-          setGenError((gen as any)?.error || genErr?.message || "We couldn't prepare your contract documents.");
+        const { data: rawGen, error: genErr } = await supabase.functions.invoke("journey-generate-cs", {
+          body: likelyServiceDate ? { token, likely_service_date: likelyServiceDate } : { token },
+        });
+        const gen = (rawGen ?? (genErr ? await readFunctionErrorBody(genErr) : null)) as any;
+        if (gen?.needs_service_date) {
+          setNeedsServiceDate(true);
+          setServiceDateInvalid(!!gen.invalid);
+          return;
+        }
+        setNeedsServiceDate(false);
+        if (genErr || gen?.error) {
+          const code = String(gen?.error ?? "");
+          const inner = gen?.details && typeof gen.details === "object" ? gen.details : null;
+          setGenError(
+            GENERATION_ERROR_COPY[code] ||
+            inner?.message || gen?.message ||
+            "We couldn't prepare your contract documents. OCCTA has been notified — please retry shortly or contact support. Nothing has been accepted or charged.",
+          );
           return;
         }
         detail = await loadDetail();
@@ -180,6 +205,9 @@ export default function AgreementStep({
   }, [token, loadDetail]);
 
   useEffect(() => { ensureCs(); }, [ensureCs]);
+
+  const minServiceDate = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); })();
+  const maxServiceDate = (() => { const d = new Date(); d.setUTCDate(d.getUTCDate() + 90); return d.toISOString().slice(0, 10); })();
 
   const allChecksTicked = documentsAndDetailsConfirmed && termsAndConsentConfirmed;
   const dobAge = (() => {
@@ -266,6 +294,27 @@ export default function AgreementStep({
     );
   }
 
+  if (needsServiceDate && !genError) {
+    return (
+      <div className="border-4 border-foreground p-6 space-y-3">
+        <p className="font-display uppercase text-sm">Choose your preferred service start date</p>
+        <p className="text-xs text-muted-foreground">
+          This is your target date and is shown in your contract documents. It stays provisional until the network confirms the
+          appointment or activation. Billing only starts once your service is confirmed live.
+        </p>
+        <div className="max-w-xs space-y-1">
+          <Label htmlFor="likely-service-date">Preferred start date</Label>
+          <Input id="likely-service-date" type="date" min={minServiceDate} max={maxServiceDate} value={serviceDate}
+            onChange={(e) => { setServiceDate(e.target.value); setServiceDateInvalid(false); }} />
+          {serviceDateInvalid && <p className="text-xs text-destructive">Please pick a date between tomorrow and 90 days from today.</p>}
+        </div>
+        <Button size="sm" disabled={!serviceDate || serviceDate < minServiceDate || serviceDate > maxServiceDate} onClick={() => ensureCs(serviceDate)}>
+          Continue to contract documents
+        </Button>
+      </div>
+    );
+  }
+
   if (genError || !cs) {
     return (
       <div className="border-4 border-destructive p-6 bg-destructive/5">
@@ -274,7 +323,7 @@ export default function AgreementStep({
           <div className="flex-1">
             <p className="font-display uppercase text-sm mb-1">We couldn't prepare your complete contract document pack</p>
             <p className="text-xs text-muted-foreground mb-3">{genError ?? "Please try again or contact OCCTA support."}</p>
-            <Button variant="outline" size="sm" onClick={ensureCs}><RefreshCw className="w-3 h-3 mr-1" /> Retry</Button>
+            <Button variant="outline" size="sm" onClick={() => ensureCs()}><RefreshCw className="w-3 h-3 mr-1" /> Retry</Button>
           </div>
         </div>
       </div>

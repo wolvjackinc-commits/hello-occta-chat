@@ -1731,6 +1731,1496 @@ export type Database = {
         }
         Relationships: []
       }
+      care_applications: {
+        Row: {
+          channel: string
+          collection_day: number
+          created_at: string
+          customer_id: string
+          expires_at: string
+          first_collection_date: string
+          frequency: string
+          id: string
+          invite_id: string | null
+          ip: string | null
+          key_facts: Json | null
+          key_facts_sha256: string | null
+          key_facts_shown_at: string | null
+          plan_code: string
+          price_minor: number
+          status: string
+          submitted_at: string | null
+          terms_version: string
+          user_agent: string | null
+        }
+        Insert: {
+          channel: string
+          collection_day: number
+          created_at?: string
+          customer_id: string
+          expires_at: string
+          first_collection_date: string
+          frequency: string
+          id?: string
+          invite_id?: string | null
+          ip?: string | null
+          key_facts?: Json | null
+          key_facts_sha256?: string | null
+          key_facts_shown_at?: string | null
+          plan_code: string
+          price_minor: number
+          status?: string
+          submitted_at?: string | null
+          terms_version: string
+          user_agent?: string | null
+        }
+        Update: {
+          channel?: string
+          collection_day?: number
+          created_at?: string
+          customer_id?: string
+          expires_at?: string
+          first_collection_date?: string
+          frequency?: string
+          id?: string
+          invite_id?: string | null
+          ip?: string | null
+          key_facts?: Json | null
+          key_facts_sha256?: string | null
+          key_facts_shown_at?: string | null
+          plan_code?: string
+          price_minor?: number
+          status?: string
+          submitted_at?: string | null
+          terms_version?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_applications_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "care_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_applications_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "care_plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "care_applications_terms_version_fkey"
+            columns: ["terms_version"]
+            isOneToOne: false
+            referencedRelation: "care_terms_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      care_bank_holidays: {
+        Row: {
+          holiday: string
+          name: string
+        }
+        Insert: {
+          holiday: string
+          name: string
+        }
+        Update: {
+          holiday?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      care_collection_runs: {
+        Row: {
+          created_at: string
+          created_by: string
+          csv_sha256: string | null
+          earliest_due: string | null
+          id: string
+          item_count: number
+          latest_due: string | null
+          provider_code: string
+          run_number: string
+          submitted_confirmed_at: string | null
+          submitted_confirmed_by: string | null
+          total_minor: number
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          csv_sha256?: string | null
+          earliest_due?: string | null
+          id?: string
+          item_count: number
+          latest_due?: string | null
+          provider_code: string
+          run_number: string
+          submitted_confirmed_at?: string | null
+          submitted_confirmed_by?: string | null
+          total_minor: number
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          csv_sha256?: string | null
+          earliest_due?: string | null
+          id?: string
+          item_count?: number
+          latest_due?: string | null
+          provider_code?: string
+          run_number?: string
+          submitted_confirmed_at?: string | null
+          submitted_confirmed_by?: string | null
+          total_minor?: number
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: []
+      }
+      care_collections: {
+        Row: {
+          amount_minor: number
+          bank_received_date: string | null
+          cancelled_reason: string | null
+          created_at: string
+          due_date: string
+          id: string
+          is_test: boolean
+          kind: string
+          mandate_id: string | null
+          notice_kind: string | null
+          notice_sent_at: string | null
+          paid_confirmed_at: string | null
+          paid_confirmed_by: string | null
+          period_end: string
+          period_start: string
+          represent_of: string | null
+          reschedule_count: number
+          run_id: string | null
+          status: string
+          submitted_at: string | null
+          submitted_by: string | null
+          subscription_id: string
+          unpaid_reason_code: string | null
+          unpaid_reason_text: string | null
+          unpaid_recorded_at: string | null
+          unpaid_recorded_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_minor: number
+          bank_received_date?: string | null
+          cancelled_reason?: string | null
+          created_at?: string
+          due_date: string
+          id?: string
+          is_test?: boolean
+          kind: string
+          mandate_id?: string | null
+          notice_kind?: string | null
+          notice_sent_at?: string | null
+          paid_confirmed_at?: string | null
+          paid_confirmed_by?: string | null
+          period_end: string
+          period_start: string
+          represent_of?: string | null
+          reschedule_count?: number
+          run_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          subscription_id: string
+          unpaid_reason_code?: string | null
+          unpaid_reason_text?: string | null
+          unpaid_recorded_at?: string | null
+          unpaid_recorded_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number
+          bank_received_date?: string | null
+          cancelled_reason?: string | null
+          created_at?: string
+          due_date?: string
+          id?: string
+          is_test?: boolean
+          kind?: string
+          mandate_id?: string | null
+          notice_kind?: string | null
+          notice_sent_at?: string | null
+          paid_confirmed_at?: string | null
+          paid_confirmed_by?: string | null
+          period_end?: string
+          period_start?: string
+          represent_of?: string | null
+          reschedule_count?: number
+          run_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          submitted_by?: string | null
+          subscription_id?: string
+          unpaid_reason_code?: string | null
+          unpaid_reason_text?: string | null
+          unpaid_recorded_at?: string | null
+          unpaid_recorded_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_collections_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "care_mandates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_collections_represent_of_fkey"
+            columns: ["represent_of"]
+            isOneToOne: false
+            referencedRelation: "care_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_collections_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "care_collection_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_collections_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_consents: {
+        Row: {
+          application_id: string | null
+          channel: string
+          collection_day: number
+          created_at: string
+          customer_id: string
+          declared_over_18: boolean
+          frequency: string
+          id: string
+          invite_id: string | null
+          ip: string | null
+          key_facts: Json
+          key_facts_sha256: string
+          key_facts_shown_at: string
+          kind: string
+          page_url: string | null
+          plan_code: string
+          price_minor: number
+          snapshot: Json
+          staff_id: string | null
+          subscription_id: string
+          terms_sha256: string
+          terms_version: string
+          ticked_account_holder_at: string | null
+          ticked_dd_at: string | null
+          ticked_early_start: boolean
+          ticked_early_start_at: string | null
+          ticked_terms_at: string
+          user_agent: string | null
+          verification_destination: string | null
+          verification_id: string | null
+          verification_method: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          channel: string
+          collection_day: number
+          created_at?: string
+          customer_id: string
+          declared_over_18: boolean
+          frequency: string
+          id?: string
+          invite_id?: string | null
+          ip?: string | null
+          key_facts: Json
+          key_facts_sha256: string
+          key_facts_shown_at: string
+          kind: string
+          page_url?: string | null
+          plan_code: string
+          price_minor: number
+          snapshot: Json
+          staff_id?: string | null
+          subscription_id: string
+          terms_sha256: string
+          terms_version: string
+          ticked_account_holder_at?: string | null
+          ticked_dd_at?: string | null
+          ticked_early_start?: boolean
+          ticked_early_start_at?: string | null
+          ticked_terms_at: string
+          user_agent?: string | null
+          verification_destination?: string | null
+          verification_id?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          channel?: string
+          collection_day?: number
+          created_at?: string
+          customer_id?: string
+          declared_over_18?: boolean
+          frequency?: string
+          id?: string
+          invite_id?: string | null
+          ip?: string | null
+          key_facts?: Json
+          key_facts_sha256?: string
+          key_facts_shown_at?: string
+          kind?: string
+          page_url?: string | null
+          plan_code?: string
+          price_minor?: number
+          snapshot?: Json
+          staff_id?: string | null
+          subscription_id?: string
+          terms_sha256?: string
+          terms_version?: string
+          ticked_account_holder_at?: string | null
+          ticked_dd_at?: string | null
+          ticked_early_start?: boolean
+          ticked_early_start_at?: string | null
+          ticked_terms_at?: string
+          user_agent?: string | null
+          verification_destination?: string | null
+          verification_id?: string | null
+          verification_method?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_consents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "care_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_consents_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_consents_terms_version_fkey"
+            columns: ["terms_version"]
+            isOneToOne: false
+            referencedRelation: "care_terms_versions"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "care_consents_verification_id_fkey"
+            columns: ["verification_id"]
+            isOneToOne: false
+            referencedRelation: "care_verifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_disputes: {
+        Row: {
+          amount_minor: number | null
+          bacs_reason_code: string | null
+          closed_at: string | null
+          collection_id: string | null
+          complaint_id: string | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          evidence_pack_id: string | null
+          id: string
+          kind: string
+          received_on: string
+          respond_by: string
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          amount_minor?: number | null
+          bacs_reason_code?: string | null
+          closed_at?: string | null
+          collection_id?: string | null
+          complaint_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence_pack_id?: string | null
+          id?: string
+          kind: string
+          received_on: string
+          respond_by: string
+          status?: string
+          subscription_id: string
+        }
+        Update: {
+          amount_minor?: number | null
+          bacs_reason_code?: string | null
+          closed_at?: string | null
+          collection_id?: string | null
+          complaint_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          evidence_pack_id?: string | null
+          id?: string
+          kind?: string
+          received_on?: string
+          respond_by?: string
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_disputes_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "care_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_disputes_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_disputes_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: string
+          created_at: string
+          customer_id: string | null
+          details: Json
+          event: string
+          id: number
+          subscription_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type: string
+          created_at?: string
+          customer_id?: string | null
+          details?: Json
+          event: string
+          id?: number
+          subscription_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          customer_id?: string | null
+          details?: Json
+          event?: string
+          id?: number
+          subscription_id?: string | null
+        }
+        Relationships: []
+      }
+      care_evidence_packs: {
+        Row: {
+          created_at: string
+          id: string
+          pdf_path: string
+          pdf_sha256: string
+          purpose: string
+          requested_by: string
+          subscription_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pdf_path: string
+          pdf_sha256: string
+          purpose: string
+          requested_by: string
+          subscription_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pdf_path?: string
+          pdf_sha256?: string
+          purpose?: string
+          requested_by?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_evidence_packs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_invites: {
+        Row: {
+          call_notes: string | null
+          call_reference: string | null
+          collection_day: number
+          created_at: string
+          created_by: string
+          customer_id: string
+          email_status: string | null
+          expires_at: string
+          frequency: string
+          id: string
+          plan_code: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          script_confirmed: Json
+          sent_to_email: string | null
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          call_notes?: string | null
+          call_reference?: string | null
+          collection_day: number
+          created_at?: string
+          created_by: string
+          customer_id: string
+          email_status?: string | null
+          expires_at: string
+          frequency: string
+          id?: string
+          plan_code: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          script_confirmed: Json
+          sent_to_email?: string | null
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          call_notes?: string | null
+          call_reference?: string | null
+          collection_day?: number
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          email_status?: string | null
+          expires_at?: string
+          frequency?: string
+          id?: string
+          plan_code?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          script_confirmed?: Json
+          sent_to_email?: string | null
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_invites_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "care_plans"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      care_letters: {
+        Row: {
+          batch_id: string | null
+          copy_for: string | null
+          created_at: string
+          customer_id: string
+          dedupe_key: string | null
+          delivery: string | null
+          email_log_id: string | null
+          email_status: string | null
+          error: string | null
+          id: string
+          large_print: boolean
+          letter_type: string
+          payload: Json
+          pdf_path: string | null
+          pdf_sha256: string | null
+          posted_by: string | null
+          posted_on: string | null
+          provider_id: string | null
+          recipient: Json
+          status: string
+          subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_id?: string | null
+          copy_for?: string | null
+          created_at?: string
+          customer_id: string
+          dedupe_key?: string | null
+          delivery?: string | null
+          email_log_id?: string | null
+          email_status?: string | null
+          error?: string | null
+          id?: string
+          large_print?: boolean
+          letter_type: string
+          payload: Json
+          pdf_path?: string | null
+          pdf_sha256?: string | null
+          posted_by?: string | null
+          posted_on?: string | null
+          provider_id?: string | null
+          recipient: Json
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string | null
+          copy_for?: string | null
+          created_at?: string
+          customer_id?: string
+          dedupe_key?: string | null
+          delivery?: string | null
+          email_log_id?: string | null
+          email_status?: string | null
+          error?: string | null
+          id?: string
+          large_print?: boolean
+          letter_type?: string
+          payload?: Json
+          pdf_path?: string | null
+          pdf_sha256?: string | null
+          posted_by?: string | null
+          posted_on?: string | null
+          provider_id?: string | null
+          recipient?: Json
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_letters_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "care_print_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_letters_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_mandates: {
+        Row: {
+          account_holder_name: string
+          activated_at: string | null
+          activated_by: string | null
+          bank_details_ciphertext: string | null
+          bank_name: string | null
+          cancel_reason_code: string | null
+          cancel_requested_at: string | null
+          cancel_source: string | null
+          cancelled_at: string | null
+          ciphertext_purged_at: string | null
+          created_at: string
+          customer_id: string
+          enc_alg: string | null
+          enc_key_id: string | null
+          enc_nonce: string | null
+          id: string
+          is_test: boolean
+          lodge_due_by: string
+          lodged_at: string | null
+          lodged_by: string | null
+          masked_account_last4: string
+          masked_sort_last2: string
+          provider_code: string
+          provider_reference: string | null
+          reference: string
+          rejected_at: string | null
+          rejection_reason: string | null
+          signed_at: string
+          status: string
+          subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_holder_name: string
+          activated_at?: string | null
+          activated_by?: string | null
+          bank_details_ciphertext?: string | null
+          bank_name?: string | null
+          cancel_reason_code?: string | null
+          cancel_requested_at?: string | null
+          cancel_source?: string | null
+          cancelled_at?: string | null
+          ciphertext_purged_at?: string | null
+          created_at?: string
+          customer_id: string
+          enc_alg?: string | null
+          enc_key_id?: string | null
+          enc_nonce?: string | null
+          id?: string
+          is_test?: boolean
+          lodge_due_by: string
+          lodged_at?: string | null
+          lodged_by?: string | null
+          masked_account_last4: string
+          masked_sort_last2: string
+          provider_code: string
+          provider_reference?: string | null
+          reference: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          signed_at: string
+          status: string
+          subscription_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_holder_name?: string
+          activated_at?: string | null
+          activated_by?: string | null
+          bank_details_ciphertext?: string | null
+          bank_name?: string | null
+          cancel_reason_code?: string | null
+          cancel_requested_at?: string | null
+          cancel_source?: string | null
+          cancelled_at?: string | null
+          ciphertext_purged_at?: string | null
+          created_at?: string
+          customer_id?: string
+          enc_alg?: string | null
+          enc_key_id?: string | null
+          enc_nonce?: string | null
+          id?: string
+          is_test?: boolean
+          lodge_due_by?: string
+          lodged_at?: string | null
+          lodged_by?: string | null
+          masked_account_last4?: string
+          masked_sort_last2?: string
+          provider_code?: string
+          provider_reference?: string | null
+          reference?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
+          signed_at?: string
+          status?: string
+          subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_mandates_provider_code_fkey"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "dd_providers"
+            referencedColumns: ["provider_code"]
+          },
+          {
+            foreignKeyName: "care_mandates_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          customer_id: string | null
+          dedupe_key: string | null
+          finished_at: string | null
+          id: string
+          is_test: boolean
+          kind: string
+          last_error: string | null
+          lease: string | null
+          letter_id: string | null
+          locked_until: string | null
+          payload: Json
+          status: string
+          subscription_id: string | null
+          template: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          customer_id?: string | null
+          dedupe_key?: string | null
+          finished_at?: string | null
+          id?: string
+          is_test?: boolean
+          kind: string
+          last_error?: string | null
+          lease?: string | null
+          letter_id?: string | null
+          locked_until?: string | null
+          payload?: Json
+          status?: string
+          subscription_id?: string | null
+          template: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          customer_id?: string | null
+          dedupe_key?: string | null
+          finished_at?: string | null
+          id?: string
+          is_test?: boolean
+          kind?: string
+          last_error?: string | null
+          lease?: string | null
+          letter_id?: string | null
+          locked_until?: string | null
+          payload?: Json
+          status?: string
+          subscription_id?: string | null
+          template?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_outbox_letter_id_fkey"
+            columns: ["letter_id"]
+            isOneToOne: false
+            referencedRelation: "care_letters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_plans: {
+        Row: {
+          active: boolean
+          code: string
+          monthly_minor: number
+          name: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          monthly_minor: number
+          name: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          monthly_minor?: number
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      care_price_changes: {
+        Row: {
+          affected: number
+          created_at: string
+          created_by: string
+          effective_from: string
+          frequency: string
+          id: string
+          new_price_minor: number
+          old_price_minor: number
+          plan_code: string
+          reason: string
+        }
+        Insert: {
+          affected?: number
+          created_at?: string
+          created_by: string
+          effective_from: string
+          frequency: string
+          id?: string
+          new_price_minor: number
+          old_price_minor: number
+          plan_code: string
+          reason: string
+        }
+        Update: {
+          affected?: number
+          created_at?: string
+          created_by?: string
+          effective_from?: string
+          frequency?: string
+          id?: string
+          new_price_minor?: number
+          old_price_minor?: number
+          plan_code?: string
+          reason?: string
+        }
+        Relationships: []
+      }
+      care_print_batches: {
+        Row: {
+          batch_number: string
+          created_at: string
+          created_by: string
+          id: string
+          letter_count: number
+          pdf_path: string | null
+          pdf_sha256: string | null
+          posted_by: string | null
+          posted_on: string | null
+        }
+        Insert: {
+          batch_number: string
+          created_at?: string
+          created_by: string
+          id?: string
+          letter_count: number
+          pdf_path?: string | null
+          pdf_sha256?: string | null
+          posted_by?: string | null
+          posted_on?: string | null
+        }
+        Update: {
+          batch_number?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          letter_count?: number
+          pdf_path?: string | null
+          pdf_sha256?: string | null
+          posted_by?: string | null
+          posted_on?: string | null
+        }
+        Relationships: []
+      }
+      care_refunds: {
+        Row: {
+          amount_minor: number
+          cancelled_reason: string | null
+          collection_id: string | null
+          created_at: string
+          created_by: string | null
+          due_by: string | null
+          id: string
+          paid_at: string | null
+          paid_by: string | null
+          paid_reference: string | null
+          reason: string
+          status: string
+          subscription_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_minor: number
+          cancelled_reason?: string | null
+          collection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_by?: string | null
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          paid_reference?: string | null
+          reason: string
+          status: string
+          subscription_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number
+          cancelled_reason?: string | null
+          collection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_by?: string | null
+          id?: string
+          paid_at?: string | null
+          paid_by?: string | null
+          paid_reference?: string | null
+          reason?: string
+          status?: string
+          subscription_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_refunds_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "care_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_refunds_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_requests: {
+        Row: {
+          created_at: string
+          customer_id: string
+          details: string
+          id: string
+          kind: string
+          status: string
+          subscription_id: string
+          ticket_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          details: string
+          id?: string
+          kind: string
+          status?: string
+          subscription_id: string
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          details?: string
+          id?: string
+          kind?: string
+          status?: string
+          subscription_id?: string
+          ticket_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_requests_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_settings: {
+        Row: {
+          current_terms_version: string
+          provider_code: string
+          sales_open: boolean
+          singleton: boolean
+          support_hours: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          current_terms_version: string
+          provider_code?: string
+          sales_open?: boolean
+          singleton?: boolean
+          support_hours?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          current_terms_version?: string
+          provider_code?: string
+          sales_open?: boolean
+          singleton?: boolean
+          support_hours?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_settings_current_terms_version_fkey"
+            columns: ["current_terms_version"]
+            isOneToOne: false
+            referencedRelation: "care_terms_versions"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "care_settings_provider_code_fkey"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "dd_providers"
+            referencedColumns: ["provider_code"]
+          },
+        ]
+      }
+      care_subscriptions: {
+        Row: {
+          application_id: string | null
+          cancel_channel: string | null
+          cancel_effective_date: string | null
+          cancel_reason: string | null
+          cancel_requested_at: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          channel: string
+          collection_day: number
+          cooling_off_ends_at: string
+          created_at: string
+          customer_id: string
+          failed_collections: number
+          first_collection_date: string
+          frequency: string
+          id: string
+          invite_id: string | null
+          is_test: boolean
+          joined_at: string
+          last_usage_reminder_at: string | null
+          next_usage_reminder_on: string | null
+          plan_code: string
+          price_minor: number
+          reference: string
+          review_hold_until: string | null
+          review_note: string | null
+          review_reasons: string[]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          service_starts_on: string
+          sold_by: string | null
+          started_early: boolean
+          status: string
+          status_reason: string | null
+          terms_version: string
+          updated_at: string
+          welcome_call_done_at: string | null
+          welcome_call_due_on: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          cancel_channel?: string | null
+          cancel_effective_date?: string | null
+          cancel_reason?: string | null
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          channel: string
+          collection_day: number
+          cooling_off_ends_at: string
+          created_at?: string
+          customer_id: string
+          failed_collections?: number
+          first_collection_date: string
+          frequency: string
+          id?: string
+          invite_id?: string | null
+          is_test?: boolean
+          joined_at?: string
+          last_usage_reminder_at?: string | null
+          next_usage_reminder_on?: string | null
+          plan_code: string
+          price_minor: number
+          reference?: string
+          review_hold_until?: string | null
+          review_note?: string | null
+          review_reasons?: string[]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_starts_on: string
+          sold_by?: string | null
+          started_early?: boolean
+          status: string
+          status_reason?: string | null
+          terms_version: string
+          updated_at?: string
+          welcome_call_done_at?: string | null
+          welcome_call_due_on?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          cancel_channel?: string | null
+          cancel_effective_date?: string | null
+          cancel_reason?: string | null
+          cancel_requested_at?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          channel?: string
+          collection_day?: number
+          cooling_off_ends_at?: string
+          created_at?: string
+          customer_id?: string
+          failed_collections?: number
+          first_collection_date?: string
+          frequency?: string
+          id?: string
+          invite_id?: string | null
+          is_test?: boolean
+          joined_at?: string
+          last_usage_reminder_at?: string | null
+          next_usage_reminder_on?: string | null
+          plan_code?: string
+          price_minor?: number
+          reference?: string
+          review_hold_until?: string | null
+          review_note?: string | null
+          review_reasons?: string[]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          service_starts_on?: string
+          sold_by?: string | null
+          started_early?: boolean
+          status?: string
+          status_reason?: string | null
+          terms_version?: string
+          updated_at?: string
+          welcome_call_done_at?: string | null
+          welcome_call_due_on?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_subscriptions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "care_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_subscriptions_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "care_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_subscriptions_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "care_plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "care_subscriptions_terms_version_fkey"
+            columns: ["terms_version"]
+            isOneToOne: false
+            referencedRelation: "care_terms_versions"
+            referencedColumns: ["version"]
+          },
+        ]
+      }
+      care_support_needs: {
+        Row: {
+          carer_contact: string | null
+          carer_name: string | null
+          consent_at: string
+          consent_source: string
+          customer_id: string
+          needs: string[]
+          other_detail: string | null
+          staff_note: string | null
+          staff_sales_block: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          carer_contact?: string | null
+          carer_name?: string | null
+          consent_at: string
+          consent_source: string
+          customer_id: string
+          needs?: string[]
+          other_detail?: string | null
+          staff_note?: string | null
+          staff_sales_block?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          carer_contact?: string | null
+          carer_name?: string | null
+          consent_at?: string
+          consent_source?: string
+          customer_id?: string
+          needs?: string[]
+          other_detail?: string | null
+          staff_note?: string | null
+          staff_sales_block?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      care_terms_versions: {
+        Row: {
+          created_at: string
+          effective_from: string
+          rules: Json
+          summary: string
+          terms_sha256: string
+          terms_url: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          effective_from: string
+          rules: Json
+          summary: string
+          terms_sha256: string
+          terms_url?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          rules?: Json
+          summary?: string
+          terms_sha256?: string
+          terms_url?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      care_usage: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          notes: string | null
+          occurred_at: string
+          recorded_by: string | null
+          source: string
+          subscription_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          notes?: string | null
+          occurred_at?: string
+          recorded_by?: string | null
+          source?: string
+          subscription_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          occurred_at?: string
+          recorded_by?: string | null
+          source?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      care_verifications: {
+        Row: {
+          application_id: string
+          code_hash: string | null
+          consumed_at: string | null
+          created_at: string
+          customer_id: string
+          destination_hash: string
+          destination_masked: string
+          expires_at: string
+          id: string
+          last_sent_at: string
+          method: string
+          provider_challenge_id: string | null
+          send_count: number
+          verified_at: string | null
+          verify_attempts: number
+        }
+        Insert: {
+          application_id: string
+          code_hash?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          customer_id: string
+          destination_hash: string
+          destination_masked: string
+          expires_at: string
+          id?: string
+          last_sent_at?: string
+          method: string
+          provider_challenge_id?: string | null
+          send_count?: number
+          verified_at?: string | null
+          verify_attempts?: number
+        }
+        Update: {
+          application_id?: string
+          code_hash?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          customer_id?: string
+          destination_hash?: string
+          destination_masked?: string
+          expires_at?: string
+          id?: string
+          last_sent_at?: string
+          method?: string
+          provider_challenge_id?: string | null
+          send_count?: number
+          verified_at?: string | null
+          verify_attempts?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_verifications_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "care_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_analytics: {
         Row: {
           created_at: string
@@ -15922,6 +17412,328 @@ export type Database = {
           cycle_end: string
           cycle_start: string
         }[]
+      }
+      care_add_working_days: { Args: { d: string; n: number }; Returns: string }
+      care_admin_cancel: {
+        Args: { p_channel: string; p_reason: string; p_sub: string }
+        Returns: Json
+      }
+      care_admin_collections: { Args: { p_status?: string }; Returns: Json }
+      care_admin_create_run: {
+        Args: { p_collection_ids: string[] }
+        Returns: Json
+      }
+      care_admin_dispute_decide: {
+        Args: {
+          p_cancel_care?: boolean
+          p_decision: string
+          p_dispute: string
+          p_note: string
+          p_write_once?: boolean
+        }
+        Returns: Json
+      }
+      care_admin_disputes: { Args: never; Returns: Json }
+      care_admin_goodwill_refund: {
+        Args: {
+          p_amount_minor: number
+          p_collection: string
+          p_reason: string
+          p_sub: string
+        }
+        Returns: Json
+      }
+      care_admin_letters: { Args: { p_status?: string }; Returns: Json }
+      care_admin_letters_posted: {
+        Args: { p_letter_ids: string[]; p_posted_on: string }
+        Returns: Json
+      }
+      care_admin_list: {
+        Args: { p_filter?: string; p_search?: string }
+        Returns: Json
+      }
+      care_admin_mandate_action: {
+        Args: {
+          p_action: string
+          p_effective?: string
+          p_mandate: string
+          p_provider_ref?: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      care_admin_mandate_queue: { Args: never; Returns: Json }
+      care_admin_member: { Args: { p_sub: string }; Returns: Json }
+      care_admin_overview: { Args: never; Returns: Json }
+      care_admin_raise_complaint: {
+        Args: {
+          p_channel: string
+          p_desired: string
+          p_sub: string
+          p_summary: string
+        }
+        Returns: Json
+      }
+      care_admin_record_bank_cancellation: {
+        Args: { p_mandate: string; p_reason_code: string; p_received: string }
+        Returns: Json
+      }
+      care_admin_record_ddi_request: {
+        Args: { p_note: string; p_received: string; p_sub: string }
+        Returns: Json
+      }
+      care_admin_record_indemnity: {
+        Args: {
+          p_amount_minor: number
+          p_collection: string
+          p_reason_code: string
+          p_received: string
+        }
+        Returns: Json
+      }
+      care_admin_record_result: {
+        Args: {
+          p_bank_received?: string
+          p_collection: string
+          p_note?: string
+          p_outcome: string
+          p_reason_code?: string
+        }
+        Returns: Json
+      }
+      care_admin_record_usage: {
+        Args: {
+          p_kind: string
+          p_notes: string
+          p_occurred?: string
+          p_sub: string
+        }
+        Returns: Json
+      }
+      care_admin_refund_action: {
+        Args: {
+          p_action: string
+          p_paid_on?: string
+          p_reason?: string
+          p_reference?: string
+          p_refund: string
+        }
+        Returns: Json
+      }
+      care_admin_refunds: { Args: never; Returns: Json }
+      care_admin_report: { Args: { p_month?: string }; Returns: Json }
+      care_admin_review: {
+        Args: { p_decision: string; p_note: string; p_sub: string }
+        Returns: Json
+      }
+      care_admin_run_action: {
+        Args: {
+          p_action: string
+          p_csv_sha?: string
+          p_reason?: string
+          p_run: string
+        }
+        Returns: Json
+      }
+      care_admin_schedule_price_change: {
+        Args: {
+          p_effective: string
+          p_frequency: string
+          p_new_minor: number
+          p_plan: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      care_admin_set_plan_price: {
+        Args: { p_active: boolean; p_monthly_minor: number; p_plan: string }
+        Returns: Json
+      }
+      care_admin_settings: {
+        Args: { p_sales_open: boolean; p_support_hours?: string }
+        Returns: Json
+      }
+      care_admin_update_support_needs: {
+        Args: {
+          p_carer_contact?: string
+          p_carer_name?: string
+          p_consent_source: string
+          p_customer: string
+          p_needs: string[]
+          p_note: string
+          p_sales_block: boolean
+        }
+        Returns: Json
+      }
+      care_admin_welcome_call: {
+        Args: { p_note: string; p_outcome: string; p_sub: string }
+        Returns: Json
+      }
+      care_cancel_internal: {
+        Args: {
+          p_actor: string
+          p_actor_type: string
+          p_channel: string
+          p_reason: string
+          p_sub: string
+        }
+        Returns: Json
+      }
+      care_claim_outbox: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          customer_id: string | null
+          dedupe_key: string | null
+          finished_at: string | null
+          id: string
+          is_test: boolean
+          kind: string
+          last_error: string | null
+          lease: string | null
+          letter_id: string | null
+          locked_until: string | null
+          payload: Json
+          status: string
+          subscription_id: string | null
+          template: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "care_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      care_day_on_or_after: {
+        Args: { d: string; p_day: number }
+        Returns: string
+      }
+      care_dispatch_messages: { Args: never; Returns: boolean }
+      care_eligibility: { Args: { p_customer: string }; Returns: Json }
+      care_finish_outbox: {
+        Args: {
+          p_error: string
+          p_id: string
+          p_lease: string
+          p_ok: boolean
+          p_status?: string
+        }
+        Returns: boolean
+      }
+      care_first_collection_date: {
+        Args: { p_day: number; p_signed: string }
+        Returns: string
+      }
+      care_is_finance: { Args: { _uid: string }; Returns: boolean }
+      care_is_staff: { Args: { _uid: string }; Returns: boolean }
+      care_is_working_day: { Args: { d: string }; Returns: boolean }
+      care_log: {
+        Args: {
+          p_actor: string
+          p_actor_type: string
+          p_customer: string
+          p_details?: Json
+          p_event: string
+          p_sub: string
+        }
+        Returns: undefined
+      }
+      care_my_cancel: { Args: { p_reason?: string }; Returns: Json }
+      care_my_change_plan: {
+        Args: {
+          p_agree: boolean
+          p_key_facts: Json
+          p_key_facts_sha: string
+          p_plan: string
+        }
+        Returns: Json
+      }
+      care_my_overview: { Args: never; Returns: Json }
+      care_my_request: {
+        Args: { p_details: string; p_kind: string }
+        Returns: Json
+      }
+      care_my_update_support_needs: {
+        Args: {
+          p_carer_contact?: string
+          p_carer_name?: string
+          p_consent: boolean
+          p_needs: string[]
+          p_other?: string
+        }
+        Returns: Json
+      }
+      care_next_working_day: { Args: { d: string }; Returns: string }
+      care_nightly: { Args: never; Returns: Json }
+      care_period_months: { Args: { p_frequency: string }; Returns: number }
+      care_price_minor: {
+        Args: { p_frequency: string; p_plan: string }
+        Returns: number
+      }
+      care_public_catalogue: { Args: never; Returns: Json }
+      care_queue: {
+        Args: {
+          p_dedupe: string
+          p_kind?: string
+          p_payload: Json
+          p_sub: string
+          p_template: string
+        }
+        Returns: string
+      }
+      care_record_evidence_pack: {
+        Args: {
+          p_actor: string
+          p_dispute?: string
+          p_path: string
+          p_purpose: string
+          p_sha: string
+          p_sub: string
+        }
+        Returns: string
+      }
+      care_record_key_facts: {
+        Args: {
+          p_application: string
+          p_customer: string
+          p_key_facts: Json
+          p_sha: string
+        }
+        Returns: boolean
+      }
+      care_request_header: { Args: { p_name: string }; Returns: string }
+      care_require: { Args: { _finance?: boolean }; Returns: string }
+      care_start_application: {
+        Args: {
+          p_customer: string
+          p_day: number
+          p_frequency: string
+          p_invite_hash: string
+          p_ip: string
+          p_plan: string
+          p_ua: string
+        }
+        Returns: Json
+      }
+      care_submit_application: {
+        Args: { p: Json; p_application: string; p_customer: string }
+        Returns: Json
+      }
+      care_task: {
+        Args: {
+          p_customer: string
+          p_description: string
+          p_due: string
+          p_priority: string
+          p_title: string
+        }
+        Returns: undefined
+      }
+      care_working_days_between: {
+        Args: { a: string; b: string }
+        Returns: number
       }
       chat_handoff_reason: { Args: { p_text: string }; Returns: string }
       check_rate_limit: {

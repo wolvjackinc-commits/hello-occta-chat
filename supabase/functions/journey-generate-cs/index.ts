@@ -1,4 +1,5 @@
 import { corsHeaders, jsonResponse, getServiceClient, sha256Hex, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
+import { isManualConsumerBroadband, planEstimatePatch, validateCustomerServiceDate } from "../_shared/manualQuoteContract.ts";
 import { perfServe } from "../_shared/perfLog.ts";
 
 const ACTIVE_CONTRACT_TERMS_VERSION = "2026.10.1";
@@ -76,7 +77,7 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 
-  const body = await req.json().catch(() => ({} as { token?: string }));
+  const body = await req.json().catch(() => ({} as { token?: string; likely_service_date?: string }));
   const token = (body.token ?? "").trim();
   if (!token || token.length < 16) return jsonResponse({ error: "invalid_token" }, 400);
 
@@ -170,6 +171,31 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
       contract_information_ready: ci.ready,
       contract_information_pack_id: ci.pack_id ?? null,
     });
+  }
+
+  // Admin-built consumer broadband quotes have no Journey 2 session. Fill the
+  // contract prerequisites only from legitimate sources before both document
+  // generators read the quote: a deterministic OCCTA plan estimate, and a
+  // likely service date chosen by the customer. Never guessed.
+  {
+    const { data: fq } = await supabase.from("quotes").select("*").eq("id", q.id).maybeSingle();
+    if (fq && isManualConsumerBroadband(fq)) {
+      const { data: qrPc } = await supabase.from("quote_requests").select("postcode").eq("id", fq.quote_request_id).maybeSingle();
+      const patch = await planEstimatePatch(fq, qrPc?.postcode);
+      if (patch) {
+        const { error: pErr } = await supabase.from("quotes").update(patch).eq("id", fq.id).is("supplier_availability_sha256", null);
+        if (pErr) return jsonResponse({ error: "speed_snapshot_save_failed", retryable: true }, 503);
+      }
+      if (!fq.likely_service_date) {
+        const chosen = validateCustomerServiceDate((body as any).likely_service_date);
+        if (!chosen) {
+          // 200 so the browser can read it and ask the customer for a date.
+          return jsonResponse({ ok: false, needs_service_date: true, invalid: (body as any).likely_service_date != null });
+        }
+        const { error: dErr } = await supabase.from("quotes").update({ likely_service_date: chosen }).eq("id", fq.id).is("likely_service_date", null);
+        if (dErr) return jsonResponse({ error: "service_date_save_failed", retryable: true }, 503);
+      }
+    }
   }
 
   // Generate the two independent document PDFs in parallel. The information

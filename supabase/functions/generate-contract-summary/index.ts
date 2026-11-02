@@ -12,6 +12,10 @@ import {
 import { speedEstimatesFor, speedStatementFor } from "../_shared/journey2Snapshot.ts";
 import { resolveNoticePeriod } from "../_shared/noticePeriod.ts";
 import { buildContractSpeedMatrix, matrixHeadline, speedMatrixStatement, type ContractSpeedMatrix } from "../_shared/networkEvidence.ts";
+import {
+  isManualConsumerBroadband, manualExitBasis, planEstimatePatch,
+  NETWORK_CEASE_CAP_WITHIN_12M_INCL_VAT, NETWORK_CEASE_CAP_AFTER_12M_INCL_VAT,
+} from "../_shared/manualQuoteContract.ts";
 
 const CONTRACT_TERMS_VERSION = "2026.10.1";
 const money = (n: number) => `£${Number(n).toFixed(2)}`;
@@ -109,6 +113,17 @@ Deno.serve(async (req) => {
   let contractSpeedMatrix: ContractSpeedMatrix | null = null;
 
   if (q.customer_type !== "business" && q.service_type === "broadband") {
+    // Admin-built quotes: derive the deterministic OCCTA plan estimate when the
+    // quote's speeds are exactly a published plan cap. Never marked verified.
+    if (isManualConsumerBroadband(q)) {
+      const { data: qrPc } = await supabase.from("quote_requests").select("postcode").eq("id", q.quote_request_id).maybeSingle();
+      const patch = await planEstimatePatch(q, qrPc?.postcode);
+      if (patch) {
+        const { data: saved, error: pErr } = await supabase.from("quotes").update(patch).eq("id", q.id).is("supplier_availability_sha256", null).select("speed_bucket, supplier_availability_snapshot, supplier_availability_sha256").maybeSingle();
+        if (pErr) return jsonResponse({ error: "speed_snapshot_save_failed", retryable: true }, 503);
+        if (saved) Object.assign(q, saved);
+      }
+    }
     const speedGate = buildContractSpeedMatrix(q.supplier_availability_snapshot, q.speed_bucket);
     if (!speedGate.ok) {
       return jsonResponse({
@@ -117,7 +132,7 @@ Deno.serve(async (req) => {
       }, 409);
     }
     if (!q.likely_service_date) {
-      return jsonResponse({ error: "likely_service_date_required" }, 409);
+      return jsonResponse({ error: "likely_service_date_required", message: "Choose your preferred service start date before your contract documents can be prepared." }, 409);
     }
     contractSpeedMatrix = speedGate.matrix;
     if (!/^[0-9a-f]{64}$/i.test(String(q.supplier_availability_sha256 ?? ""))) {
@@ -184,6 +199,12 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
     bpFields = { speed_bucket: q.speed_bucket, plan_term: q.plan_term, router_option: q.router_option, setup_option: q.setup_option, selected_addons: q.selected_addons };
     if (resolved.router.oneOff > 0) extraOneOff.push({ label: resolved.router.label, amount: resolved.router.oneOff });
     if (resolved.setup.oneOff > 0) extraOneOff.push({ label: resolved.setup.label, amount: resolved.setup.oneOff });
+  } else if (q.service_type === "broadband" && q.cease_fee_gross == null && manualExitBasis(q) === "benchmark_capped_flex") {
+    // Rolling consumer quote without a fixed cease figure: use the benchmark
+    // conditional wording (actual qualifying cost only, capped) — never a flat fee.
+    const exit = buildExitTerms("flex_30", NETWORK_CEASE_CAP_WITHIN_12M_INCL_VAT, NETWORK_CEASE_CAP_AFTER_12M_INCL_VAT, notice.days, notice.text);
+    exitText = exit.text;
+    etfPolicySnapshot = { ...exit.snapshot, penalty_free_rights_preserved: true };
   } else if (q.service_type === "broadband") {
     if (q.cease_fee_gross == null) {
       return jsonResponse({

@@ -1661,7 +1661,7 @@ BEGIN
   SELECT count(*) INTO bad FROM public.care_collections c LEFT JOIN public.care_mandates m ON m.id = c.mandate_id
    WHERE c.id = ANY(p_collection_ids) AND (c.status <> 'ready' OR m.status IS DISTINCT FROM 'active');
   IF bad > 0 THEN RAISE EXCEPTION 'only_ready_collections_with_active_mandates (% not ready)', bad; END IF;
-  rnum := 'CARE-RUN-' || to_char(now() AT TIME ZONE 'Europe/London', 'YYYYMMDD-HH24MISS');
+  rnum := 'CARE-RUN-' || to_char(now() AT TIME ZONE 'Europe/London', 'YYYYMMDD-HH24MISS') || '-' || upper(substr(md5(gen_random_uuid()::text), 1, 4));
   SELECT count(*), sum(amount_minor), min(due_date), max(due_date) INTO n, tot, mn, mx FROM public.care_collections WHERE id = ANY(p_collection_ids);
   INSERT INTO public.care_collection_runs(run_number, provider_code, created_by, item_count, total_minor, earliest_due, latest_due)
   VALUES (rnum, (SELECT provider_code FROM public.care_settings WHERE singleton), uid, n, tot, mn, mx) RETURNING id INTO rid;

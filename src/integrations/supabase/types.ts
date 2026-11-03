@@ -2411,9 +2411,13 @@ export type Database = {
           posted_by: string | null
           posted_on: string | null
           provider_id: string | null
+          received_on: string | null
           recipient: Json
+          royal_mail_ref: string | null
           status: string
           subscription_id: string | null
+          tracking_updated_by: string | null
+          tracking_url: string | null
           updated_at: string
         }
         Insert: {
@@ -2438,9 +2442,13 @@ export type Database = {
           posted_by?: string | null
           posted_on?: string | null
           provider_id?: string | null
+          received_on?: string | null
           recipient: Json
+          royal_mail_ref?: string | null
           status?: string
           subscription_id?: string | null
+          tracking_updated_by?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -2465,9 +2473,13 @@ export type Database = {
           posted_by?: string | null
           posted_on?: string | null
           provider_id?: string | null
+          received_on?: string | null
           recipient?: Json
+          royal_mail_ref?: string | null
           status?: string
           subscription_id?: string | null
+          tracking_updated_by?: string | null
+          tracking_url?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -17947,13 +17959,29 @@ export type Database = {
         Args: { p_decision: string; p_note: string; p_sale: string }
         Returns: Json
       }
+      care_sales_earliest_first_date: { Args: never; Returns: string }
       care_sales_find_customer: { Args: { p_query: string }; Returns: Json }
+      care_sales_followup: { Args: { p_sale: string }; Returns: Json }
       care_sales_get: { Args: { p_sale: string }; Returns: Json }
+      care_sales_letter_update: {
+        Args: {
+          p_letter: string
+          p_posted_on: string
+          p_received_on: string
+          p_royal_mail_ref: string
+          p_tracking_url: string
+        }
+        Returns: Json
+      }
       care_sales_list: {
         Args: { p_scope?: string; p_status?: string }
         Returns: Json
       }
       care_sales_refresh: { Args: { p_sale: string }; Returns: undefined }
+      care_sales_reminder_call: {
+        Args: { p_note: string; p_outcome: string; p_sale: string }
+        Returns: Json
+      }
       care_sales_report: { Args: never; Returns: Json }
       care_sales_require: { Args: never; Returns: string }
       care_sales_role: { Args: { _uid: string }; Returns: string }
@@ -17968,6 +17996,10 @@ export type Database = {
           p_transcript: string
         }
         Returns: undefined
+      }
+      care_sales_set_first_date: {
+        Args: { p_application: string; p_date: string; p_provider: string }
+        Returns: Json
       }
       care_sales_withdraw: {
         Args: { p_note: string; p_sale: string }

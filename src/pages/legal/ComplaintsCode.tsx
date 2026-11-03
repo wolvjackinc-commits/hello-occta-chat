@@ -61,6 +61,10 @@ export default function ComplaintsCode() {
         and you can ask us for them at any time.
       </p>
       <p>
+        This code also applies to complaints about OCCTA Care. If a Care Direct Debit is taken in error, you can also get an immediate refund from your
+        bank under the Direct Debit Guarantee.
+      </p>
+      <p>
         Ofcom regulates the communications sector and publishes guidance on your rights at ofcom.org.uk, but it does not normally decide individual disputes.
       </p>
 

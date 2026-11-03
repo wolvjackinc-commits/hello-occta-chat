@@ -1899,6 +1899,7 @@ export type Database = {
           is_test: boolean
           kind: string
           mandate_id: string | null
+          notice_dedupe: string | null
           notice_kind: string | null
           notice_sent_at: string | null
           paid_confirmed_at: string | null
@@ -1928,6 +1929,7 @@ export type Database = {
           is_test?: boolean
           kind: string
           mandate_id?: string | null
+          notice_dedupe?: string | null
           notice_kind?: string | null
           notice_sent_at?: string | null
           paid_confirmed_at?: string | null
@@ -1957,6 +1959,7 @@ export type Database = {
           is_test?: boolean
           kind?: string
           mandate_id?: string | null
+          notice_dedupe?: string | null
           notice_kind?: string | null
           notice_sent_at?: string | null
           paid_confirmed_at?: string | null
@@ -2153,6 +2156,7 @@ export type Database = {
           decided_at: string | null
           decided_by: string | null
           decision_note: string | null
+          escalated_at: string | null
           evidence_pack_id: string | null
           id: string
           kind: string
@@ -2172,6 +2176,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          escalated_at?: string | null
           evidence_pack_id?: string | null
           id?: string
           kind: string
@@ -2191,6 +2196,7 @@ export type Database = {
           decided_at?: string | null
           decided_by?: string | null
           decision_note?: string | null
+          escalated_at?: string | null
           evidence_pack_id?: string | null
           id?: string
           kind?: string
@@ -2371,11 +2377,14 @@ export type Database = {
           dedupe_key: string | null
           delivery: string | null
           email_log_id: string | null
+          email_sent_at: string | null
           email_status: string | null
           error: string | null
           id: string
           large_print: boolean
+          letter_date: string | null
           letter_type: string
+          mail_house_on: string | null
           payload: Json
           pdf_path: string | null
           pdf_sha256: string | null
@@ -2395,11 +2404,14 @@ export type Database = {
           dedupe_key?: string | null
           delivery?: string | null
           email_log_id?: string | null
+          email_sent_at?: string | null
           email_status?: string | null
           error?: string | null
           id?: string
           large_print?: boolean
+          letter_date?: string | null
           letter_type: string
+          mail_house_on?: string | null
           payload: Json
           pdf_path?: string | null
           pdf_sha256?: string | null
@@ -2419,11 +2431,14 @@ export type Database = {
           dedupe_key?: string | null
           delivery?: string | null
           email_log_id?: string | null
+          email_sent_at?: string | null
           email_status?: string | null
           error?: string | null
           id?: string
           large_print?: boolean
+          letter_date?: string | null
           letter_type?: string
+          mail_house_on?: string | null
           payload?: Json
           pdf_path?: string | null
           pdf_sha256?: string | null
@@ -2472,6 +2487,8 @@ export type Database = {
           id: string
           is_test: boolean
           lodge_due_by: string
+          lodge_overdue_at: string | null
+          lodge_warned_at: string | null
           lodged_at: string | null
           lodged_by: string | null
           masked_account_last4: string
@@ -2505,6 +2522,8 @@ export type Database = {
           id?: string
           is_test?: boolean
           lodge_due_by: string
+          lodge_overdue_at?: string | null
+          lodge_warned_at?: string | null
           lodged_at?: string | null
           lodged_by?: string | null
           masked_account_last4: string
@@ -2538,6 +2557,8 @@ export type Database = {
           id?: string
           is_test?: boolean
           lodge_due_by?: string
+          lodge_overdue_at?: string | null
+          lodge_warned_at?: string | null
           lodged_at?: string | null
           lodged_by?: string | null
           masked_account_last4?: string
@@ -2849,6 +2870,121 @@ export type Database = {
           },
         ]
       }
+      care_sales: {
+        Row: {
+          agent_id: string
+          agent_notes: string | null
+          call_at: string
+          call_reference: string
+          collection_day: number
+          created_at: string
+          customer_id: string
+          frequency: string
+          id: string
+          invite_id: string | null
+          plan_code: string
+          qa: Json | null
+          qa_at: string | null
+          qa_decision: string | null
+          qa_model: string | null
+          qa_score: number | null
+          recording_bytes: number | null
+          recording_path: string | null
+          reference: string
+          status: string
+          subscription_id: string | null
+          supervisor_at: string | null
+          supervisor_decision: string | null
+          supervisor_id: string | null
+          supervisor_note: string | null
+          transcript: string | null
+          transcript_source: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          agent_notes?: string | null
+          call_at: string
+          call_reference: string
+          collection_day: number
+          created_at?: string
+          customer_id: string
+          frequency: string
+          id?: string
+          invite_id?: string | null
+          plan_code: string
+          qa?: Json | null
+          qa_at?: string | null
+          qa_decision?: string | null
+          qa_model?: string | null
+          qa_score?: number | null
+          recording_bytes?: number | null
+          recording_path?: string | null
+          reference?: string
+          status?: string
+          subscription_id?: string | null
+          supervisor_at?: string | null
+          supervisor_decision?: string | null
+          supervisor_id?: string | null
+          supervisor_note?: string | null
+          transcript?: string | null
+          transcript_source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          agent_notes?: string | null
+          call_at?: string
+          call_reference?: string
+          collection_day?: number
+          created_at?: string
+          customer_id?: string
+          frequency?: string
+          id?: string
+          invite_id?: string | null
+          plan_code?: string
+          qa?: Json | null
+          qa_at?: string | null
+          qa_decision?: string | null
+          qa_model?: string | null
+          qa_score?: number | null
+          recording_bytes?: number | null
+          recording_path?: string | null
+          reference?: string
+          status?: string
+          subscription_id?: string | null
+          supervisor_at?: string | null
+          supervisor_decision?: string | null
+          supervisor_id?: string | null
+          supervisor_note?: string | null
+          transcript?: string | null
+          transcript_source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_sales_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "care_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_sales_plan_code_fkey"
+            columns: ["plan_code"]
+            isOneToOne: false
+            referencedRelation: "care_plans"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "care_sales_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "care_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       care_settings: {
         Row: {
           current_terms_version: string
@@ -2908,6 +3044,7 @@ export type Database = {
           cooling_off_ends_at: string
           created_at: string
           customer_id: string
+          date_of_birth_declared: string | null
           failed_collections: number
           first_collection_date: string
           frequency: string
@@ -2917,12 +3054,17 @@ export type Database = {
           joined_at: string
           last_usage_reminder_at: string | null
           next_usage_reminder_on: string | null
+          pending_from: string | null
+          pending_notice_dedupe: string | null
+          pending_plan_code: string | null
+          pending_price_minor: number | null
           plan_code: string
           price_minor: number
           reference: string
           review_hold_until: string | null
           review_note: string | null
           review_reasons: string[]
+          review_task_at: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           service_starts_on: string
@@ -2934,6 +3076,7 @@ export type Database = {
           updated_at: string
           welcome_call_done_at: string | null
           welcome_call_due_on: string | null
+          welcome_task_at: string | null
         }
         Insert: {
           application_id?: string | null
@@ -2948,6 +3091,7 @@ export type Database = {
           cooling_off_ends_at: string
           created_at?: string
           customer_id: string
+          date_of_birth_declared?: string | null
           failed_collections?: number
           first_collection_date: string
           frequency: string
@@ -2957,12 +3101,17 @@ export type Database = {
           joined_at?: string
           last_usage_reminder_at?: string | null
           next_usage_reminder_on?: string | null
+          pending_from?: string | null
+          pending_notice_dedupe?: string | null
+          pending_plan_code?: string | null
+          pending_price_minor?: number | null
           plan_code: string
           price_minor: number
           reference?: string
           review_hold_until?: string | null
           review_note?: string | null
           review_reasons?: string[]
+          review_task_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           service_starts_on: string
@@ -2974,6 +3123,7 @@ export type Database = {
           updated_at?: string
           welcome_call_done_at?: string | null
           welcome_call_due_on?: string | null
+          welcome_task_at?: string | null
         }
         Update: {
           application_id?: string | null
@@ -2988,6 +3138,7 @@ export type Database = {
           cooling_off_ends_at?: string
           created_at?: string
           customer_id?: string
+          date_of_birth_declared?: string | null
           failed_collections?: number
           first_collection_date?: string
           frequency?: string
@@ -2997,12 +3148,17 @@ export type Database = {
           joined_at?: string
           last_usage_reminder_at?: string | null
           next_usage_reminder_on?: string | null
+          pending_from?: string | null
+          pending_notice_dedupe?: string | null
+          pending_plan_code?: string | null
+          pending_price_minor?: number | null
           plan_code?: string
           price_minor?: number
           reference?: string
           review_hold_until?: string | null
           review_note?: string | null
           review_reasons?: string[]
+          review_task_at?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           service_starts_on?: string
@@ -3014,6 +3170,7 @@ export type Database = {
           updated_at?: string
           welcome_call_done_at?: string | null
           welcome_call_due_on?: string | null
+          welcome_task_at?: string | null
         }
         Relationships: [
           {
@@ -3029,6 +3186,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "care_invites"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_subscriptions_pending_plan_code_fkey"
+            columns: ["pending_plan_code"]
+            isOneToOne: false
+            referencedRelation: "care_plans"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "care_subscriptions_plan_code_fkey"
@@ -17465,6 +17629,23 @@ export type Database = {
       care_admin_mandate_queue: { Args: never; Returns: Json }
       care_admin_member: { Args: { p_sub: string }; Returns: Json }
       care_admin_overview: { Args: never; Returns: Json }
+      care_admin_pause: {
+        Args: { p_note: string; p_sub: string }
+        Returns: Json
+      }
+      care_admin_pulled_item_collected: {
+        Args: { p_collection: string; p_note: string }
+        Returns: Json
+      }
+      care_admin_queue_document: {
+        Args: {
+          p_body?: string
+          p_sub: string
+          p_subject?: string
+          p_type: string
+        }
+        Returns: Json
+      }
       care_admin_raise_complaint: {
         Args: {
           p_channel: string
@@ -17569,6 +17750,7 @@ export type Database = {
         Args: { p_note: string; p_outcome: string; p_sub: string }
         Returns: Json
       }
+      care_can_see_evidence: { Args: { _uid: string }; Returns: boolean }
       care_cancel_internal: {
         Args: {
           p_actor: string
@@ -17667,12 +17849,32 @@ export type Database = {
       }
       care_next_working_day: { Args: { d: string }; Returns: string }
       care_nightly: { Args: never; Returns: Json }
+      care_notice_delivered_on: { Args: { p_dedupe: string }; Returns: string }
+      care_notice_ok: {
+        Args: { p_dedupe: string; p_due: string }
+        Returns: boolean
+      }
+      care_pause_internal: {
+        Args: {
+          p_actor: string
+          p_actor_type: string
+          p_dedupe: string
+          p_reason: string
+          p_reason_code: string
+          p_sub: string
+        }
+        Returns: Json
+      }
       care_period_months: { Args: { p_frequency: string }; Returns: number }
       care_price_minor: {
         Args: { p_frequency: string; p_plan: string }
         Returns: number
       }
       care_public_catalogue: { Args: never; Returns: Json }
+      care_pull_from_runs: {
+        Args: { p_reason: string; p_sub: string }
+        Returns: number
+      }
       care_queue: {
         Args: {
           p_dedupe: string
@@ -17705,6 +17907,48 @@ export type Database = {
       }
       care_request_header: { Args: { p_name: string }; Returns: string }
       care_require: { Args: { _finance?: boolean }; Returns: string }
+      care_sales_create: {
+        Args: {
+          p_call_at: string
+          p_call_reference: string
+          p_customer: string
+          p_day: number
+          p_frequency: string
+          p_notes: string
+          p_plan: string
+        }
+        Returns: Json
+      }
+      care_sales_decide: {
+        Args: { p_decision: string; p_note: string; p_sale: string }
+        Returns: Json
+      }
+      care_sales_find_customer: { Args: { p_query: string }; Returns: Json }
+      care_sales_get: { Args: { p_sale: string }; Returns: Json }
+      care_sales_list: {
+        Args: { p_scope?: string; p_status?: string }
+        Returns: Json
+      }
+      care_sales_refresh: { Args: { p_sale: string }; Returns: undefined }
+      care_sales_report: { Args: never; Returns: Json }
+      care_sales_require: { Args: never; Returns: string }
+      care_sales_role: { Args: { _uid: string }; Returns: string }
+      care_sales_save_qa: {
+        Args: {
+          p_decision: string
+          p_model: string
+          p_qa: Json
+          p_sale: string
+          p_score: number
+          p_source: string
+          p_transcript: string
+        }
+        Returns: undefined
+      }
+      care_sales_withdraw: {
+        Args: { p_note: string; p_sale: string }
+        Returns: Json
+      }
       care_start_application: {
         Args: {
           p_customer: string
@@ -17731,6 +17975,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      care_today: { Args: never; Returns: string }
       care_working_days_between: {
         Args: { a: string; b: string }
         Returns: number

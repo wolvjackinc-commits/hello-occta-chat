@@ -9,11 +9,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CustomerPicker } from "@/components/admin/CustomerPicker";
 import { downloadText, toCsv } from "@/lib/outreach/csv";
 import { careAdmin, dd, dt, gbp, today, type Json } from "@/lib/care/admin";
 import { careAdminFn, CARE_LETTER_LABEL } from "@/lib/care/api";
-import { CARE_FREQUENCIES, CARE_PHONE_SCRIPT, CARE_PLANS, carePriceMinor, pounds } from "../../../../supabase/functions/_shared/careTerms.ts";
+import { CARE_FREQUENCIES, CARE_PLANS } from "../../../../supabase/functions/_shared/careTerms.ts";
 import { openStoragePath, useCareAction } from "./MemberDialog";
 import { DDProviderSelect } from "@/components/care/DDProviderSelect";
 
@@ -143,53 +142,6 @@ export function RefundsPanel({ onOpenMember, onChanged }: { onOpenMember: (id: s
   );
 }
 
-// ---------------------------------------------------------------- Phone sale
-export function PhoneSalePanel({ onChanged }: { onChanged: () => void }) {
-  const [customer, setCustomer] = useState<{ id: string; full_name: string | null; account_number: string | null } | null>(null);
-  const [plan, setPlan] = useState("essentials");
-  const [freq, setFreq] = useState("monthly");
-  const [day, setDay] = useState("1");
-  const [script, setScript] = useState<Record<string, boolean>>({});
-  const [callRef, setCallRef] = useState("");
-  const [prov, setProv] = useState("accesspay");
-  const [notes, setNotes] = useState("");
-  const { busy, run } = useCareAction(onChanged);
-  const price = carePriceMinor(plan, freq) ?? 0;
-  const all = CARE_PHONE_SCRIPT.every((l) => script[l.id]);
-
-  return (
-    <div className="max-w-3xl space-y-4">
-      <p className="text-sm text-muted-foreground">
-        For customers who call. You never take bank details or agreement over the phone: you send a secure link and the customer completes it themselves, with the same key facts, ticks and code as online. Only offer Care if they asked about help with their tech, or after you've helped them. Never to anyone who seems confused, under pressure, or worried about money.
-      </p>
-      <div><Label>Customer</Label><CustomerPicker value={customer as never} onSelect={(c) => setCustomer(c as never)} /></div>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div><Label>Plan</Label><Select value={plan} onValueChange={setPlan}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CARE_PLANS.map((p) => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}</SelectContent></Select></div>
-        <div><Label>Pays</Label><Select value={freq} onValueChange={setFreq}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CARE_FREQUENCIES.map((f) => <SelectItem key={f.code} value={f.code}>{f.label}</SelectItem>)}</SelectContent></Select></div>
-        <div><Label>Day</Label><Select value={day} onValueChange={setDay}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1st</SelectItem><SelectItem value="15">15th</SelectItem></SelectContent></Select></div>
-      </div>
-      <div className="border-[3px] border-foreground p-4">
-        <p className="font-display uppercase">Read out, and tick each one as you say it</p>
-        <p className="text-xs text-muted-foreground">Price for this choice: {pounds(price)} {freq === "monthly" ? "a month" : freq === "quarterly" ? "every 3 months" : "a year"}.</p>
-        <div className="mt-3 space-y-2">
-          {CARE_PHONE_SCRIPT.map((l) => (
-            <label key={l.id} className="flex items-start gap-2 text-sm"><Checkbox checked={!!script[l.id]} onCheckedChange={(v) => setScript({ ...script, [l.id]: v === true })} /> <span>{l.line}</span></label>
-          ))}
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div><Label>Call recording reference</Label><Input value={callRef} onChange={(e) => setCallRef(e.target.value)} placeholder="Phone system call ID" /></div>
-        <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
-        <div><Label htmlFor="phone-dd-prov">Direct Debit collected through</Label><DDProviderSelect id="phone-dd-prov" value={prov} onChange={setProv} /></div>
-      </div>
-      <Button disabled={busy || !customer || !all || callRef.trim().length < 3} onClick={async () => {
-        const r = await run("Link emailed to the customer", () => careAdminFn.sendInvite({ customer_id: customer!.id, plan, frequency: freq, collection_day: Number(day), script_confirmed: script, call_reference: callRef, call_notes: notes, provider_code: prov }));
-        if (r) { setScript({}); setCallRef(""); setNotes(""); }
-      }}>Email the sign-up link</Button>
-      <p className="text-xs text-muted-foreground">If the customer can't join (for example an overdue bill, no postal address, or a business account), the reason shows when you press the button.</p>
-    </div>
-  );
-}
 
 // ------------------------------------------------------------------- Reports
 export function ReportsPanel() {

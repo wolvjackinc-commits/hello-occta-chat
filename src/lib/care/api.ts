@@ -75,7 +75,6 @@ export const careJoin = {
 
 export const careAdminFn = {
   revealBank: (mandate_id: string, reason: string) => fn<{ ok: boolean; reference: string; account_holder_name: string; sort_code: string; account_number: string; bank_name: string | null; service_user_number: string; collection_name: string }>("care-admin", { action: "reveal_bank", mandate_id, reason }),
-  sendInvite: (b: Record<string, unknown>) => fn<{ ok: boolean; invite_id: string; expires_at: string; email: string }>("care-admin", { action: "send_invite", ...b }),
   revokeInvite: (invite_id: string, reason: string) => fn<{ ok: boolean }>("care-admin", { action: "revoke_invite", invite_id, reason }),
   evidencePack: (subscription_id: string, purpose: string, dispute_id?: string | null) => fn<{ ok: boolean; url: string | null; sha256: string; evidence_pack_id: string }>("care-admin", { action: "evidence_pack", subscription_id, purpose, dispute_id: dispute_id ?? null }),
   printBatch: (letter_ids?: string[]) => fn<{ ok: boolean; url: string | null; batch_number: string; count: number; letter_ids: string[] }>("care-admin", { action: "print_batch", letter_ids }),

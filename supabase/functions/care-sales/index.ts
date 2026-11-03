@@ -3,39 +3,23 @@
 //   config       — is automatic transcription / AI scoring available?
 //   upload_url   — signed upload URL for the call recording (private bucket care-sales)
 //   recording_url— short-lived link to play the recording
-//   score        — transcript (from the recording via OPENAI_API_KEY, or pasted) scored
+//   score        — transcript (made on the agent's computer from the recording) scored
 //                  against the Care script by Claude; pass / hold / decline decided by
 //                  careQaDecision (fixed rules), never by the model alone
-//   send_link    — only for a passed or supervisor-approved sale: email the customer
-//                  their sign-up link (they complete everything themselves)
-import { getServiceClient, jsonResponse, corsHeaders } from "../_shared/quoteHelpers.ts";
-import { sendCareInvite } from "../_shared/careInvite.ts";
-import { CARE_PROVIDER_CODES } from "../_shared/careProvider.ts";
+//   create_customer — open a free OCCTA account for someone new (email optional)
+//   complete     — passed or approved/bypassed sale: take the Direct Debit on the call and
+//                  sign the customer up; the welcome summary and DD confirmation + Guarantee are posted
+import { getServiceClient, jsonResponse, corsHeaders, getRequestIp, sha256Hex } from "../_shared/quoteHelpers.ts";
+import { encryptJson } from "../_shared/ddCrypto.ts";
+import { careProvider, CARE_PROVIDER_CODES } from "../_shared/careProvider.ts";
 import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, careQaDecision } from "../_shared/careSalesScript.ts";
-import { carePlan, carePriceMinor, pounds, CARE_NOT_INCLUDED } from "../_shared/careTerms.ts";
+import { carePlan, carePriceMinor, pounds, CARE_NOT_INCLUDED, careKeyFacts, careTermsCanonicalText } from "../_shared/careTerms.ts";
+import { longDate } from "../_shared/careLetters.ts";
 
 const BUCKET = "care-sales";
-const MAX_TRANSCRIBE_BYTES = 25 * 1024 * 1024;
 const QA_MODEL = Deno.env.get("CARE_QA_MODEL")?.trim() || "claude-sonnet-5-5";
 
 type Sale = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-async function transcribe(blob: Blob, filename: string): Promise<string> {
-  const key = Deno.env.get("OPENAI_API_KEY");
-  if (!key) throw new Error("transcription_not_configured");
-  const form = new FormData();
-  form.append("file", blob, filename);
-  form.append("model", Deno.env.get("CARE_TRANSCRIBE_MODEL")?.trim() || "whisper-1");
-  form.append("response_format", "verbose_json");
-  form.append("language", "en");
-  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form });
-  if (!res.ok) throw new Error(`transcription_failed_${res.status}`);
-  const j = await res.json() as { text?: string; segments?: { start: number; text: string }[] };
-  if (j.segments?.length) {
-    return j.segments.map((s) => `[${String(Math.floor(s.start / 60)).padStart(2, "0")}:${String(Math.floor(s.start % 60)).padStart(2, "0")}] ${s.text.trim()}`).join("\n");
-  }
-  return String(j.text ?? "");
-}
 
 async function scoreCall(sale: Sale, customer: { full_name?: string; postcode?: string; address_line1?: string }, transcript: string) {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
@@ -48,7 +32,7 @@ You check a call transcript against the mandatory script and red flags below, st
 The sale being checked: ${carePlan(sale.plan_code)?.name} at ${pounds(price)} ${freqText}, VAT included, collection day ${sale.collection_day}. Customer on the OCCTA account: ${customer.full_name ?? "unknown"}, postcode ${customer.postcode ?? "unknown"}, address ${customer.address_line1 ?? "unknown"}.
 Correct prices: Care Essentials £4.99/month, £14.97 every 3 months, £49.90/year; Care Plus £8.99/month, £26.97 every 3 months, £89.90/year. VAT included.
 What Care never includes: ${CARE_NOT_INCLUDED.join(" ")}
-OCCTA takes payment by Direct Debit or bank transfer only. Bank details must never be taken on the call: the customer enters them via the emailed link.
+OCCTA takes payment by Direct Debit or bank transfer only. Bank details are taken on the call for the Direct Debit, after the customer confirms they are the account holder; card details must never be taken.
 
 SCRIPT STEPS (id: what must be shown${""}):
 ${CARE_SALES_SCRIPT.map((s) => `- ${s.id}${s.mandatory ? " [MANDATORY]" : ""}: ${s.check}`).join("\n")}
@@ -109,7 +93,7 @@ Deno.serve(async (req) => {
   const action = String(body.action ?? "");
 
   if (action === "config") {
-    return jsonResponse({ ok: true, role, transcription: !!Deno.env.get("OPENAI_API_KEY"), ai: !!Deno.env.get("ANTHROPIC_API_KEY") });
+    return jsonResponse({ ok: true, role, ai: !!Deno.env.get("ANTHROPIC_API_KEY") });
   }
 
   // Care isn't only for broadband customers: open a free OCCTA account for someone new on the call.
@@ -119,21 +103,26 @@ Deno.serve(async (req) => {
     const name = t("full_name"), line1 = t("address_line1"), city = t("city", 80);
     const postcode = t("postcode", 10).toUpperCase().replace(/\s+/g, " ");
     const phone = t("phone", 20).replace(/[^\d+ ]/g, "");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResponse({ error: "invalid_email" }, 400);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResponse({ error: "invalid_email" }, 400);
+    if (!email && phone.replace(/\D/g, "").length < 10) return jsonResponse({ error: "email_or_phone_required" }, 400);
     if (!/[A-Za-z]{2,} [A-Za-z]{2,}/.test(name)) return jsonResponse({ error: "full_name_required" }, 400);
     if (line1.length < 3 || city.length < 2 || !/^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/.test(postcode)) return jsonResponse({ error: "uk_address_required" }, 400);
-    const { data: existing } = await svc.from("profiles").select("id").ilike("email", email).limit(1).maybeSingle();
-    if (existing) return jsonResponse({ error: "account_exists_search_instead" }, 409);
-    const { data: created, error: cerr } = await svc.auth.admin.createUser({ email, email_confirm: true, user_metadata: { full_name: name } });
+    if (email) {
+      const { data: existing } = await svc.from("profiles").select("id").ilike("email", email).limit(1).maybeSingle();
+      if (existing) return jsonResponse({ error: "account_exists_search_instead" }, 409);
+    }
+    // No email: the login needs one, so it gets a private placeholder address; the profile keeps none and every letter is posted.
+    const loginEmail = email || `care-${crypto.randomUUID()}@no-email.occta.co.uk`;
+    const { data: created, error: cerr } = await svc.auth.admin.createUser({ email: loginEmail, email_confirm: true, user_metadata: { full_name: name } });
     if (cerr || !created?.user) return jsonResponse({ error: "account_create_failed", detail: cerr?.message }, 500);
     const id = created.user.id;
-    const { error: perr } = await svc.from("profiles").upsert({ id, email, full_name: name, phone: phone || null, address_line1: line1,
+    const { error: perr } = await svc.from("profiles").upsert({ id, email: email || null, full_name: name, phone: phone || null, address_line1: line1,
       address_line2: t("address_line2") || null, city, postcode, account_type: "residential" }, { onConflict: "id" });
     if (perr) return jsonResponse({ error: "account_create_failed", detail: perr.message }, 500);
-    await svc.from("care_events").insert({ customer_id: id, actor_type: "staff", actor_id: uid, event: "account_opened_for_care_sale", details: { email } });
+    await svc.from("care_events").insert({ customer_id: id, actor_type: "staff", actor_id: uid, event: "account_opened_for_care_sale", details: { email: email || null } });
     const { data: prof } = await svc.from("profiles").select("id, full_name, account_number, postcode, address_line1, email").eq("id", id).single();
     const { data: elig } = await svc.rpc("care_eligibility", { p_customer: id });
-    return jsonResponse({ ok: true, customer: { ...prof, email_masked: email.replace(/^(.{2}).*(@.*)$/, "$1***$2"), eligibility: elig } });
+    return jsonResponse({ ok: true, customer: { ...prof, email_masked: email ? email.replace(/^(.{2}).*(@.*)$/, "$1***$2") : null, eligibility: elig } });
   }
 
   const { data: sale } = await svc.from("care_sales").select("*").eq("id", String(body.sale_id ?? "")).maybeSingle() as { data: Sale | null };
@@ -159,20 +148,14 @@ Deno.serve(async (req) => {
     if (!editable) return jsonResponse({ error: "sale_locked" }, 400);
     const path = body.recording_path ? String(body.recording_path) : sale.recording_path;
     if (path && !path.startsWith(`${sale.id}/`)) return jsonResponse({ error: "bad_path" }, 400);
-    let transcript = String(body.transcript ?? "").trim();
-    let source: "pasted" | "audio_auto" | "audio_local" = body.transcript_source === "audio_local" ? "audio_local" : "pasted";
+    const transcript = String(body.transcript ?? "").trim();
+    const source: "pasted" | "audio_local" = body.transcript_source === "audio_local" ? "audio_local" : "pasted";
     let bytes: number | null = sale.recording_bytes ?? null;
     if (path) {
       const { data: blob, error } = await svc.storage.from(BUCKET).download(path);
       if (error || !blob) return jsonResponse({ error: "recording_not_found" }, 400);
       bytes = blob.size;
       await svc.from("care_sales").update({ recording_path: path, recording_bytes: bytes, status: "scoring" }).eq("id", sale.id);
-      if (transcript.length < 200) {
-        if (!Deno.env.get("OPENAI_API_KEY")) return jsonResponse({ error: "transcription_not_configured", hint: "Paste the call transcript, or ask an admin to add OPENAI_API_KEY." }, 400);
-        if (blob.size > MAX_TRANSCRIBE_BYTES) return jsonResponse({ error: "recording_too_large_for_auto_transcription", hint: "Max 25 MB. Export as MP3, or paste the transcript." }, 400);
-        try { transcript = await transcribe(blob, path.split("/").pop()!); source = "audio_auto"; }
-        catch (e) { await svc.from("care_sales").update({ status: sale.status }).eq("id", sale.id); return jsonResponse({ error: (e as Error).message }, 502); }
-      }
     }
     if (!path) return jsonResponse({ error: "recording_required", hint: "Upload the call recording. A transcript alone isn't enough evidence." }, 400);
     if (transcript.length < 200) return jsonResponse({ error: "transcript_too_short" }, 400);
@@ -187,19 +170,73 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, decision: r.decision, score: r.qa.score });
   }
 
-  if (action === "send_link") {
+  // Telesales: the whole sign-up happens on the recorded call. It runs the same checks as an online sign-up
+  // (eligibility, age, account-holder name, reviews, letters, staff tasks); the call recording is the verification.
+  if (action === "complete") {
     if (!(sale.status === "approved" || (sale.status === "passed" && sale.qa_decision === "pass"))) return jsonResponse({ error: "sale_not_passed_or_approved" }, 400);
-    const provider = body.provider_code ? String(body.provider_code) : null;
-    if (provider && !CARE_PROVIDER_CODES.includes(provider)) return jsonResponse({ error: "invalid_provider" }, 400);
-    const checks = ((sale.qa?.checks ?? []) as { id: string; status: string }[]);
-    const scriptConfirmed: Record<string, unknown> = Object.fromEntries(checks.map((c) => [c.id, c.status === "met"]));
-    scriptConfirmed.qa = { sale_id: sale.id, sale_reference: sale.reference, score: sale.qa_score, decision: sale.qa_decision,
-      supervisor_decision: sale.supervisor_decision, supervisor_id: sale.supervisor_id, recording_path: sale.recording_path };
-    const r = await sendCareInvite(svc, { customerId: sale.customer_id, plan: sale.plan_code, frequency: sale.frequency, day: sale.collection_day,
-      actor: sale.agent_id, callRef: `${sale.call_reference} (${sale.reference})`, callNotes: sale.agent_notes ?? "", scriptConfirmed, provider });
-    if (!r.ok) return jsonResponse({ error: r.error, reasons: r.reasons ?? [] }, r.status ?? 400);
-    await svc.from("care_sales").update({ status: "link_sent", invite_id: r.invite_id }).eq("id", sale.id);
-    return jsonResponse(r);
+    const plan = String(body.plan ?? sale.plan_code), frequency = String(body.frequency ?? sale.frequency), day = Number(body.collection_day ?? sale.collection_day);
+    if (!carePlan(plan) || carePriceMinor(plan, frequency) == null || ![1, 15].includes(day)) return jsonResponse({ error: "invalid_choice" }, 400);
+    const provider = String(body.provider_code ?? "");
+    if (!CARE_PROVIDER_CODES.includes(provider)) return jsonResponse({ error: "choose_dd_provider" }, 400);
+    const bank = (body.bank ?? {}) as Record<string, unknown>;
+    const sort = String(bank.sort_code ?? "").replace(/\D/g, "");
+    let acct = String(bank.account_number ?? "").replace(/\D/g, "");
+    if (acct.length === 7) acct = `0${acct}`;
+    const holder = String(bank.account_holder_name ?? "").trim().replace(/\s+/g, " ");
+    if (sort.length !== 6 || acct.length !== 8) return jsonResponse({ error: "bank_details_invalid" }, 400);
+    if (holder.length < 2 || holder.length > 120) return jsonResponse({ error: "account_holder_required" }, 400);
+    const confirm = (body.confirm ?? {}) as Record<string, unknown>;
+    if (!["ddi_read", "account_holder", "customer_agreed", "over_18"].every((k) => confirm[k] === true)) return jsonResponse({ error: "confirmations_required" }, 400);
+    const prov = await careProvider(svc, provider);
+    const now = new Date();
+
+    // An internal invite (never emailed) carries the seller, the call and the chosen DD provider into the standard sign-up.
+    const hash = await sha256Hex(crypto.randomUUID() + crypto.randomUUID());
+    const { data: inv, error: ierr } = await svc.from("care_invites").insert({
+      token_hash: hash, customer_id: sale.customer_id, plan_code: plan, frequency, collection_day: day, created_by: sale.agent_id, provider_code: provider,
+      script_confirmed: { telesales: true, confirmations: confirm, completed_by: uid, confirmed_at: now.toISOString(),
+        qa: { sale_id: sale.id, sale_reference: sale.reference, score: sale.qa_score, decision: sale.qa_decision,
+          supervisor_decision: sale.supervisor_decision, recording_path: sale.recording_path } },
+      call_reference: `${sale.call_reference} (${sale.reference})`.slice(0, 120), call_notes: (sale.agent_notes ?? "").slice(0, 2000) || null,
+      expires_at: new Date(now.getTime() + 3600_000).toISOString(),
+    }).select("id").single();
+    if (ierr || !inv) return jsonResponse({ error: "complete_failed", detail: ierr?.message }, 500);
+    const fail = async (out: Record<string, unknown>, status = 400) => {
+      await svc.from("care_invites").update({ revoked_at: new Date().toISOString(), revoked_reason: "telesales_not_completed" }).eq("id", inv.id);
+      return jsonResponse(out, status);
+    };
+    const ip = getRequestIp(req);
+    const { data: st, error: serr } = await svc.rpc("care_start_application", { p_customer: sale.customer_id, p_plan: plan, p_frequency: frequency,
+      p_day: day, p_invite_hash: hash, p_ip: ip, p_ua: "OCCTA Sales Desk" });
+    const start = st as Record<string, unknown> | null;
+    if (serr || !start?.ok) return fail(serr ? { error: "complete_failed", detail: serr.message } : start ?? { error: "complete_failed" });
+    const keyFacts = careKeyFacts({ planCode: plan, frequency, priceMinor: Number(start.price_minor), collectionDay: day,
+      firstCollectionDate: longDate(String(start.first_collection_date)), ddName: prov.name });
+    const { data: recorded } = await svc.rpc("care_record_key_facts", { p_application: start.application_id, p_customer: sale.customer_id,
+      p_key_facts: keyFacts, p_sha: await sha256Hex(JSON.stringify(keyFacts)) });
+    if (!recorded) return fail({ error: "key_facts_not_recorded" }, 500);
+    const { data: vrf, error: verr } = await svc.from("care_verifications").insert({ application_id: start.application_id, customer_id: sale.customer_id,
+      method: "call_recording", destination_masked: `Recorded call ${sale.call_reference}`.slice(0, 80), destination_hash: await sha256Hex(sale.id),
+      expires_at: new Date(now.getTime() + 1800_000).toISOString(), verified_at: now.toISOString() }).select("id").single();
+    if (verr || !vrf) return fail({ error: "complete_failed", detail: verr?.message }, 500);
+    let enc: { ciphertext_hex: string; nonce_hex: string; key_id: string };
+    try {
+      enc = await encryptJson({ account_holder_name: holder, sort_code: sort, account_number: acct, bank_name: String(bank.bank_name ?? "").slice(0, 120), purpose: "occta_care" });
+    } catch { return fail({ error: "encryption_unavailable" }, 503); }
+    const { data: sub, error: suberr } = await svc.rpc("care_submit_application", { p_application: start.application_id, p_customer: sale.customer_id, p: {
+      terms_sha256: await sha256Hex(careTermsCanonicalText()), tick_terms: true, tick_dd: true, tick_account_holder: true, declared_over_18: true,
+      tick_early_start: body.start_now === true, ticked_early_start_at: body.start_now === true ? now.toISOString() : null,
+      verification_id: vrf.id, bank_ciphertext: enc.ciphertext_hex, bank_nonce: enc.nonce_hex, enc_key_id: enc.key_id,
+      masked_account_last4: acct.slice(-4), masked_sort_last2: sort.slice(-2), account_holder_name: holder, bank_name: String(bank.bank_name ?? "").slice(0, 120),
+      date_of_birth: typeof body.date_of_birth === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date_of_birth) ? body.date_of_birth : null,
+      ip, user_agent: "OCCTA Sales Desk", page_url: "sales-desk", client_snapshot: { sale_id: sale.id, completed_by: uid, confirmations: confirm },
+    } });
+    const r = sub as Record<string, unknown> | null;
+    if (suberr || !r?.ok) return fail(suberr ? { error: "complete_failed", detail: suberr.message } : r ?? { error: "complete_failed" });
+    await svc.from("care_sales").update({ status: "joined", invite_id: inv.id, subscription_id: r.subscription_id, plan_code: plan, frequency, collection_day: day }).eq("id", sale.id);
+    await svc.from("care_events").insert({ subscription_id: r.subscription_id, customer_id: sale.customer_id, actor_type: "staff", actor_id: uid,
+      event: "telesales_completed", details: { sale_id: sale.id, provider } });
+    return jsonResponse({ ...r, provider: prov.portal });
   }
 
   return jsonResponse({ error: "unknown_action" }, 400);

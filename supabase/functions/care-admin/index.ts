@@ -13,7 +13,7 @@ import { PDFDocument } from "npm:pdf-lib@1.17.1";
 import { getServiceClient, jsonResponse, corsHeaders, requireStaff, generateTokenPair, sendTrackedCommunication, escapeHtml } from "../_shared/quoteHelpers.ts";
 import { decryptJson } from "../_shared/ddCrypto.ts";
 import { getCronSecret } from "../_shared/cronSecret.ts";
-import { renderBrandedEmail } from "../_shared/brandedEmailShell.ts";
+import { sendCareInvite } from "../_shared/careInvite.ts";
 import { providerInstructionText } from "../_shared/directDebitGuarantee.ts";
 import { CARE_DD, CARE_PHONE_SCRIPT, CARE_RULES, carePlan, careFrequency, carePriceMinor, pounds } from "../_shared/careTerms.ts";
 import { longDate } from "../_shared/careLetters.ts";
@@ -80,48 +80,10 @@ Deno.serve(async (req) => {
     const callRef = String(body.call_reference ?? "").trim();
     if (callRef.length < 3) return jsonResponse({ error: "call_reference_required" }, 400);
 
-    const { data: elig } = await svc.rpc("care_eligibility", { p_customer: customerId });
-    const e = elig as { eligible?: boolean; reasons?: string[]; no_sales_contact?: boolean } | null;
-    if (!e?.eligible) return jsonResponse({ error: "not_eligible", reasons: e?.reasons ?? [] }, 400);
-    // The customer asked not to be offered things: staff may not sell to them (they can still join themselves).
-    if (e.no_sales_contact) return jsonResponse({ error: "not_eligible", reasons: ["no_sales_contact"] }, 400);
-    const { data: profile } = await svc.from("profiles").select("full_name, email").eq("id", customerId).maybeSingle();
-    if (!profile?.email) return jsonResponse({ error: "no_email_on_account" }, 400);
-
-    await svc.from("care_invites").update({ revoked_at: new Date().toISOString(), revoked_reason: "superseded" })
-      .eq("customer_id", customerId).is("used_at", null).is("revoked_at", null);
-    const { raw, hash } = await generateTokenPair();
-    const expires = new Date(Date.now() + CARE_RULES.inviteValidDays * 86400_000);
-    const { data: inv, error } = await svc.from("care_invites").insert({
-      token_hash: hash, customer_id: customerId, plan_code: plan, frequency, collection_day: day, created_by: actor,
-      script_confirmed: { ...confirmed, confirmed_at: new Date().toISOString(), script: CARE_PHONE_SCRIPT.map((l) => l.line) },
-      call_reference: callRef.slice(0, 120), call_notes: String(body.call_notes ?? "").slice(0, 2000) || null,
-      sent_to_email: profile.email, expires_at: expires.toISOString(),
-    }).select("id").single();
-    if (error || !inv) return jsonResponse({ error: "invite_failed", detail: error?.message }, 500);
-
-    const price = carePriceMinor(plan, frequency) ?? 0;
-    const link = `${SITE}/care/join?invite=${encodeURIComponent(raw)}`;
-    const html = renderBrandedEmail({
-      preheader: "Check the details and agree yourself. Nothing starts until you do.",
-      eyebrow: "OCCTA Care",
-      greeting: `Hi ${escapeHtml((profile.full_name ?? "there").split(" ")[0])}`,
-      intro: `<p style="margin:0 0 12px 0">Thanks for talking to us about OCCTA Care. As promised, here's your secure link to check the details and join yourself, if you'd like to.</p><p style="margin:0 0 12px 0"><strong>Nothing has been set up and nothing starts until you agree.</strong> There's no deadline; the link works for ${CARE_RULES.inviteValidDays} days, and you can always join later from My OCCTA.</p>`,
-      sections: [
-        { heading: "What we talked about", html: `<p style="margin:0">${escapeHtml(carePlan(plan)!.name)} at ${escapeHtml(pounds(price))} ${frequency === "monthly" ? "a month" : frequency === "quarterly" ? "every 3 months" : "a year"}, VAT included, by its own Direct Debit. You can change this on the next page.</p>` },
-        { heading: "Good to know", html: `<p style="margin:0 0 8px 0">OCCTA Care is a support service, not insurance. It doesn't pay for, repair or replace your own devices.</p><p style="margin:0 0 8px 0">Nothing is taken in your first 14 days, and you can cancel any time with no exit fee.</p><p style="margin:0">Didn't expect this email? Ignore it, or call us on 0800 260 6626.</p>` },
-      ],
-      cta: { label: "Check the details", url: link },
-    });
-    const sent = await sendTrackedCommunication(svc, {
-      template_name: "care_invite", recipient_email: profile.email, subject: "Your OCCTA Care link (nothing starts until you agree)", html,
-      user_id: customerId, metadata: { invite_id: inv.id, created_by: actor },
-    });
-    await svc.from("care_invites").update({ email_status: sent.ok ? "sent" : "failed" }).eq("id", inv.id);
-    await svc.from("care_events").insert({ customer_id: customerId, actor_type: "staff", actor_id: actor, event: "invite_sent",
-      details: { invite_id: inv.id, plan, frequency, day, call_reference: callRef, email_ok: sent.ok } });
-    await audit(svc, actor, "care_invite_sent", inv.id, { customer_id: customerId, plan, frequency });
-    return jsonResponse({ ok: sent.ok, invite_id: inv.id, expires_at: expires.toISOString(), email: sent.ok ? "sent" : "failed" });
+    const r = await sendCareInvite(svc, { customerId, plan, frequency, day, actor, callRef, callNotes: String(body.call_notes ?? ""), scriptConfirmed: confirmed });
+    if (!r.ok) return jsonResponse({ error: r.error, reasons: r.reasons ?? [] }, r.status ?? 400);
+    await audit(svc, actor, "care_invite_sent", r.invite_id, { customer_id: customerId, plan, frequency });
+    return jsonResponse(r);
   }
 
   if (action === "revoke_invite") {
@@ -181,6 +143,9 @@ Deno.serve(async (req) => {
     if (inv.data) sections.push({ heading: "Phone-assisted sale", rows: [
       ["Staff user", String(inv.data.created_by)], ["Call reference / recording", String(inv.data.call_reference ?? "-")], ["Notes", String(inv.data.call_notes ?? "-")],
       ["Link sent", `${dt(inv.data.created_at)} to ${inv.data.sent_to_email}`], ["Customer completed", dt(inv.data.used_at)],
+      ...(((inv.data.script_confirmed as { qa?: Record<string, unknown> })?.qa) ? (() => { const q = (inv.data.script_confirmed as { qa: Record<string, unknown> }).qa;
+        return [["Sales Desk sale", String(q.sale_reference ?? "-")], ["Call check", `${q.decision ?? "-"} (score ${q.score ?? "-"})${q.supervisor_decision ? `, supervisor ${q.supervisor_decision}` : ""}`],
+          ["Recording on file", String(q.recording_path ?? "-")]] as [string, string][]; })() : []),
     ], lines: ["Script lines confirmed as read out:", ...((inv.data.script_confirmed as { script?: string[] })?.script ?? []).map((l) => `- ${l}`)] });
     if (mand) {
       sections.push({ heading: "Direct Debit Instruction (paperless)", rows: [

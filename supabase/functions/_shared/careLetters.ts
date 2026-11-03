@@ -124,6 +124,16 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
     closing: [CANCEL_LINE, NOT_INSURANCE_LINE, SUPPORT_LINE],
   };
 
+  const out = buildCareLetterInner(t, payload, recipient, base, freq, sentAt);
+  if (payload.copy && (t === "welcome_pack" || t === "dd_confirmation")) {
+    out.title = `${out.title} (copy)`;
+    out.subject = `Copy: ${out.subject}`;
+    out.paragraphs = [`This is a copy you asked for, sent on ${base.dateText}. It doesn't change anything about your Care.`, ...out.paragraphs];
+  }
+  return out;
+}
+
+function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareRecipient, base: Omit<CareLetterContent, "title" | "subject" | "preheader" | "paragraphs">, freq: string, sentAt: Date): CareLetterContent {
   switch (t) {
     case "welcome_pack": {
       const price = num(payload.price_minor);
@@ -457,8 +467,45 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
       };
     }
 
+    case "agreement_copy": {
+      const p = carePlan(str(payload.plan_code));
+      const c = (payload.consent ?? {}) as { key_facts?: string[]; agreed_at?: string; verified?: string; verified_at?: string; channel?: string; terms_sha256?: string };
+      return {
+        ...base,
+        title: "A copy of your OCCTA Care agreement",
+        subject: `Your OCCTA Care agreement (${recipient.reference})`,
+        preheader: "What you agreed to, and when.",
+        paragraphs: [
+          "As requested, here is a copy of your OCCTA Care agreement: the key facts you saw and agreed to, and how you confirmed it.",
+          `The full terms (version ${str(payload.terms_version) || CARE_TERMS_VERSION}) are at ${OCCTA_CONTACT.web}/legal/occta-care-terms. We can post you a printed copy if you'd like one.`,
+        ],
+        facts: [
+          ["Plan", p?.name ?? str(payload.plan_code)],
+          ["Price", `${priceWithNoun(num(payload.price_minor), freq)}, VAT included`],
+          ["Paid by", `Its own Direct Debit to ${CARE_DD.collectionName}, on the ${ordinalDay(num(payload.collection_day))} of the month`],
+          ["Agreed on", c.agreed_at ? longDate(str(c.agreed_at).slice(0, 10)) : "-"],
+          ["Confirmed by", c.verified === "sms_otp" ? "A one-time code sent to your mobile" : c.verified ? "A one-time code sent to your email" : "-"],
+          ["How you joined", c.channel === "phone_assisted" ? "Online, using a secure link after a call with our team" : "Online, in My OCCTA"],
+          ["Terms version", str(payload.terms_version)],
+          ["Minimum term", "None. Cancel any time, no exit fee."],
+        ],
+        boxes: [{ heading: "Key facts you agreed to", lines: Array.isArray(c.key_facts) ? c.key_facts.map(String) : [] }],
+        guarantee: guaranteeText(),
+      };
+    }
+
+    case "general_letter": {
+      return {
+        ...base,
+        title: str(payload.subject) || "About your OCCTA Care",
+        subject: `${str(payload.subject) || "About your OCCTA Care"} (${recipient.reference})`,
+        preheader: str(payload.subject) || "A message from the OCCTA Care team.",
+        paragraphs: str(payload.body).split(/\n{2,}/).map((x) => x.trim()).filter(Boolean),
+      };
+    }
+
     default:
-      throw new Error(`unknown_care_letter_type:${type}`);
+      throw new Error(`unknown_care_letter_type:${t}`);
   }
 }
 

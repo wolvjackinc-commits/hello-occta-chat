@@ -111,6 +111,17 @@ export function MemberDialog({ id, onClose, onChanged }: { id: string | null; on
                     <Button size="sm" className="mt-2" disabled={busy} onClick={() => run("Usage recorded", () => careAdmin.usage(s.id, usageKind, note))}>Record</Button>
                   </div>
 
+                  <div className="border-2 border-foreground p-3 md:col-span-2">
+                    <p className="text-sm font-semibold">Send a document (letter + email, PDF kept on record)</p>
+                    <p className="text-xs text-muted-foreground">Copies are marked "copy" and never change payments or notice. For a staff letter, put the subject on the first line of the note and the letter below it. Insurance, card-payment and debt-chasing words are blocked.</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => run("Welcome pack copy queued", () => careAdmin.queueDocument(s.id, "welcome_pack", null, null))}>Welcome pack copy</Button>
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => run("Direct Debit confirmation copy queued", () => careAdmin.queueDocument(s.id, "dd_confirmation", null, null))}>DD mandate confirmation copy</Button>
+                      <Button size="sm" variant="outline" disabled={busy} onClick={() => run("Agreement copy queued", () => careAdmin.queueDocument(s.id, "agreement_copy", null, null))}>Agreement (contract) copy</Button>
+                      <Button size="sm" variant="outline" disabled={busy || note.trim().split("\n").length < 2} onClick={() => { const [subject, ...rest] = note.trim().split("\n"); return run("Letter queued", () => careAdmin.queueDocument(s.id, "general_letter", subject.trim(), rest.join("\n").trim())); }}>Staff letter from note</Button>
+                    </div>
+                  </div>
+
                   {["active", "pending_mandate", "pending_review"].includes(s.status) && (
                     <div className="border-2 border-foreground p-3">
                       <p className="text-sm font-semibold">Pause Care (money tight, or the customer asks)</p>

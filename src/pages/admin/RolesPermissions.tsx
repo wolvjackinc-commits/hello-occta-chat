@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { StaffLogins } from "@/components/admin/staff/StaffLogins";
 
 const ALL_ROLES = [
   "super_admin",
@@ -112,6 +113,8 @@ export const AdminRolesPermissions = () => {
           Grant staff access to specific admin surfaces. Only super_admin can access this page.
         </p>
       </div>
+
+      <StaffLogins />
 
       <div className="border-4 border-foreground p-4 bg-secondary space-y-3">
         <div className="font-display uppercase text-sm">Grant role</div>

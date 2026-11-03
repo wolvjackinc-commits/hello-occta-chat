@@ -10,6 +10,7 @@ import {
   CARE_TERMS_VERSION, careKeyFacts, carePriceMinor, careTermsCanonicalText,
 } from "../../../../supabase/functions/_shared/careTerms.ts";
 import { buildCareLetter, careLetterText } from "../../../../supabase/functions/_shared/careLetters.ts";
+import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, careQaDecision } from "../../../../supabase/functions/_shared/careSalesScript.ts";
 
 const root = path.resolve(__dirname, "../../../..");
 // Every Care migration, in order: the schema plus later hardening.
@@ -35,6 +36,9 @@ const payloads: Record<string, Record<string, unknown>> = {
   refund_confirmation: { amount_minor: 499, paid_on: "2026-11-10" },
   application_declined: {},
   indemnity_followup: { amount_minor: 499 },
+  agreement_copy: { plan_code: "plus", frequency: "monthly", price_minor: 899, collection_day: 15, terms_version: CARE_TERMS_VERSION,
+    consent: { key_facts: ["Plan: Care Plus. Price: £8.99 a month, VAT included."], agreed_at: "2026-11-03T10:00:00Z", verified: "sms_otp", channel: "phone_assisted" } },
+  general_letter: { subject: "Your help session", body: "Thanks for calling us today.\n\nYour remote help session is booked for Friday." },
 };
 
 /** Sentences that are allowed to use an insurance word because they say Care is NOT insurance. */
@@ -215,5 +219,30 @@ describe("OCCTA Care letters", () => {
 
   it("the cancellation confirmation states the refund", () => {
     expect(careLetterText(buildCareLetter("cancellation_confirmation", payloads.cancellation_confirmation, recipient))).toContain("£4.99");
+  });
+});
+
+describe("OCCTA Care telesales call check", () => {
+  const allMet = CARE_SALES_SCRIPT.map((x) => ({ id: x.id, status: "met" }));
+  it("passes only a complete, clean call above the pass mark", () => {
+    expect(careQaDecision({ checks: allMet, red_flags: [], score: 92 }).decision).toBe("pass");
+    expect(careQaDecision({ checks: allMet, red_flags: [], score: 80 }).decision).toBe("hold");
+  });
+  it("holds when any mandatory step is missing, whatever the score", () => {
+    const checks = allMet.map((c) => (c.id === "not_insurance" ? { ...c, status: "partial" } : c));
+    expect(careQaDecision({ checks, red_flags: [], score: 99 }).decision).toBe("hold");
+  });
+  it("declines on a decline-level red flag, whatever the score", () => {
+    expect(careQaDecision({ checks: allMet, red_flags: [{ id: "insurance_claim" }], score: 100 }).decision).toBe("decline");
+    expect(careQaDecision({ checks: allMet, red_flags: [{ id: "bank_details_on_call" }], score: 100 }).decision).toBe("decline");
+  });
+  it("holds vulnerability or pressure for a supervisor", () => {
+    expect(careQaDecision({ checks: allMet, red_flags: [{ id: "vulnerability" }], score: 95 }).decision).toBe("hold");
+  });
+  it("the script never describes Care as insurance and covers every legal must-say", () => {
+    const said = CARE_SALES_SCRIPT.map((x) => x.say).join(" ");
+    expect(bannedHits(said)).toEqual([]);
+    for (const must of ["not insurance", "14 days", "no exit fee", "Direct Debit Guarantee", "10 working days", "recorded", "won't take your bank details"]) expect(said).toContain(must);
+    expect(CARE_QA_RED_FLAGS.find((f) => f.id === "bank_details_on_call")?.severity).toBe("decline");
   });
 });

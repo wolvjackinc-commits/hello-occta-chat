@@ -158,6 +158,7 @@ const AdminRolesPermissions = lazy(() => import("./pages/admin/RolesPermissions"
 const AdminOutreach = lazy(() => import("./pages/admin/Outreach"));
 const AdminPartners = lazy(() => import("./pages/admin/Partners"));
 const AdminCare = lazy(() => import("./pages/admin/Care"));
+const CareSalesDesk = lazy(() => import("./pages/staff/CareSalesDesk"));
 const CareLanding = lazy(() => import("./pages/care/CareLanding"));
 const CareJoin = lazy(() => import("./pages/care/CareJoin"));
 const CareHowItWorks = lazy(() => import("./pages/care/CareInfoPages").then((m) => ({ default: m.CareHowItWorks })));
@@ -257,6 +258,9 @@ const AnimatedRoutes = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/staff/care-sales" element={<Suspense fallback={<AdminRouteFallback />}><ProtectedAdminRoute requiredRoles={["sales_agent", "sales_admin", "compliance_admin", "admin", "super_admin"]} /></Suspense>}>
+          <Route index element={<Suspense fallback={<AdminRouteFallback />}><CareSalesDesk /></Suspense>} />
+        </Route>
         <Route path="/admin/*" element={<Suspense fallback={<AdminRouteFallback />}><ProtectedAdminRoute /></Suspense>}>
           <Route element={<Suspense fallback={<AdminRouteFallback />}><AdminLayout /></Suspense>}>
             <Route index element={<Navigate to="overview" replace />} />

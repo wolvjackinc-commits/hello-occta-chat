@@ -73,6 +73,16 @@ const Auth = () => {
     return "/dashboard";
   };
 
+  // Staff with no ?next go to their own workspace, not the customer dashboard.
+  const homeFor = async (userId: string) => {
+    const target = getRedirectTarget();
+    if (target !== "/dashboard") return target;
+    const { data } = await supabase.from("user_roles").select("role").eq("user_id", userId);
+    const roles = (data ?? []).map((r) => String(r.role)).filter((r) => r !== "user");
+    if (!roles.length) return target;
+    return roles.every((r) => r === "sales_agent") ? "/staff/care-sales" : "/admin";
+  };
+
   useEffect(() => {
     const redirectTarget = getRedirectTarget();
     
@@ -80,7 +90,7 @@ const Auth = () => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session && !isWelcome && !recoveryMode && !hashIsRecovery) {
-        navigate(redirectTarget);
+        navigate(await homeFor(session.user.id));
       }
       if (session && (isWelcome || hashIsRecovery)) {
         // Landed here via the email "Set password & open dashboard" link.
@@ -113,7 +123,7 @@ const Auth = () => {
               toast({ title: `Linked ${linked} record${linked === 1 ? "" : "s"} to your account` });
             }
           })
-          .finally(() => navigate(redirectTarget));
+          .finally(() => homeFor(session.user.id).then(navigate, () => navigate(redirectTarget)));
       }
     });
 

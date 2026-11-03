@@ -32,7 +32,7 @@ export const CARE_SALES_SCRIPT: ScriptStep[] = [
     say: "[Care Essentials is £4.99 / Care Plus is £8.99] a month, VAT included. You can also pay every 3 months, or yearly with 2 months free, which is [£amount].",
     check: "Agent states the exact price for the chosen plan and frequency, including VAT, matching the price list." },
   { id: "own_dd", stage: "Price", mandatory: true,
-    say: "It's paid by its own Direct Debit, separate from your broadband, and it shows on your statement as APS Re OCCTA with a reference starting OCCTA CARE.",
+    say: "It's paid by its own Direct Debit, separate from your broadband, and your statement shows it under the collector named in your email and letter (APS Re OCCTA or FastPay), with a reference starting OCCTA CARE.",
     check: "Agent says Care is paid by its own Direct Debit, separate from broadband, and how it shows on the statement." },
   { id: "cooling_off", stage: "Rights", mandatory: true,
     say: "Nothing is taken for the first 14 days. That's your cooling-off period, and you can cancel for any reason in that time and pay nothing.",

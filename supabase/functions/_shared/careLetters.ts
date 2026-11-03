@@ -112,7 +112,7 @@ function firstName(name: string): string {
 type P = Record<string, unknown>;
 const num = (v: unknown) => Number(v ?? 0);
 const str = (v: unknown) => (v == null ? "" : String(v));
-const dayAfter = (iso: string) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
+const dayAfter = (iso: string) => { const d = new Date(`${iso}T12:00:00Z`); if (Number.isNaN(d.getTime())) return ""; d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
 
 export function buildCareLetter(type: CareLetterType | string, payload: P, recipient: CareRecipient, sentAt: Date = new Date()): CareLetterContent {
   const t = type as CareLetterType;

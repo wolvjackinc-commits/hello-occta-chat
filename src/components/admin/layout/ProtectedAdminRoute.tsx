@@ -42,7 +42,7 @@ const AdminAccessDenied = () => {
   );
 };
 
-type Role = "admin" | "super_admin" | "business_admin" | "ticket_admin" | "sales_admin" | "moderator";
+type Role = "admin" | "super_admin" | "business_admin" | "ticket_admin" | "sales_admin" | "sales_agent" | "compliance_admin" | "moderator";
 
 interface Props {
   /** Any of these roles grants access. Defaults to ["admin","super_admin"]. */

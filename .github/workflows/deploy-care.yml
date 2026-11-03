@@ -8,15 +8,18 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/care-*/**'
+      - 'supabase/functions/admin-staff-users/**'
       - 'supabase/functions/_shared/care*.ts'
       - 'supabase/functions/_shared/directDebitGuarantee.ts'
       - 'supabase/migrations/20261102200000_occta_care.sql'
       - 'supabase/migrations/20261103100000_occta_care_hardening.sql'
+      - 'supabase/migrations/20261103120000_occta_care_sales_desk.sql'
       - '.github/workflows/deploy-care.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/functions/care-*/**'
+      - 'supabase/functions/admin-staff-users/**'
       - 'supabase/functions/_shared/care*.ts'
       - 'supabase/functions/_shared/directDebitGuarantee.ts'
       - '.github/workflows/deploy-care.yml'
@@ -36,7 +39,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Type-check OCCTA Care functions
-        run: deno check supabase/functions/care-join/index.ts supabase/functions/care-dispatch/index.ts supabase/functions/care-admin/index.ts
+        run: deno check supabase/functions/care-join/index.ts supabase/functions/care-dispatch/index.ts supabase/functions/care-admin/index.ts supabase/functions/care-sales/index.ts supabase/functions/admin-staff-users/index.ts
       - name: Render every Care letter to PDF
         run: |
           cat > /tmp/render.ts <<'EOF'

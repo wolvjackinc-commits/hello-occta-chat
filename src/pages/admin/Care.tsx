@@ -50,7 +50,7 @@ export default function AdminCare() {
           <h1 className="font-display text-3xl uppercase">OCCTA Care</h1>
           <p className="text-sm text-muted-foreground">Support subscription, not insurance. Own Direct Debit (APS Re OCCTA · OCCTA CARE- references). Every action is logged on the member's timeline.</p>
         </div>
-        <Button variant="outline" onClick={changed}><RefreshCw className="mr-1 h-4 w-4" />Refresh</Button>
+        <div className="flex gap-2"><Button asChild><a href="/staff/care-sales">Sales Desk</a></Button><Button variant="outline" onClick={changed}><RefreshCw className="mr-1 h-4 w-4" />Refresh</Button></div>
       </div>
 
       {o && (

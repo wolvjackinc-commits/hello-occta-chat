@@ -27,6 +27,8 @@ export const careAdmin = {
     careCall<Json>("care_admin_dispute_decide", { p_dispute: id, p_decision: decision, p_note: note, p_cancel_care: cancelCare, p_write_once: writeOnce }),
   ddiRequest: (sub: string, received: string, note: string) => careCall<Json>("care_admin_record_ddi_request", { p_sub: sub, p_received: received, p_note: note }),
   cancel: (sub: string, channel: string, reason: string) => careCall<Json>("care_admin_cancel", { p_sub: sub, p_channel: channel, p_reason: reason }),
+  queueDocument: (sub: string, type: string, subject: string | null, body: string | null) =>
+    careCall<Json>("care_admin_queue_document", { p_sub: sub, p_type: type, p_subject: subject, p_body: body }),
   pause: (sub: string, note: string) => careCall<Json>("care_admin_pause", { p_sub: sub, p_note: note }),
   pulledItemCollected: (col: string, note: string) => careCall<Json>("care_admin_pulled_item_collected", { p_collection: col, p_note: note }),
   usage: (sub: string, kind: string, notes: string) => careCall<Json>("care_admin_record_usage", { p_sub: sub, p_kind: kind, p_notes: notes, p_occurred: new Date().toISOString() }),

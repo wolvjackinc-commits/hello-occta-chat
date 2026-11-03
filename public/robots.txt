@@ -6,6 +6,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /staff
 Disallow: /overview
 Disallow: /customers
 Disallow: /.lovable/
@@ -38,6 +39,7 @@ Allow: /quote/start
 User-agent: GPTBot
 Allow: /
 Disallow: /admin
+Disallow: /staff
 Disallow: /overview
 Disallow: /customers
 Disallow: /.lovable/
@@ -69,6 +71,7 @@ Allow: /quote/start
 User-agent: OAI-SearchBot
 Allow: /
 Disallow: /admin
+Disallow: /staff
 Disallow: /overview
 Disallow: /customers
 Disallow: /.lovable/
@@ -100,6 +103,7 @@ Allow: /quote/start
 User-agent: ChatGPT-User
 Allow: /
 Disallow: /admin
+Disallow: /staff
 Disallow: /overview
 Disallow: /customers
 Disallow: /.lovable/
@@ -131,6 +135,7 @@ Allow: /quote/start
 User-agent: PerplexityBot
 Allow: /
 Disallow: /admin
+Disallow: /staff
 Disallow: /overview
 Disallow: /customers
 Disallow: /.lovable/
@@ -162,6 +167,7 @@ Allow: /quote/start
 User-agent: Google-Extended
 Allow: /
 Disallow: /admin
+Disallow: /staff
 Disallow: /overview
 Disallow: /customers
 Disallow: /.lovable/
@@ -193,6 +199,7 @@ Allow: /quote/start
 User-agent: ClaudeBot
 Allow: /
 Disallow: /admin
+Disallow: /staff
 Disallow: /overview
 Disallow: /customers
 Disallow: /.lovable/

@@ -371,6 +371,8 @@ export const CARE_LETTER_TYPES = [
   "refund_confirmation",
   "application_declined",
   "indemnity_followup",
+  "agreement_copy",
+  "general_letter",
 ] as const;
 export type CareLetterType = typeof CARE_LETTER_TYPES[number];
 

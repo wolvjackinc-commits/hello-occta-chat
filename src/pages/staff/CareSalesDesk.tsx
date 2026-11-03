@@ -13,7 +13,10 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { careSales, salesError, SALE_STATUS, type J } from "@/lib/care/sales";
 import { transcribeRecording } from "@/lib/care/transcribe";
-import { DDProviderSelect } from "@/components/care/DDProviderSelect";
+import { DDProviderSelect, DD_PROVIDERS } from "@/components/care/DDProviderSelect";
+import { CareDDGuarantee } from "@/components/care/CareBits";
+import { Checkbox } from "@/components/ui/checkbox";
+import { providerInstructionText } from "../../../supabase/functions/_shared/directDebitGuarantee.ts";
 import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, CARE_QA_PASS_SCORE } from "../../../supabase/functions/_shared/careSalesScript.ts";
 import { CARE_FREQUENCIES, CARE_PLANS, carePriceMinor, pounds } from "../../../supabase/functions/_shared/careTerms.ts";
 
@@ -40,7 +43,7 @@ export default function CareSalesDesk() {
   return (
     <div className="min-h-screen bg-background">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b-[3px] border-foreground px-4 py-3">
-        <div><p className="font-display text-2xl uppercase">OCCTA Care · Sales Desk</p><p className="text-xs text-muted-foreground">{sup ? "Supervisor" : "Sales agent"} · every sale needs its call recording and passes a call check before the customer gets a link</p></div>
+        <div><p className="font-display text-2xl uppercase">OCCTA Care · Sales Desk</p><p className="text-xs text-muted-foreground">{sup ? "Supervisor" : "Sales agent"} · record the call, check it (or bypass), then complete the sign-up on the call</p></div>
         <div className="flex gap-2">{sup && <Button asChild variant="outline" size="sm"><Link to="/admin/care">Admin → Care</Link></Button>}
           <Button variant="outline" size="sm" onClick={() => void supabase.auth.signOut().then(() => { window.location.href = "/auth"; })}>Sign out</Button></div>
       </header>
@@ -93,10 +96,10 @@ function NewSale({ onCreated }: { onCreated: (id: string) => void }) {
         {!nc && !(found && found.length === 0) && <button className="mt-2 text-xs underline" onClick={() => setNc({})}>New to OCCTA? Add a new customer</button>}
         {nc && (
           <div className="mt-3 grid gap-2 border-2 border-foreground/30 p-3 sm:grid-cols-2">
-            {([["full_name", "Full name"], ["email", "Email"], ["phone", "Mobile"], ["address_line1", "Address line 1"], ["address_line2", "Address line 2 (optional)"], ["city", "Town or city"], ["postcode", "Postcode"]] as const).map(([k, l]) => (
+            {([["full_name", "Full name"], ["email", "Email (optional)"], ["phone", "Mobile or phone"], ["address_line1", "Address line 1"], ["address_line2", "Address line 2 (optional)"], ["city", "Town or city"], ["postcode", "Postcode"]] as const).map(([k, l]) => (
               <div key={k}><Label htmlFor={`nc-${k}`}>{l}</Label><Input id={`nc-${k}`} value={nc[k] ?? ""} onChange={(e) => setNc({ ...nc, [k]: e.target.value })} /></div>
             ))}
-            <p className="text-xs text-muted-foreground sm:col-span-2">This opens a free OCCTA account. The customer gets an email to set their password, then checks the details and joins Care themselves.</p>
+            <p className="text-xs text-muted-foreground sm:col-span-2">This opens a free OCCTA account for them. Email is optional: every Care letter is posted.</p>
             <div className="flex gap-2 sm:col-span-2"><Button disabled={busy} onClick={() => void addNew()}>Add customer</Button><Button variant="outline" onClick={() => setNc(null)}>Cancel</Button></div>
           </div>
         )}
@@ -123,7 +126,7 @@ function NewSale({ onCreated }: { onCreated: (id: string) => void }) {
           </div>
           <Label className="mt-3 block">Notes (anything the supervisor should know)</Label><Textarea value={notes} maxLength={2000} onChange={(e) => setNotes(e.target.value)} />
           <Button className="mt-3" disabled={busy || !cust.eligibility?.eligible || callRef.trim().length < 3} onClick={() => void create()}>Log sale</Button>
-          <p className="mt-2 text-xs text-muted-foreground">Never take bank details on the call. The customer enters them through the link.</p>
+          <p className="mt-2 text-xs text-muted-foreground">Take the bank details only after the call passes (or is bypassed), using the Complete sign-up form. Never take card details.</p>
         </section>
       )}
     </div>
@@ -154,7 +157,7 @@ function SalesTable({ rows, onOpen }: { rows: J[]; onOpen: (id: string) => void 
 
 function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; transcription: boolean }; onClose: () => void }) {
   const [s, setS] = useState<J | null>(null); const [file, setFile] = useState<File | null>(null); const [stage, setStage] = useState<string | null>(null);
-  const [busy, setBusy] = useState<string | null>(null); const [note, setNote] = useState(""); const [prov, setProv] = useState("accesspay"); const [audio, setAudio] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null); const [note, setNote] = useState(""); const [audio, setAudio] = useState<string | null>(null);
   const load = useCallback(async () => { try { setS(await careSales.get(id)); } catch (e) { toast({ title: "Couldn't open sale", description: salesError(e), variant: "destructive" }); } }, [id]);
   useEffect(() => { void load(); }, [load]);
   async function act(label: string, f: () => Promise<unknown>) {
@@ -226,13 +229,9 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
         )}
 
         {s.supervisor_decision && <p className="border-l-4 border-primary pl-3 text-sm">Supervisor {s.supervisor_name} {s.supervisor_decision === "approve" ? "approved" : s.supervisor_decision === "bypass" ? "bypassed the call check" : "declined"} at {dt(s.supervisor_at)}: {s.supervisor_note}</p>}
-        {s.invite && <p className="text-sm">Link sent {dt(s.invite.sent_at)} (email {s.invite.email_status}) · expires {dt(s.invite.expires_at)}{s.invite.used_at ? ` · used ${dt(s.invite.used_at)}` : ""}</p>}
+        {canSend && <CompleteSignup sale={s} />}
 
         <section className="flex flex-wrap items-end gap-2 border-t-2 border-foreground pt-3">
-          {canSend && (<>
-            <div className="min-w-[220px]"><Label htmlFor="dd-prov">Direct Debit collected through</Label><DDProviderSelect id="dd-prov" value={prov} onChange={setProv} /></div>
-            <Button disabled={!!busy} onClick={() => void act("Sign-up link emailed to the customer", () => careSales.sendLink(id, prov))}>Send the customer their sign-up link</Button>
-          </>)}
           {sup && ["awaiting_recording", "scoring", "passed", "held", "declined"].includes(s.status) && (<>
             <div className="min-w-[260px] flex-1"><Label>Supervisor note (required)</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What you checked, e.g. listened at 03:10, price was confirmed" /></div>
             {["passed", "held", "declined"].includes(s.status) && <>
@@ -242,7 +241,7 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
           </>)}
           {["awaiting_recording", "scoring", "held", "declined"].includes(s.status) && (<>
             {!sup && <div className="min-w-[260px] flex-1"><Label>Reason for bypassing (required)</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why this sale should go ahead" /></div>}
-            <Button variant="secondary" disabled={!!busy || note.trim().length < 20} title="Continue even though the call didn't pass or couldn't be checked. The reason is saved and can't be changed." onClick={() => void act("Call check bypassed: you can now send the link", () => careSales.decide(id, "bypass", note))}>Bypass call check</Button>
+            <Button variant="secondary" disabled={!!busy || note.trim().length < 20} title="Continue even though the call didn't pass or couldn't be checked. The reason is saved and can't be changed." onClick={() => void act("Call check bypassed: complete the sign-up below", () => careSales.decide(id, "bypass", note))}>Bypass call check</Button>
           </>)}
           {!["joined", "withdrawn"].includes(s.status) && <Button variant="outline" disabled={!!busy} onClick={() => void act("Withdrawn", () => careSales.withdraw(id, note || "withdrawn by staff"))}>Withdraw sale</Button>}
         </section>
@@ -274,5 +273,66 @@ function Report() {
     <div className="mt-4 overflow-x-auto"><p className="mb-2 text-xs text-muted-foreground">Last 12 months. Pay bonuses on "active after 90 days", not on sales logged.</p>
       <table className="w-full text-sm"><thead><tr className="border-b-2 border-foreground text-left">{["Agent", "Logged", "Avg score", "Passed", "Held", "Declined", "Joined", "Active 90+ days", "Cancelled in cooling-off", "Indemnity claims"].map((h) => <th key={h} className="p-1">{h}</th>)}</tr></thead>
         <tbody>{r.map((x) => <tr key={x.agent_id} className="border-b"><td className="p-1">{x.agent}</td><td>{x.sales}</td><td>{x.avg_score ?? "—"}</td><td>{x.passed}</td><td>{x.held}</td><td>{x.declined}</td><td>{x.joined}</td><td>{x.active_after_90_days}</td><td>{x.cancelled_in_cooling_off}</td><td>{x.indemnity_claims}</td></tr>)}</tbody></table></div>
+  );
+}
+
+// Telesales: take everything on the call. The server runs the full sign-up checks and posts the letters.
+function CompleteSignup({ sale }: { sale: J }) {
+  const [plan, setPlan] = useState<string>(sale.plan_code); const [freq, setFreq] = useState<string>(sale.frequency); const [day, setDay] = useState(String(sale.collection_day));
+  const [prov, setProv] = useState("accesspay"); const [startNow, setStartNow] = useState(false); const [dob, setDob] = useState("");
+  const [bank, setBank] = useState({ account_holder_name: sale.customer?.name ?? "", sort_code: "", account_number: "", bank_name: "" });
+  const [c, setC] = useState({ ddi_read: false, account_holder: false, customer_agreed: false, over_18: false });
+  const [busy, setBusy] = useState(false); const [done, setDone] = useState<J | null>(null);
+  const price = carePriceMinor(plan, freq as never) ?? 0;
+  const dd = DD_PROVIDERS[prov];
+  const sortOk = bank.sort_code.replace(/\D/g, "").length === 6; const acctOk = [7, 8].includes(bank.account_number.replace(/\D/g, "").length);
+  const ready = sortOk && acctOk && bank.account_holder_name.trim().length >= 2 && Object.values(c).every(Boolean);
+  async function submit() {
+    setBusy(true);
+    try {
+      const r = await careSales.complete(sale.id, { plan, frequency: freq, collection_day: Number(day), provider_code: prov, start_now: startNow,
+        date_of_birth: dob || null, bank, confirm: c });
+      setDone(r); toast({ title: `Signed up: ${r.reference}`, description: "Summary and Direct Debit confirmation are queued to post." });
+    } catch (e) { toast({ title: "Couldn't complete the sign-up", description: salesError(e), variant: "destructive" }); } finally { setBusy(false); }
+  }
+  if (done) return (
+    <section className="border-[3px] border-primary p-3 text-sm" role="status">
+      <p className="font-display uppercase">Signed up · {String(done.reference)}</p>
+      <p>Status: {done.status === "pending_review" ? "needs a review before the mandate is lodged (shown in Admin → OCCTA Care)" : `mandate to lodge in ${String(done.provider)}`}.
+        Cooling-off ends {String(done.cooling_off_ends_on)}. First payment {String(done.first_collection_date)}.</p>
+      <p>Posted automatically: the Care summary (welcome pack) and the Direct Debit confirmation with the Direct Debit Guarantee. They're in Admin → OCCTA Care → Letters to print. If the customer has an email, they get a copy by email too.</p>
+    </section>
+  );
+  return (
+    <section className="space-y-3 border-[3px] border-foreground p-3">
+      <p className="font-display uppercase">Complete the sign-up on the call</p>
+      <div className="grid gap-3 sm:grid-cols-4">
+        <div><Label>Plan</Label><Select value={plan} onValueChange={setPlan}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CARE_PLANS.map((p) => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label>How often</Label><Select value={freq} onValueChange={setFreq}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CARE_FREQUENCIES.map((f) => <SelectItem key={f.code} value={f.code}>{f.label}</SelectItem>)}</SelectContent></Select></div>
+        <div><Label>Payment day</Label><Select value={day} onValueChange={setDay}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1st of the month</SelectItem><SelectItem value="15">15th of the month</SelectItem></SelectContent></Select></div>
+        <div><Label>Price</Label><p className="pt-2 font-semibold">{pounds(price)} {freq === "monthly" ? "a month" : freq === "quarterly" ? "every 3 months" : "a year"}</p></div>
+      </div>
+      <label className="flex items-start gap-2 text-sm"><Checkbox checked={startNow} onCheckedChange={(v) => setStartNow(v === true)} /> <span>Customer asked for support to start today (they can still cancel in the 14 days; nothing is taken before then).</span></label>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div><Label htmlFor="cs-prov">Direct Debit goes on</Label><DDProviderSelect id="cs-prov" value={prov} onChange={setProv} /></div>
+        <div><Label htmlFor="cs-dob">Date of birth (if we don't have it)</Label><Input id="cs-dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} /></div>
+        <div><Label htmlFor="cs-holder">Name on the bank account</Label><Input id="cs-holder" value={bank.account_holder_name} onChange={(e) => setBank({ ...bank, account_holder_name: e.target.value })} /></div>
+        <div><Label htmlFor="cs-bank">Bank name (optional)</Label><Input id="cs-bank" value={bank.bank_name} onChange={(e) => setBank({ ...bank, bank_name: e.target.value })} /></div>
+        <div><Label htmlFor="cs-sort">Sort code</Label><Input id="cs-sort" inputMode="numeric" placeholder="12-34-56" maxLength={8} value={bank.sort_code} onChange={(e) => setBank({ ...bank, sort_code: e.target.value })} aria-invalid={bank.sort_code !== "" && !sortOk} /></div>
+        <div><Label htmlFor="cs-acct">Account number</Label><Input id="cs-acct" inputMode="numeric" placeholder="12345678" maxLength={8} value={bank.account_number} onChange={(e) => setBank({ ...bank, account_number: e.target.value })} aria-invalid={bank.account_number !== "" && !acctOk} /></div>
+      </div>
+      <div className="border-2 border-foreground/40 p-3 text-sm">
+        <p className="font-semibold">Read this to the customer</p>
+        <p className="mt-1">Instruction to your bank or building society: {providerInstructionText({ legal_collection_name: dd.name, service_user_number: dd.sun, advance_notice_working_days: 10 })} Your reference will start OCCTA CARE-.</p>
+        <div className="mt-2"><CareDDGuarantee dd={dd} /></div>
+      </div>
+      <div className="space-y-1 text-sm">
+        {([["ddi_read", "I read the Direct Debit Instruction and Guarantee above to the customer."], ["account_holder", "The customer confirmed they are the account holder and can authorise Direct Debits on their own."],
+          ["customer_agreed", "The customer clearly agreed to Care and to this Direct Debit, on the recorded call."], ["over_18", "The customer confirmed they are 18 or over."]] as const).map(([k, l]) => (
+          <label key={k} className="flex items-start gap-2"><Checkbox checked={c[k]} onCheckedChange={(v) => setC({ ...c, [k]: v === true })} /> <span>{l}</span></label>
+        ))}
+      </div>
+      <Button disabled={busy || !ready} onClick={() => void submit()}>{busy ? "Saving…" : "Complete sign-up"}</Button>
+    </section>
   );
 }

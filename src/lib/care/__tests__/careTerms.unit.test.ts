@@ -234,7 +234,7 @@ describe("OCCTA Care telesales call check", () => {
   });
   it("declines on a decline-level red flag, whatever the score", () => {
     expect(careQaDecision({ checks: allMet, red_flags: [{ id: "insurance_claim" }], score: 100 }).decision).toBe("decline");
-    expect(careQaDecision({ checks: allMet, red_flags: [{ id: "bank_details_on_call" }], score: 100 }).decision).toBe("decline");
+    expect(careQaDecision({ checks: allMet, red_flags: [{ id: "dd_not_authorised" }], score: 100 }).decision).toBe("decline");
   });
   it("holds vulnerability or pressure for a supervisor", () => {
     expect(careQaDecision({ checks: allMet, red_flags: [{ id: "vulnerability" }], score: 95 }).decision).toBe("hold");
@@ -242,7 +242,7 @@ describe("OCCTA Care telesales call check", () => {
   it("the script never describes Care as insurance and covers every legal must-say", () => {
     const said = CARE_SALES_SCRIPT.map((x) => x.say).join(" ");
     expect(bannedHits(said)).toEqual([]);
-    for (const must of ["not insurance", "14 days", "no exit fee", "Direct Debit Guarantee", "10 working days", "recorded", "won't take your bank details"]) expect(said).toContain(must);
-    expect(CARE_QA_RED_FLAGS.find((f) => f.id === "bank_details_on_call")?.severity).toBe("decline");
+    for (const must of ["not insurance", "14 days", "no exit fee", "Direct Debit Guarantee", "10 working days", "recorded", "account holder", "Direct Debit Instruction"]) expect(said).toContain(must);
+    expect(CARE_QA_RED_FLAGS.find((f) => f.id === "dd_not_authorised")?.severity).toBe("decline");
   });
 });

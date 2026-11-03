@@ -9,8 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { careAdmin, dd, dt, gbp, REVIEW_LABEL, STATUS_TONE, type Json } from "@/lib/care/admin";
 import { MemberDialog } from "@/components/admin/care/MemberDialog";
 import { DirectDebitPanel } from "@/components/admin/care/DirectDebitPanel";
-import { DisputesPanel, LettersPanel, PhoneSalePanel, RefundsPanel, ReportsPanel, SettingsPanel } from "@/components/admin/care/OpsPanels";
-import { CARE_BANNED_PHRASES, CARE_PHONE_SCRIPT } from "../../../supabase/functions/_shared/careTerms.ts";
+import { DisputesPanel, LettersPanel, RefundsPanel, ReportsPanel, SettingsPanel } from "@/components/admin/care/OpsPanels";
+import { CARE_BANNED_PHRASES } from "../../../supabase/functions/_shared/careTerms.ts";
 
 function Stat({ label, value, warn }: { label: string; value: string | number; warn?: boolean }) {
   return (
@@ -77,7 +77,6 @@ export default function AdminCare() {
           <TabsTrigger value="disputes">Disputes{o?.open_disputes ? ` (${o.open_disputes})` : ""}</TabsTrigger>
           <TabsTrigger value="letters">Letters{o?.letters_to_print ? ` (${o.letters_to_print})` : ""}</TabsTrigger>
           <TabsTrigger value="refunds">Refunds</TabsTrigger>
-          <TabsTrigger value="phone">Sell by phone</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="playbook">Staff playbook</TabsTrigger>
@@ -113,7 +112,6 @@ export default function AdminCare() {
         <TabsContent value="disputes"><DisputesPanel onOpenMember={setOpen} onChanged={changed} /></TabsContent>
         <TabsContent value="letters"><LettersPanel onChanged={changed} /></TabsContent>
         <TabsContent value="refunds"><RefundsPanel onOpenMember={setOpen} onChanged={changed} /></TabsContent>
-        <TabsContent value="phone"><PhoneSalePanel onChanged={changed} /></TabsContent>
         <TabsContent value="reports"><ReportsPanel /></TabsContent>
         <TabsContent value="settings"><SettingsPanel overview={o} onChanged={changed} /></TabsContent>
 
@@ -136,9 +134,8 @@ export default function AdminCare() {
             <p className="mt-2">Never say: {CARE_BANNED_PHRASES.map((b) => `"${b}"`).join(", ")}. Say: support, help, setup, data transfer, faster OCCTA kit swaps (Care Plus). Don't offer repairs: Care has no repair partner yet.</p>
           </section>
           <section>
-            <h2 className="font-display text-xl uppercase">Phone script (Sell by phone tab)</h2>
-            <ul className="mt-2 list-disc space-y-1 pl-5">{CARE_PHONE_SCRIPT.map((l) => <li key={l.id}>{l.line}</li>)}</ul>
-            <p className="mt-2">No cold calls. No deadlines or "today only". Don't sell to anyone confused, under pressure from someone else, or worried about money. We never take bank details over the phone for Care.</p>
+            <h2 className="font-display text-xl uppercase">Phone sales</h2>
+            <p className="mt-2">All phone sales go through the Sales Desk: record the call, check it (or bypass), then take the Direct Debit on the call. The script is in the Sales Desk. No cold calls. No deadlines or "today only". Don't sell to anyone confused, under pressure from someone else, or worried about money. Never take card details.</p>
           </section>
           <section>
             <h2 className="font-display text-xl uppercase">Cancelling</h2>

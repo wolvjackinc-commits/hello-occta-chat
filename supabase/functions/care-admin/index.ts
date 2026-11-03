@@ -4,7 +4,6 @@
 //
 // Actions:
 //   reveal_bank     — decrypt a Care mandate's bank details to key into AccessPay (finance roles, reason required, audited)
-//   send_invite     — phone-assisted sale: email the customer a link to complete sign-up themselves
 //   revoke_invite
 //   evidence_pack   — one PDF with everything we hold about a member's agreement and payments
 //   print_batch     — one PDF of every letter waiting to be printed (the exact stored, hashed PDFs joined together), then mark them 'in batch'
@@ -13,8 +12,7 @@ import { PDFDocument } from "npm:pdf-lib@1.17.1";
 import { getServiceClient, jsonResponse, corsHeaders, requireStaff, generateTokenPair, sendTrackedCommunication, escapeHtml } from "../_shared/quoteHelpers.ts";
 import { decryptJson } from "../_shared/ddCrypto.ts";
 import { getCronSecret } from "../_shared/cronSecret.ts";
-import { sendCareInvite } from "../_shared/careInvite.ts";
-import { careProvider, CARE_PROVIDER_CODES } from "../_shared/careProvider.ts";
+import { careProvider } from "../_shared/careProvider.ts";
 import { providerInstructionText } from "../_shared/directDebitGuarantee.ts";
 import { CARE_DD, CARE_PHONE_SCRIPT, CARE_RULES, carePlan, careFrequency, carePriceMinor, pounds } from "../_shared/careTerms.ts";
 import { longDate } from "../_shared/careLetters.ts";
@@ -67,27 +65,6 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, reference: m.reference, account_holder_name: plain.account_holder_name, sort_code: plain.sort_code,
       account_number: plain.account_number, bank_name: plain.bank_name ?? null, service_user_number: prov.sun,
       collection_name: prov.name, provider_name: prov.portal });
-  }
-
-  // --------------------------------------------------------------- send_invite
-  if (action === "send_invite") {
-    const customerId = String(body.customer_id ?? "");
-    const plan = String(body.plan ?? "");
-    const frequency = String(body.frequency ?? "");
-    const day = Number(body.collection_day ?? 1);
-    const confirmed = (body.script_confirmed ?? {}) as Record<string, boolean>;
-    const missing = CARE_PHONE_SCRIPT.filter((l) => confirmed[l.id] !== true).map((l) => l.id);
-    if (missing.length) return jsonResponse({ error: "script_not_confirmed", missing }, 400);
-    if (!carePlan(plan) || !careFrequency(frequency) || ![1, 15].includes(day)) return jsonResponse({ error: "invalid_choice" }, 400);
-    const callRef = String(body.call_reference ?? "").trim();
-    if (callRef.length < 3) return jsonResponse({ error: "call_reference_required" }, 400);
-    const provider = body.provider_code ? String(body.provider_code) : null;
-    if (provider && !CARE_PROVIDER_CODES.includes(provider)) return jsonResponse({ error: "invalid_provider" }, 400);
-
-    const r = await sendCareInvite(svc, { customerId, plan, frequency, day, actor, callRef, callNotes: String(body.call_notes ?? ""), scriptConfirmed: confirmed, provider });
-    if (!r.ok) return jsonResponse({ error: r.error, reasons: r.reasons ?? [] }, r.status ?? 400);
-    await audit(svc, actor, "care_invite_sent", r.invite_id, { customer_id: customerId, plan, frequency });
-    return jsonResponse(r);
   }
 
   if (action === "revoke_invite") {
@@ -146,7 +123,9 @@ Deno.serve(async (req) => {
     }
     if (inv.data) sections.push({ heading: "Phone-assisted sale", rows: [
       ["Staff user", String(inv.data.created_by)], ["Call reference / recording", String(inv.data.call_reference ?? "-")], ["Notes", String(inv.data.call_notes ?? "-")],
-      ["Link sent", `${dt(inv.data.created_at)} to ${inv.data.sent_to_email}`], ["Customer completed", dt(inv.data.used_at)],
+      ...(((inv.data.script_confirmed as { telesales?: boolean })?.telesales)
+        ? [["Signed up", `On the recorded call, ${dt(inv.data.used_at ?? inv.data.created_at)}. Direct Debit Instruction and Guarantee read to the customer; customer confirmed they are the account holder and agreed.`]] as [string, string][]
+        : [["Link sent", `${dt(inv.data.created_at)} to ${inv.data.sent_to_email}`], ["Customer completed", dt(inv.data.used_at)]] as [string, string][]),
       ...(((inv.data.script_confirmed as { qa?: Record<string, unknown> })?.qa) ? (() => { const q = (inv.data.script_confirmed as { qa: Record<string, unknown> }).qa;
         // A bypassed call check is internal only: the pack shows the sale and recording, not the check.
         return [["Sales Desk sale", String(q.sale_reference ?? "-")],

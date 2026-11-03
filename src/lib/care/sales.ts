@@ -34,7 +34,7 @@ export const careSales = {
     fn<{ ok: boolean; decision: string; score: number }>({ action: "score", sale_id: saleId, recording_path: recordingPath, transcript, transcript_source: source }),
   createCustomer: (b: Record<string, string>) => fn<{ ok: boolean; customer: J }>({ action: "create_customer", ...b }),
   recordingUrl: (saleId: string) => fn<{ ok: boolean; url: string | null }>({ action: "recording_url", sale_id: saleId }),
-  sendLink: (saleId: string, provider: string) => fn<{ ok: boolean; invite_id: string; expires_at: string; email: string }>({ action: "send_link", sale_id: saleId, provider_code: provider }),
+  complete: (saleId: string, b: Record<string, unknown>) => fn<{ ok: boolean; reference: string; status: string; first_collection_date: string; cooling_off_ends_on: string; provider: string }>({ action: "complete", sale_id: saleId, ...b }),
 };
 
 export const staffUsers = {
@@ -45,17 +45,22 @@ export const staffUsers = {
 };
 
 export const SALE_STATUS: Record<string, string> = {
-  awaiting_recording: "Needs recording", scoring: "Checking call", passed: "Passed: send link", held: "Held: supervisor",
-  declined: "Declined", approved: "Approved: send link", link_sent: "Link sent", joined: "Customer joined", withdrawn: "Withdrawn",
+  awaiting_recording: "Needs recording", scoring: "Checking call", passed: "Passed: complete sign-up", held: "Held: supervisor or bypass",
+  declined: "Declined", approved: "Approved: complete sign-up", link_sent: "Link sent", joined: "Signed up", withdrawn: "Withdrawn",
 };
 
 export const SALES_ERRORS: Record<string, string> = {
-  transcription_not_configured: "This computer couldn't transcribe the recording. Try Chrome or Edge, and the audio-only M4A file from Zoom.",
   recording_too_short: "That recording is under 20 seconds. Check you chose the right file.",
-  recording_too_large_for_auto_transcription: "That recording is over 25 MB. Export it as MP3, or paste the transcript.",
   recording_required: "Upload the call recording first. It's the evidence if the sale is ever disputed.",
   transcript_too_short: "That transcript is too short to check. Paste the whole call.",
-  sale_not_passed_or_approved: "This sale hasn't passed the call check or been approved by a supervisor.",
+  sale_not_passed_or_approved: "This sale hasn't passed the call check, or been approved or bypassed.",
+  choose_dd_provider: "Choose which portal the Direct Debit goes on (AccessPay or FastPay).",
+  bank_details_invalid: "Check the sort code (6 digits) and account number (8 digits).",
+  account_holder_required: "Enter the name on the bank account.",
+  confirmations_required: "Tick all four confirmations once you've read the Direct Debit Instruction and the customer has agreed.",
+  date_of_birth_required: "Enter the customer's date of birth.",
+  email_or_phone_required: "Enter an email or a mobile number so we can contact them.",
+  not_eligible: "This customer can't join Care right now.",
   customer_already_has_an_open_care_sale: "This customer already has an open Care sale.",
   customer_asked_for_no_offers: "This customer asked not to be offered things. They can join themselves from My OCCTA.",
   account_exists_search_instead: "That email already has an OCCTA account. Search for it instead.",

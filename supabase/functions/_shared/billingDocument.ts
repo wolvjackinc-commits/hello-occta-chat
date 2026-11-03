@@ -259,7 +259,7 @@ function font(doc: PdfDoc, style: "normal" | "bold", size: number) {
 }
 
 /** Brand mark (yellow tile, offset black shadow) + OCCTA wordmark. */
-function drawLogo(doc: PdfDoc, x: number, y: number, size = 11) {
+export function drawLogo(doc: PdfDoc, x: number, y: number, size = 11) {
   fill(doc, INK);
   doc.rect(x + size * 0.12, y + size * 0.12, size, size, "F");
   fill(doc, YELLOW);

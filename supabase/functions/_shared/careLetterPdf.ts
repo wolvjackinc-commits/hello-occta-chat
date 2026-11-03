@@ -4,6 +4,7 @@
 import { jsPDF } from "npm:jspdf@2.5.1";
 import type { CareLetterContent } from "./careLetters.ts";
 import { OCCTA_CONTACT } from "./careLetters.ts";
+import { drawLogo, type PdfDoc } from "./billingDocument.ts";
 
 // jsPDF's built-in fonts are WinAnsi: keep text inside that set.
 export function pdfSafe(s: string): string {
@@ -21,7 +22,7 @@ export function pdfSafe(s: string): string {
 }
 
 const A4 = { w: 210, h: 297 };
-const M = { left: 20, right: 20, top: 18, bottom: 22 };
+const M = { left: 20, right: 20, top: 30, bottom: 22 };
 
 interface Cursor { doc: jsPDF; y: number; size: number; large: boolean }
 
@@ -35,19 +36,17 @@ function ensure(c: Cursor, needed: number, _footer: () => void) {
   }
 }
 
+// Same brand header as OCCTA invoices: logo, then a yellow rule.
 function header(doc: jsPDF, reference: string) {
-  doc.setFillColor(17, 17, 17);
-  doc.rect(0, 0, A4.w, 14, "F");
-  doc.setFillColor(255, 209, 0);
-  doc.rect(M.left, 3, 22, 8, "F");
-  doc.setTextColor(17, 17, 17);
+  drawLogo(doc as unknown as PdfDoc, M.left, 8, 10);
+  doc.setTextColor(90, 90, 90);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("OCCTA", M.left + 3, 8.8);
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
-  doc.text(pdfSafe(`OCCTA Care  |  ${reference}`), A4.w - M.right, 8.8, { align: "right" });
+  doc.text("OCCTA CARE", A4.w - M.right, 12, { align: "right", charSpace: 0.6 });
+  doc.setFont("helvetica", "normal");
+  doc.text(pdfSafe(reference), A4.w - M.right, 16.5, { align: "right" });
+  doc.setFillColor(255, 222, 0);
+  doc.rect(M.left, 24, A4.w - M.left - M.right, 1.4, "F");
   doc.setTextColor(17, 17, 17);
 }
 
@@ -129,7 +128,7 @@ export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { l
 
   for (const b of content.boxes ?? []) {
     ensure(c, 18, footer);
-    doc.setFillColor(255, 209, 0);
+    doc.setFillColor(255, 222, 0);
     doc.rect(M.left, c.y - 4, 2.2, 5, "F");
     para(c, b.heading.toUpperCase(), footer, { bold: true, size: large ? 13 : 9.5, indent: 4 });
     for (const l of b.lines) para(c, `-  ${l}`, footer, { indent: 4 });
@@ -197,7 +196,7 @@ export function renderCareReportPdf(title: string, reference: string, sections: 
   para(c, title, footer, { bold: true, size: 15 });
   for (const s of sections) {
     ensure(c, 14, footer);
-    doc.setFillColor(255, 209, 0);
+    doc.setFillColor(255, 222, 0);
     doc.rect(M.left, c.y - 4, 2.2, 5, "F");
     para(c, s.heading.toUpperCase(), footer, { bold: true, size: 10, indent: 4 });
     for (const [k, v] of s.rows ?? []) {

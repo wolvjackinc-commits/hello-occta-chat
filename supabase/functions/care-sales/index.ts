@@ -170,12 +170,23 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, decision: r.decision, score: r.qa.score });
   }
 
+  // A short-lived link to one of this sale's letters (the summary, DD confirmation and anything sent later).
+  if (action === "letter_url") {
+    const { data: l } = await svc.from("care_letters").select("id, pdf_path, subscription_id").eq("id", String(body.letter_id ?? "")).maybeSingle();
+    if (!l || !sale.subscription_id || l.subscription_id !== sale.subscription_id || !l.pdf_path) return jsonResponse({ error: "not_found" }, 404);
+    const { data: signed } = await svc.storage.from("care-documents").createSignedUrl(l.pdf_path, 600);
+    return jsonResponse({ ok: true, url: signed?.signedUrl ?? null });
+  }
+
   // Telesales: the whole sign-up happens on the recorded call. It runs the same checks as an online sign-up
   // (eligibility, age, account-holder name, reviews, letters, staff tasks); the call recording is the verification.
   if (action === "complete") {
     if (!(sale.status === "approved" || (sale.status === "passed" && sale.qa_decision === "pass"))) return jsonResponse({ error: "sale_not_passed_or_approved" }, 400);
-    const plan = String(body.plan ?? sale.plan_code), frequency = String(body.frequency ?? sale.frequency), day = Number(body.collection_day ?? sale.collection_day);
-    if (!carePlan(plan) || carePriceMinor(plan, frequency) == null || ![1, 15].includes(day)) return jsonResponse({ error: "invalid_choice" }, 400);
+    const plan = String(body.plan ?? sale.plan_code), frequency = String(body.frequency ?? sale.frequency);
+    const firstDate = String(body.first_payment_date ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(firstDate)) return jsonResponse({ error: "first_payment_date_required" }, 400);
+    const day = Number(firstDate.slice(8, 10));
+    if (!carePlan(plan) || carePriceMinor(plan, frequency) == null) return jsonResponse({ error: "invalid_choice" }, 400);
     const provider = String(body.provider_code ?? "");
     if (!CARE_PROVIDER_CODES.includes(provider)) return jsonResponse({ error: "choose_dd_provider" }, 400);
     const bank = (body.bank ?? {}) as Record<string, unknown>;
@@ -207,9 +218,13 @@ Deno.serve(async (req) => {
     };
     const ip = getRequestIp(req);
     const { data: st, error: serr } = await svc.rpc("care_start_application", { p_customer: sale.customer_id, p_plan: plan, p_frequency: frequency,
-      p_day: day, p_invite_hash: hash, p_ip: ip, p_ua: "OCCTA Sales Desk" });
+      p_day: day === 15 ? 15 : 1, p_invite_hash: hash, p_ip: ip, p_ua: "OCCTA Sales Desk" });
     const start = st as Record<string, unknown> | null;
     if (serr || !start?.ok) return fail(serr ? { error: "complete_failed", detail: serr.message } : start ?? { error: "complete_failed" });
+    // The agent's chosen date replaces the default 1st/15th (rules checked in the database).
+    const { data: fd, error: fderr } = await svc.rpc("care_sales_set_first_date", { p_application: start.application_id, p_date: firstDate, p_provider: provider });
+    if (fderr) return fail({ error: fderr.message }, 400);
+    start.first_collection_date = (fd as Record<string, unknown>).first_collection_date;
     const keyFacts = careKeyFacts({ planCode: plan, frequency, priceMinor: Number(start.price_minor), collectionDay: day,
       firstCollectionDate: longDate(String(start.first_collection_date)), ddName: prov.name });
     const { data: recorded } = await svc.rpc("care_record_key_facts", { p_application: start.application_id, p_customer: sale.customer_id,

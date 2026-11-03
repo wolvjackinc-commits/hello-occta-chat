@@ -7,7 +7,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CARE_BANNED_PHRASES, CARE_FAQ, CARE_LETTER_TYPES, CARE_NOT_INCLUDED, CARE_PHONE_SCRIPT, CARE_PLANS, CARE_TERMS, CARE_TERMS_SUMMARY,
-  CARE_TERMS_VERSION, careKeyFacts, carePriceMinor, careTermsCanonicalText,
+  CARE_TERMS_VERSION, careKeyFacts, careOrdinal, carePriceMinor, careTermsCanonicalText,
 } from "../../../../supabase/functions/_shared/careTerms.ts";
 import { buildCareLetter, careLetterText } from "../../../../supabase/functions/_shared/careLetters.ts";
 import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, careQaDecision } from "../../../../supabase/functions/_shared/careSalesScript.ts";
@@ -244,5 +244,11 @@ describe("OCCTA Care telesales call check", () => {
     expect(bannedHits(said)).toEqual([]);
     for (const must of ["not insurance", "14 days", "no exit fee", "Direct Debit Guarantee", "10 working days", "recorded", "account holder", "Direct Debit Instruction"]) expect(said).toContain(must);
     expect(CARE_QA_RED_FLAGS.find((f) => f.id === "dd_not_authorised")?.severity).toBe("decline");
+  });
+});
+
+describe("OCCTA Care payment day wording", () => {
+  it("writes any day 1-28 correctly", () => {
+    expect([1, 2, 3, 4, 11, 12, 13, 15, 21, 22, 23, 28].map(careOrdinal).join(" ")).toBe("1st 2nd 3rd 4th 11th 12th 13th 15th 21st 22nd 23rd 28th");
   });
 });

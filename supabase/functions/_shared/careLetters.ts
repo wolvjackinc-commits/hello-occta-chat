@@ -5,7 +5,7 @@
 // Runtime-free (no Deno or browser imports): the web app's unit tests build
 // every letter type and check the wording rules.
 import {
-  CARE_DD, CARE_RULES, CARE_TERMS_VERSION, carePlan, careFrequency, careFrequencyNoun, pounds,
+  CARE_DD, CARE_RULES, CARE_TERMS_VERSION, carePlan, careFrequency, careFrequencyNoun, careOrdinal, pounds,
   type CareLetterType,
 } from "./careTerms.ts";
 import { providerGuaranteeText } from "./directDebitGuarantee.ts";
@@ -74,9 +74,7 @@ export function longDate(value: string | Date | null | undefined): string {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" });
 }
 
-function ordinalDay(n: number): string {
-  return n === 15 ? "15th" : "1st";
-}
+const ordinalDay = careOrdinal;
 
 function priceWithNoun(minor: number, frequency: string): string {
   return `${pounds(minor)} ${frequency === "monthly" ? "a month" : frequency === "quarterly" ? "every 3 months" : "a year"}`;
@@ -114,6 +112,7 @@ function firstName(name: string): string {
 type P = Record<string, unknown>;
 const num = (v: unknown) => Number(v ?? 0);
 const str = (v: unknown) => (v == null ? "" : String(v));
+const dayAfter = (iso: string) => { const d = new Date(`${iso}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); };
 
 export function buildCareLetter(type: CareLetterType | string, payload: P, recipient: CareRecipient, sentAt: Date = new Date()): CareLetterContent {
   const t = type as CareLetterType;
@@ -155,7 +154,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
             : "We're setting up your Care Direct Debit now. You'll get a separate letter confirming it.",
           payload.started_early
             ? "You asked us to start helping straight away, so you can use Care now. That's free during your cooling-off period."
-            : `Your Care starts on ${longDate(str(payload.cooling_off_ends_on))}, when your 14-day cooling-off period ends.`,
+            : `Your Care starts on ${longDate(dayAfter(str(payload.cooling_off_ends_on)))}, the day after your 14-day cooling-off period ends.`,
         ],
         facts: [
           ["Plan", p?.name ?? str(payload.plan_code)],
@@ -191,6 +190,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
             ],
           },
         ],
+        closing: [SUPPORT_LINE],
       };
     }
 
@@ -227,6 +227,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           ["Questions", `${OCCTA_CONTACT.phone}`],
         ],
         guarantee: guaranteeText(payload),
+        closing: [CANCEL_LINE, SUPPORT_LINE],
       };
     }
 

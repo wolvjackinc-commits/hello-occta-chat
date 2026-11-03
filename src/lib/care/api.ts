@@ -4,7 +4,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { invokeFn } from "@/lib/invokeFn";
 
-const rpc = supabase.rpc as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 
 export async function careCall<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await rpc(fn, args);

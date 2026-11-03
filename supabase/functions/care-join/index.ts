@@ -81,9 +81,11 @@ Deno.serve(async (req) => {
     if (error) return jsonResponse({ error: "start_failed", detail: error.message }, 500);
     const r = data as Record<string, unknown>;
     if (!r?.ok) return jsonResponse(r, 400);
+    const { data: appRow } = await svc.from("care_applications").select("provider_code").eq("id", r.application_id).maybeSingle();
+    const prov = await careProvider(svc, appRow?.provider_code);
     const keyFacts = careKeyFacts({
       planCode: String(body.plan), frequency: String(body.frequency), priceMinor: Number(r.price_minor),
-      collectionDay: Number(body.collection_day), firstCollectionDate: longDate(String(r.first_collection_date)),
+      collectionDay: Number(body.collection_day), firstCollectionDate: longDate(String(r.first_collection_date)), ddName: prov.name,
     });
     const sha = await sha256Hex(JSON.stringify(keyFacts));
     const { data: recorded } = await svc.rpc("care_record_key_facts", { p_application: r.application_id, p_customer: user.id, p_key_facts: keyFacts, p_sha: sha });
@@ -91,8 +93,6 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await svc.from("profiles").select("phone, email").eq("id", user.id).maybeSingle();
     const mobile = normaliseUkMobile(profile?.phone ?? null);
-    const { data: appRow } = await svc.from("care_applications").select("provider_code").eq("id", r.application_id).maybeSingle();
-    const prov = await careProvider(svc, appRow?.provider_code);
     return jsonResponse({
       dd: { name: prov.name, sun: prov.sun },
       ok: true, application_id: r.application_id, price_minor: r.price_minor, first_collection_date: r.first_collection_date,

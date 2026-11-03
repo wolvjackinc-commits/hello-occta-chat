@@ -12,7 +12,7 @@
 // public.care_terms_versions (migration). Never edit a published version:
 // every member's consent records the version and hash they agreed to.
 
-export const CARE_TERMS_VERSION = "care-2026-11-v2";
+export const CARE_TERMS_VERSION = "care-2026-11-v3";
 export const CARE_TERMS_EFFECTIVE = "3 November 2026";
 export const CARE_TERMS_PATH = "/legal/occta-care-terms";
 export const CARE_PAGE_PATH = "/care";
@@ -191,7 +191,7 @@ export const CARE_TERMS: TermsSection[] = [
   {
     heading: "5. Payment by Direct Debit",
     points: [
-      "Care is paid by its own Direct Debit to APS Re OCCTA (Service User Number 538166), separate from any other OCCTA Direct Debit. It shows on your statement with a reference starting OCCTA CARE-.",
+      "Care is paid by its own Direct Debit, separate from any other OCCTA Direct Debit. It is collected for OCCTA by APS Re OCCTA (Service User Number 538166) or FastPay Ltd (Service User Number 246668). The Direct Debit Instruction you agree to, and your confirmation, name which one. It shows on your statement under that name, with a reference starting OCCTA CARE-.",
       "We take nothing until your 14-day cooling-off period has ended. Your welcome pack tells you the date and amount of your first payment.",
       "Payments are taken on the 1st or 15th of the month (you choose). If that's not a working day, it's taken on the next working day.",
       "We will tell you at least 10 working days before any payment, and before any change to the amount, date or how often we collect. Your payments are protected by the Direct Debit Guarantee.",
@@ -267,13 +267,13 @@ export const CARE_TERMS: TermsSection[] = [
 ];
 
 /** Key facts shown (and hashed) immediately before a customer agrees. */
-export function careKeyFacts(opts: { planCode: string; frequency: string; priceMinor: number; collectionDay: number; firstCollectionDate?: string | null }): string[] {
+export function careKeyFacts(opts: { planCode: string; frequency: string; priceMinor: number; collectionDay: number; firstCollectionDate?: string | null; ddName?: string }): string[] {
   const plan = carePlan(opts.planCode);
   const freq = careFrequency(opts.frequency);
   const day = opts.collectionDay === 15 ? "15th" : "1st";
   return [
     `Plan: ${plan?.name ?? opts.planCode}. Price: ${pounds(opts.priceMinor)} ${freq?.code === "monthly" ? "a month" : freq?.code === "quarterly" ? "every 3 months" : "a year"}, VAT included.`,
-    `Paid by its own Direct Debit to APS Re OCCTA, on the ${day} of the month.`,
+    `Paid by its own Direct Debit to ${opts.ddName ?? CARE_DD.collectionName}, on the ${day} of the month.`,
     opts.firstCollectionDate
       ? `Nothing is taken until your 14-day cooling-off period ends. Your first payment is expected on ${opts.firstCollectionDate}, and we'll confirm it in writing at least 10 working days before.`
       : "Nothing is taken until your 14-day cooling-off period ends. We'll confirm your first payment in writing at least 10 working days before.",

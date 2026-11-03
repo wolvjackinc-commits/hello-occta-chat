@@ -69,10 +69,10 @@ Include every script step id exactly once in checks. Only list red flags you can
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({ model: QA_MODEL, max_tokens: 4000, temperature: 0, system,
+    body: JSON.stringify({ model: QA_MODEL, max_tokens: 4000, system,
       messages: [{ role: "user", content: `CALL TRANSCRIPT (call reference ${sale.call_reference}):\n\n${transcript.slice(0, 120_000)}` }] }),
   });
-  if (!res.ok) throw new Error(`ai_failed_${res.status}`);
+  if (!res.ok) { console.error("care-sales scoring failed", res.status, (await res.text()).slice(0, 500)); throw new Error(`ai_failed_${res.status}`); }
   const j = await res.json() as { content?: { type: string; text?: string }[] };
   const text = (j.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("");
   const m = text.match(/\{[\s\S]*\}/);

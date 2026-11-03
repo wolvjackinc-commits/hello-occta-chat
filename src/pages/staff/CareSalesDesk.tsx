@@ -225,7 +225,7 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
           </section>
         )}
 
-        {s.supervisor_decision && <p className="border-l-4 border-primary pl-3 text-sm">Supervisor {s.supervisor_name} {s.supervisor_decision === "approve" ? "approved" : "declined"} at {dt(s.supervisor_at)}: {s.supervisor_note}</p>}
+        {s.supervisor_decision && <p className="border-l-4 border-primary pl-3 text-sm">Supervisor {s.supervisor_name} {s.supervisor_decision === "approve" ? "approved" : s.supervisor_decision === "bypass" ? "bypassed the call check" : "declined"} at {dt(s.supervisor_at)}: {s.supervisor_note}</p>}
         {s.invite && <p className="text-sm">Link sent {dt(s.invite.sent_at)} (email {s.invite.email_status}) · expires {dt(s.invite.expires_at)}{s.invite.used_at ? ` · used ${dt(s.invite.used_at)}` : ""}</p>}
 
         <section className="flex flex-wrap items-end gap-2 border-t-2 border-foreground pt-3">
@@ -233,11 +233,15 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
             <div className="min-w-[220px]"><Label htmlFor="dd-prov">Direct Debit collected through</Label><DDProviderSelect id="dd-prov" value={prov} onChange={setProv} /></div>
             <Button disabled={!!busy} onClick={() => void act("Sign-up link emailed to the customer", () => careSales.sendLink(id, prov))}>Send the customer their sign-up link</Button>
           </>)}
-          {sup && ["passed", "held", "declined"].includes(s.status) && (<>
+          {sup && ["awaiting_recording", "scoring", "passed", "held", "declined"].includes(s.status) && (<>
             <div className="min-w-[260px] flex-1"><Label>Supervisor note (required)</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What you checked, e.g. listened at 03:10, price was confirmed" /></div>
-            <Button disabled={!!busy || note.trim().length < 10} onClick={() => void act("Approved", () => careSales.decide(id, "approve", note))}>Approve</Button>
-            <Button variant="destructive" disabled={!!busy || note.trim().length < 10} onClick={() => void act("Declined", () => careSales.decide(id, "decline", note))}>Decline</Button>
+            {["passed", "held", "declined"].includes(s.status) && <>
+              <Button disabled={!!busy || note.trim().length < 10} onClick={() => void act("Approved", () => careSales.decide(id, "approve", note))}>Approve</Button>
+              <Button variant="destructive" disabled={!!busy || note.trim().length < 10} onClick={() => void act("Declined", () => careSales.decide(id, "decline", note))}>Decline</Button>
+            </>}
+            {s.status !== "passed" && <Button variant="secondary" disabled={!!busy || note.trim().length < 20} title="Continue even though the call didn't pass or couldn't be checked. Your reason is logged." onClick={() => void act("Call check bypassed: you can now send the link", () => careSales.decide(id, "bypass", note))}>Bypass call check</Button>}
           </>)}
+          {!sup && ["awaiting_recording", "scoring", "held", "declined"].includes(s.status) && <p className="text-xs text-muted-foreground">Call didn't pass or couldn't be checked? A supervisor can bypass the check with a reason, and then you can send the link.</p>}
           {!["joined", "withdrawn"].includes(s.status) && <Button variant="outline" disabled={!!busy} onClick={() => void act("Withdrawn", () => careSales.withdraw(id, note || "withdrawn by staff"))}>Withdraw sale</Button>}
         </section>
       </DialogContent>

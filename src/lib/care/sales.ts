@@ -20,7 +20,7 @@ export const careSales = {
     }),
   list: (scope: "mine" | "all", status: string | null) => careCall<J[]>("care_sales_list", { p_scope: scope, p_status: status }),
   get: (id: string) => careCall<J>("care_sales_get", { p_sale: id }),
-  decide: (id: string, decision: "approve" | "decline", note: string) => careCall<J>("care_sales_decide", { p_sale: id, p_decision: decision, p_note: note }),
+  decide: (id: string, decision: "approve" | "decline" | "bypass", note: string) => careCall<J>("care_sales_decide", { p_sale: id, p_decision: decision, p_note: note }),
   withdraw: (id: string, note: string) => careCall<J>("care_sales_withdraw", { p_sale: id, p_note: note }),
   report: () => careCall<J[]>("care_sales_report"),
   async uploadRecording(saleId: string, file: File): Promise<string> {
@@ -62,6 +62,8 @@ export const SALES_ERRORS: Record<string, string> = {
   uk_address_required: "Enter the full UK home address, including a valid postcode.",
   full_name_required: "Enter the customer's first and last name.",
   invalid_email: "Enter a valid email address.",
+  bypass_reason_required_min_20_chars: "Write why you're bypassing the call check (at least 20 characters).",
+  nothing_to_bypass: "This sale doesn't need a bypass.",
   cannot_approve_your_own_sale: "A different supervisor must approve your own sale.",
   ai_not_configured: "Call scoring isn't available (ANTHROPIC_API_KEY missing). Tell an admin.",
 };

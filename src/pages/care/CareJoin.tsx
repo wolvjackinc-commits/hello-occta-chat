@@ -160,7 +160,7 @@ export default function CareJoin() {
         support_needs: needs, support_needs_consent: needsConsent, support_other: supportOther || null,
         carer_name: needs.includes("carer_copy") ? carer.name || null : null, carer_contact: needs.includes("carer_copy") ? carer.contact || null : null,
         page_url: window.location.pathname,
-        client_snapshot: { plan, freq, day, price_shown_minor: price, key_facts_sha256: app.key_facts_sha256, viewport: `${window.innerWidth}x${window.innerHeight}`, invite: !!invite },
+        client_snapshot: { plan, freq, day, price_shown_minor: price, key_facts_sha256: app.key_facts_sha256, viewport: `${window.innerWidth}x${window.innerHeight}`, invite: !!invite, dd_shown: app.dd ?? null },
       });
       setResult(r);
       setStep("done");
@@ -290,7 +290,7 @@ export default function CareJoin() {
 
             {step === "bank" && app && (
               <section className="space-y-5">
-                <p className="text-sm">Care has its own Direct Debit, separate from your broadband. Payments are collected by <strong>{CARE_DD.collectionName}</strong>. OCCTA never asks for card details.</p>
+                <p className="text-sm">Care has its own Direct Debit, separate from your broadband. Payments are collected by <strong>{app.dd?.name ?? CARE_DD.collectionName}</strong>. OCCTA never asks for card details.</p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="sm:col-span-2"><Label htmlFor="holder">Name on the bank account</Label><Input id="holder" autoComplete="name" value={bank.account_holder_name} onChange={(e) => setBank({ ...bank, account_holder_name: e.target.value })} /></div>
                   <div><Label htmlFor="sort">Sort code</Label><Input id="sort" inputMode="numeric" placeholder="12-34-56" maxLength={8} value={bank.sort_code} onChange={(e) => setBank({ ...bank, sort_code: e.target.value })} aria-invalid={bank.sort_code !== "" && !sortOk} /></div>
@@ -300,10 +300,10 @@ export default function CareJoin() {
                 <div className="space-y-3 border-[3px] border-foreground p-4 text-sm">
                   <label className="flex items-start gap-3"><Checkbox checked={!!ticks.account_holder} onCheckedChange={(v) => tick("account_holder", v === true)} data-testid="tick-holder" /> <span>This is a UK bank account in my name, or I'm allowed to set up Direct Debits from it on my own.</span></label>
                   <label className="flex items-start gap-3"><Checkbox checked={!!ticks.dd} onCheckedChange={(v) => tick("dd", v === true)} data-testid="tick-dd" />
-                    <span><strong>Instruction to your bank or building society:</strong> {providerInstructionText({ legal_collection_name: CARE_DD.collectionName, service_user_number: CARE_DD.serviceUserNumber, advance_notice_working_days: CARE_DD.noticeWorkingDays })} Reference: given on your confirmation (starts OCCTA CARE-).</span>
+                    <span><strong>Instruction to your bank or building society:</strong> {providerInstructionText({ legal_collection_name: app.dd?.name ?? CARE_DD.collectionName, service_user_number: app.dd?.sun ?? CARE_DD.serviceUserNumber, advance_notice_working_days: CARE_DD.noticeWorkingDays })} Reference: given on your confirmation (starts OCCTA CARE-).</span>
                   </label>
                 </div>
-                <CareDDGuarantee />
+                <CareDDGuarantee dd={app.dd} />
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setStep("facts")}>Back</Button>
                   <Button disabled={!bankOk} onClick={() => setStep("support")} data-testid="care-bank-next">Continue</Button>

@@ -16,6 +16,7 @@ import { getCronSecret } from "../_shared/cronSecret.ts";
 import { renderBrandedEmail } from "../_shared/brandedEmailShell.ts";
 import { careKeyFacts, careTermsCanonicalText, CARE_TERMS_VERSION } from "../_shared/careTerms.ts";
 import { longDate } from "../_shared/careLetters.ts";
+import { careProvider } from "../_shared/careProvider.ts";
 
 const CODE_TTL_SECONDS = 600;
 const MIN_RESEND_SECONDS = 60;
@@ -90,7 +91,10 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await svc.from("profiles").select("phone, email").eq("id", user.id).maybeSingle();
     const mobile = normaliseUkMobile(profile?.phone ?? null);
+    const { data: appRow } = await svc.from("care_applications").select("provider_code").eq("id", r.application_id).maybeSingle();
+    const prov = await careProvider(svc, appRow?.provider_code);
     return jsonResponse({
+      dd: { name: prov.name, sun: prov.sun },
       ok: true, application_id: r.application_id, price_minor: r.price_minor, first_collection_date: r.first_collection_date,
       channel: r.channel, key_facts: keyFacts, key_facts_sha256: sha, terms_version: r.terms_version,
       date_of_birth_known: r.date_of_birth_known,

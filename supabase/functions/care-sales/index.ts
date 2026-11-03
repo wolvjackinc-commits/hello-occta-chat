@@ -10,6 +10,7 @@
 //                  their sign-up link (they complete everything themselves)
 import { getServiceClient, jsonResponse, corsHeaders } from "../_shared/quoteHelpers.ts";
 import { sendCareInvite } from "../_shared/careInvite.ts";
+import { CARE_PROVIDER_CODES } from "../_shared/careProvider.ts";
 import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, careQaDecision } from "../_shared/careSalesScript.ts";
 import { carePlan, carePriceMinor, pounds, CARE_NOT_INCLUDED } from "../_shared/careTerms.ts";
 
@@ -164,12 +165,14 @@ Deno.serve(async (req) => {
 
   if (action === "send_link") {
     if (!(sale.status === "approved" || (sale.status === "passed" && sale.qa_decision === "pass"))) return jsonResponse({ error: "sale_not_passed_or_approved" }, 400);
+    const provider = body.provider_code ? String(body.provider_code) : null;
+    if (provider && !CARE_PROVIDER_CODES.includes(provider)) return jsonResponse({ error: "invalid_provider" }, 400);
     const checks = ((sale.qa?.checks ?? []) as { id: string; status: string }[]);
     const scriptConfirmed: Record<string, unknown> = Object.fromEntries(checks.map((c) => [c.id, c.status === "met"]));
     scriptConfirmed.qa = { sale_id: sale.id, sale_reference: sale.reference, score: sale.qa_score, decision: sale.qa_decision,
       supervisor_decision: sale.supervisor_decision, supervisor_id: sale.supervisor_id, recording_path: sale.recording_path };
     const r = await sendCareInvite(svc, { customerId: sale.customer_id, plan: sale.plan_code, frequency: sale.frequency, day: sale.collection_day,
-      actor: sale.agent_id, callRef: `${sale.call_reference} (${sale.reference})`, callNotes: sale.agent_notes ?? "", scriptConfirmed });
+      actor: sale.agent_id, callRef: `${sale.call_reference} (${sale.reference})`, callNotes: sale.agent_notes ?? "", scriptConfirmed, provider });
     if (!r.ok) return jsonResponse({ error: r.error, reasons: r.reasons ?? [] }, r.status ?? 400);
     await svc.from("care_sales").update({ status: "link_sent", invite_id: r.invite_id }).eq("id", sale.id);
     return jsonResponse(r);

@@ -22,6 +22,7 @@ import { isCronSecret } from "../_shared/cronSecret.ts";
 import { renderBrandedEmail } from "../_shared/brandedEmailShell.ts";
 import { buildCareLetter, careLetterText, type CareLetterContent, type CareRecipient } from "../_shared/careLetters.ts";
 import { renderCareLetterPdf, sha256Bytes, toBase64 } from "../_shared/careLetterPdf.ts";
+import { careProvider } from "../_shared/careProvider.ts";
 
 const BUCKET = "care-documents";
 
@@ -100,6 +101,12 @@ async function processItem(svc: ReturnType<typeof getServiceClient>, item: Outbo
 
   const recipient = (item.payload.recipient ?? {}) as CareRecipient;
   const letterDate = new Date();
+  if (item.subscription_id) {
+    // Letters name whoever collects this member's DD (AccessPay or FastPay), taken from their mandate.
+    const { data: md } = await svc.from("care_mandates").select("provider_code").eq("subscription_id", item.subscription_id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const prov = await careProvider(svc, md?.provider_code);
+    item.payload = { ...item.payload, dd_collection_name: prov.name, dd_service_user_number: prov.sun };
+  }
   const content = buildCareLetter(item.template, item.payload, recipient, letterDate);
   let attachment: { filename: string; content: string; contentType: string } | undefined;
   let letterStatus: string | null = null;

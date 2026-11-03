@@ -62,7 +62,7 @@ export const careApi = {
 
 export type JoinStart = {
   ok: true; application_id: string; price_minor: number; first_collection_date: string; channel: string; key_facts: string[];
-  key_facts_sha256: string; terms_version: string; date_of_birth_known: boolean; verification: { sms: string | null; email: string | null };
+  key_facts_sha256: string; terms_version: string; date_of_birth_known: boolean; dd?: { name: string; sun: string }; verification: { sms: string | null; email: string | null };
 };
 
 export const careJoin = {

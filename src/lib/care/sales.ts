@@ -33,7 +33,7 @@ export const careSales = {
   score: (saleId: string, recordingPath: string | null, transcript: string, source: "audio_local" | null = null) =>
     fn<{ ok: boolean; decision: string; score: number }>({ action: "score", sale_id: saleId, recording_path: recordingPath, transcript, transcript_source: source }),
   recordingUrl: (saleId: string) => fn<{ ok: boolean; url: string | null }>({ action: "recording_url", sale_id: saleId }),
-  sendLink: (saleId: string) => fn<{ ok: boolean; invite_id: string; expires_at: string; email: string }>({ action: "send_link", sale_id: saleId }),
+  sendLink: (saleId: string, provider: string) => fn<{ ok: boolean; invite_id: string; expires_at: string; email: string }>({ action: "send_link", sale_id: saleId, provider_code: provider }),
 };
 
 export const staffUsers = {

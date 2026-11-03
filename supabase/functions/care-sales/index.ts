@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
     const path = body.recording_path ? String(body.recording_path) : sale.recording_path;
     if (path && !path.startsWith(`${sale.id}/`)) return jsonResponse({ error: "bad_path" }, 400);
     let transcript = String(body.transcript ?? "").trim();
-    let source: "pasted" | "audio_auto" = "pasted";
+    let source: "pasted" | "audio_auto" | "audio_local" = body.transcript_source === "audio_local" ? "audio_local" : "pasted";
     let bytes: number | null = sale.recording_bytes ?? null;
     if (path) {
       const { data: blob, error } = await svc.storage.from(BUCKET).download(path);

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { careSales, salesError, SALE_STATUS, type J } from "@/lib/care/sales";
+import { transcribeRecording } from "@/lib/care/transcribe";
 import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, CARE_QA_PASS_SCORE } from "../../../supabase/functions/_shared/careSalesScript.ts";
 import { CARE_FREQUENCIES, CARE_PLANS, carePriceMinor, pounds } from "../../../supabase/functions/_shared/careTerms.ts";
 
@@ -43,7 +44,7 @@ export default function CareSalesDesk() {
           <Button variant="outline" size="sm" onClick={() => void supabase.auth.signOut().then(() => { window.location.href = "/auth"; })}>Sign out</Button></div>
       </header>
       {!cfg.ai && <p className="mx-4 mt-3 border-l-4 border-destructive pl-3 text-sm">Call scoring is offline (ANTHROPIC_API_KEY missing). Sales can be logged but not checked.</p>}
-      {!cfg.transcription && <p className="mx-4 mt-3 border-l-4 border-primary pl-3 text-sm">Automatic transcription is off. Upload the recording <strong>and</strong> paste the transcript from your phone system. (Admin: add OPENAI_API_KEY to switch it on.)</p>}
+
       <main className="p-4">
         <Tabs value={tab} onValueChange={(v) => { setTab(v); if (v === "list") void load(); }}>
           <TabsList>
@@ -135,7 +136,7 @@ function SalesTable({ rows, onOpen }: { rows: J[]; onOpen: (id: string) => void 
 }
 
 function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; transcription: boolean }; onClose: () => void }) {
-  const [s, setS] = useState<J | null>(null); const [file, setFile] = useState<File | null>(null); const [transcript, setTranscript] = useState("");
+  const [s, setS] = useState<J | null>(null); const [file, setFile] = useState<File | null>(null); const [stage, setStage] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null); const [note, setNote] = useState(""); const [audio, setAudio] = useState<string | null>(null);
   const load = useCallback(async () => { try { setS(await careSales.get(id)); } catch (e) { toast({ title: "Couldn't open sale", description: salesError(e), variant: "destructive" }); } }, [id]);
   useEffect(() => { void load(); }, [load]);
@@ -145,10 +146,17 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
   }
   async function check() {
     await act("Call checked", async () => {
-      let path: string | null = null;
-      if (file) { if (file.size > 100 * 1024 * 1024) throw new Error("Recording over 100 MB"); path = await careSales.uploadRecording(id, file); }
-      const r = await careSales.score(id, path, transcript);
-      toast({ title: `Result: ${r.decision.toUpperCase()} (${r.score}/100)` });
+      if (!file) throw new Error("Choose the call recording first");
+      if (file.size > 200 * 1024 * 1024) throw new Error("Recording over 200 MB: download the audio-only (M4A) file from Zoom");
+      try {
+        // Transcribed on this computer, then the text is scored by Claude.
+        const transcript = cfg.transcription ? "" : await transcribeRecording(file, (st, pct) => setStage(pct == null ? st : `${st} ${pct}%`));
+        setStage("Uploading the recording");
+        const path = await careSales.uploadRecording(id, file);
+        setStage("Scoring the call against the script");
+        const r = await careSales.score(id, path, transcript, cfg.transcription ? null : "audio_local");
+        toast({ title: `Result: ${r.decision.toUpperCase()} (${r.score}/100)` });
+      } finally { setStage(null); }
     });
   }
   if (!s) return null;
@@ -170,21 +178,21 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
         {editable && (
           <section className="border-2 border-foreground p-3">
             <p className="font-display uppercase">{s.qa ? "Re-check the call" : "Upload the call recording"}</p>
-            <Input type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-2" />
-            {s.recording_path && !file && <p className="mt-1 text-xs">Recording on file ({Math.round((s.recording_bytes ?? 0) / 1024)} KB). Upload again only to replace it.</p>}
-            <Label className="mt-2 block">{cfg.transcription ? "Transcript (optional: leave empty to transcribe the recording automatically)" : "Call transcript (required: paste from your phone system)"}</Label>
-            <Textarea rows={5} value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste the full call transcript" />
-            <Button className="mt-2" disabled={!!busy || (!file && !s.recording_path) || (!cfg.transcription && transcript.trim().length < 200)} onClick={() => void check()}>
+            <p className="mt-1 text-xs text-muted-foreground">Download the call from Zoom (audio-only M4A is smallest) and choose it here.</p>
+            <Input type="file" accept="audio/*,video/mp4,.mp3,.mp4,.wav,.m4a,.ogg,.webm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-2" />
+            {s.recording_path && !file && <p className="mt-1 text-xs">Recording on file ({Math.round((s.recording_bytes ?? 0) / 1024)} KB). Choose it again to re-check.</p>}
+            <Button className="mt-2" disabled={!!busy || !file} onClick={() => void check()}>
               {busy === "Call checked" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Check the call
             </Button>
-            <p className="mt-1 text-xs text-muted-foreground">Takes up to 2 minutes. The check uses fixed rules: a mandatory step missed or any red flag means hold or decline, whatever the score.</p>
+            {stage && <p className="mt-2 text-sm" role="status">{stage}… keep this window open.</p>}
+            <p className="mt-1 text-xs text-muted-foreground">The recording is turned into text on this computer (the first time downloads the speech model, about 80–300 MB), then Claude scores it. Fixed rules: a mandatory step missed or any red flag means hold or decline, whatever the score.</p>
           </section>
         )}
 
         {qa && (
           <section className="space-y-3">
             <div className="flex flex-wrap items-center gap-3"><span className="font-display text-4xl">{s.qa_score}</span><span className="text-sm">/100 (pass mark {CARE_QA_PASS_SCORE})</span>
-              <Badge variant={tone(s.qa_decision)} className="text-base uppercase">{s.qa_decision}</Badge><span className="text-xs text-muted-foreground">checked {dt(s.qa_at)} · {s.transcript_source === "audio_auto" ? "auto transcript" : "pasted transcript"}</span>
+              <Badge variant={tone(s.qa_decision)} className="text-base uppercase">{s.qa_decision}</Badge><span className="text-xs text-muted-foreground">checked {dt(s.qa_at)} · {s.transcript_source === "pasted" ? "pasted transcript" : "transcribed from the recording"}</span>
               {s.recording_path && <Button size="sm" variant="outline" onClick={() => void careSales.recordingUrl(id).then((r) => setAudio(r.url))}>Play recording</Button>}</div>
             {audio && <audio controls src={audio} className="w-full" />}
             <p className="text-sm">{qa.summary}</p>

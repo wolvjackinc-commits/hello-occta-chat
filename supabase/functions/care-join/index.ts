@@ -237,6 +237,7 @@ Deno.serve(async (req) => {
         bank_ciphertext: enc.ciphertext_hex, bank_nonce: enc.nonce_hex, enc_key_id: enc.key_id,
         masked_account_last4: acct.slice(-4), masked_sort_last2: sort.slice(-2), account_holder_name: holder,
         bank_name: String(bank.bank_name ?? "").slice(0, 120) || null,
+        date_of_birth: typeof body.date_of_birth === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date_of_birth) ? body.date_of_birth : null,
         support_needs: needs, support_needs_consent: body.support_needs_consent === true,
         support_other: body.support_other ? String(body.support_other).slice(0, 500) : null,
         carer_name: body.carer_name ? String(body.carer_name).slice(0, 120) : null,

@@ -12,8 +12,8 @@
 // public.care_terms_versions (migration). Never edit a published version:
 // every member's consent records the version and hash they agreed to.
 
-export const CARE_TERMS_VERSION = "care-2026-11-v1";
-export const CARE_TERMS_EFFECTIVE = "2 November 2026";
+export const CARE_TERMS_VERSION = "care-2026-11-v2";
+export const CARE_TERMS_EFFECTIVE = "3 November 2026";
 export const CARE_TERMS_PATH = "/legal/occta-care-terms";
 export const CARE_PAGE_PATH = "/care";
 export const CARE_JOIN_PATH = "/care/join";
@@ -49,7 +49,8 @@ export const CARE_RULES = {
   usageReminderMonths: 6,
   /** Unpaid collections before Care is paused. One re-try is made after a fresh notice. */
   maxFailedCollections: 2,
-  representAfterDays: 14,
+  /** A re-try is collected this many working days after the return is recorded (fresh notice goes out first). */
+  representAfterWorkingDays: 13,
   /** Prepaid refunds below this are still paid if asked, but not chased (minor units). */
   minAutoRefundMinor: 100,
   refundWithinDays: 14,
@@ -59,7 +60,10 @@ export const CARE_RULES = {
   /** Customers this age or older get a 48-hour pause and a welcome call before the mandate is lodged. */
   extraCheckAge: 75,
   extraCheckPauseHours: 48,
-  welcomeCallDays: 7,
+  /** Reviewed and phone-assisted sales get a welcome call within this many working days. 75+ customers get it BEFORE lodging. */
+  welcomeCallWorkingDays: 5,
+  /** OCCTA's standard for every customer: a faulty OCCTA-supplied router or hub is replaced within this many working days. */
+  standardRouterSwapWorkingDays: 5,
   inviteValidDays: 7,
   applicationValidHours: 24,
   debtChasing: false,
@@ -87,8 +91,6 @@ export const CARE_PLANS: CarePlan[] = [
       "Remote help sessions for Wi-Fi, phones, tablets, computers, email and printers",
       "Remote home Wi-Fi setup and tune-up",
       "Setup and data transfer for 1 phone, tablet or computer each year",
-      "If your OCCTA router or hub is faulty, a replacement is sent within 3 working days",
-      "Member prices on repairs through our repair partner (you pay for each repair you choose)",
     ],
   },
   {
@@ -99,10 +101,9 @@ export const CARE_PLANS: CarePlan[] = [
     features: [
       "Everything in Care Essentials, with priority answering",
       "Setup and data transfer for as many phones, tablets and computers as you like",
-      "If your OCCTA router or hub is faulty, a replacement is sent the next working day",
+      "If a router or hub we supplied is faulty, we send the replacement the next working day (our standard for every customer is within 5 working days)",
       "A yearly home tech health check by video or phone",
       "A Wi-Fi extender on loan, posted to you, for as long as you're a member",
-      "Lower member prices on repairs through our repair partner (you pay for each repair you choose)",
     ],
   },
 ];
@@ -110,9 +111,9 @@ export const CARE_PLANS: CarePlan[] = [
 /** What Care never includes. Shown next to the price everywhere Care is sold. */
 export const CARE_NOT_INCLUDED: string[] = [
   "OCCTA Care is not insurance. It does not pay for, repair or replace your own phone, tablet, computer or other devices if they break down, are damaged, lost or stolen.",
-  "Repairs to your own devices are optional and paid by you, per repair, at member prices. Nothing is fixed for free.",
+  "Repairs to your own devices aren't part of Care. Nothing is fixed for free.",
   "Business IT, data recovery, and software or devices you've modified are not included.",
-  "Care doesn't change your legal rights. If anything OCCTA supplies is faulty, we put it right for every customer, member or not. Care only makes the replacement faster.",
+  "Care doesn't change your legal rights. If anything OCCTA supplies is faulty, we put it right for every customer, member or not: a faulty router or hub we supplied is replaced within 5 working days. Care Plus makes that the next working day.",
 ];
 
 export const CARE_FREQUENCIES: { code: CareFrequency; label: string; months: number; chargedMonths: number }[] = [
@@ -163,10 +164,11 @@ export const CARE_TERMS: TermsSection[] = [
   {
     heading: "2. What OCCTA Care is, and what it is not",
     points: [
-      "OCCTA Care is a subscription to support services: help from our UK team, setup help, faster replacement of faulty OCCTA equipment, and member prices on optional repairs.",
+      "OCCTA Care is a subscription to support services: help from our UK team, setup help and, on Care Plus, faster replacement of faulty OCCTA equipment.",
       "OCCTA Care is not insurance. It does not pay for, repair or replace your own devices if they break down, are damaged, lost or stolen, and it has no claims or excess.",
       "Care doesn't affect your legal rights. If anything OCCTA supplies is faulty, we put it right for every customer, member or not.",
-      "Repairs to your own devices are optional. We give you a fixed member price before any work, you decide, and you pay our repair partner for each repair you choose. The repair partner carries out and guarantees the repair.",
+      "Repairs to your own devices are not part of Care.",
+      "Our standard for every customer, member or not: if a router or hub OCCTA supplied is faulty, we send a replacement within 5 working days. Care Plus members get it sent the next working day.",
     ],
   },
   {
@@ -224,14 +226,16 @@ export const CARE_TERMS: TermsSection[] = [
     heading: "9. Price changes",
     points: [
       "We'll give you at least 30 days' written notice of any price increase, in pounds and pence. You can cancel free before it starts, and prepaid periods keep the price you paid.",
+      "If you change plan, the new plan and price start from your next payment period. We write to you at least 10 working days before the first payment at the new price.",
     ],
   },
   {
     heading: "10. If a payment is missed",
     points: [
-      "If your bank returns a payment, we'll tell you straight away. We'll try once more, after giving you fresh notice.",
+      "If your bank returns a payment because there wasn't enough money, we'll tell you straight away and try once more, after giving you fresh notice.",
+      "If a payment is returned for any other reason, we won't try again without contacting you first.",
       "If 2 payments are missed, we pause Care and write to you. We don't pass Care balances to debt collectors and we don't charge late fees for Care.",
-      "If you are finding money tight, tell us. We'll pause or cancel Care with no charge.",
+      "If you are finding money tight, tell us. We'll pause or cancel Care with no charge. A paused plan takes no payments, and you can join again whenever you like.",
     ],
   },
   {
@@ -282,7 +286,7 @@ export function careKeyFacts(opts: { planCode: string; frequency: string; priceM
 export const CARE_FAQ: { q: string; a: string }[] = [
   {
     q: "Is OCCTA Care insurance?",
-    a: "No. Care is a support service. It gives you a UK help desk, setup help, faster swaps of faulty OCCTA kit and member prices on repairs you choose to pay for. It does not pay for, repair or replace your own devices if they break, are damaged, lost or stolen. If you want that, you'd need an insurance policy from an insurer, and you may already have some through your home insurance or bank account.",
+    a: "No. Care is a support service. It gives you a UK help desk and setup help, and on Care Plus a next-working-day swap of faulty OCCTA kit. It does not pay for, repair or replace your own devices if they break, are damaged, lost or stolen. If you want that, you'd need an insurance policy from an insurer, and you may already have some through your home insurance or bank account.",
   },
   {
     q: "When do I pay?",
@@ -298,11 +302,11 @@ export const CARE_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "What if my OCCTA router stops working?",
-    a: "We replace faulty OCCTA equipment for every customer, Care or not. That's your legal right. With Care we send the replacement faster: within 3 working days on Essentials, the next working day on Plus.",
+    a: "We replace faulty equipment that OCCTA supplied for every customer, Care or not: that's your legal right, and our standard is to send the replacement within 5 working days. With Care Plus we send it the next working day. If you use your own router, this doesn't apply.",
   },
   {
-    q: "How do repairs work?",
-    a: "Ask us for a quote from My OCCTA or by phone. Our repair partner gives you a fixed member price before any work. If you go ahead, you pay them for that repair. If you don't, nothing happens and nothing is charged.",
+    q: "Does Care include repairs?",
+    a: "No. Care doesn't repair or replace your own devices, and it isn't insurance. Our team can still help you work out what's wrong, which is often enough to get things going again.",
   },
   {
     q: "Can someone help me manage it?",
@@ -346,7 +350,7 @@ export const CARE_PHONE_SCRIPT: { id: string; line: string }[] = [
 
 /** Reasons the system or staff may hold a sale for review. Shown to staff, never to customers. */
 export const CARE_REVIEW_REASONS: Record<string, string> = {
-  age_extra_check: "Customer is 75 or over: 48-hour pause and welcome call before lodging the mandate.",
+  age_extra_check: "Customer is 75 or over: 48-hour pause, and the welcome call must be recorded before the sale can be approved.",
   support_needs: "Customer told us about support needs: check Care is right for them before lodging.",
   vulnerability_review_open: "Customer has an open vulnerability review on their account.",
   account_holder_mismatch: "Bank account holder name doesn't match the OCCTA account holder.",

@@ -26,7 +26,7 @@ export default function CareLanding() {
     <Layout>
       <SEO
         title="OCCTA Care | UK home tech support from £4.99 a month"
-        description="OCCTA Care: a UK help desk for your home Wi-Fi, phones, tablets and computers, faster swaps of faulty OCCTA kit and member repair prices. From £4.99 a month. Not insurance. No minimum term, cancel any time."
+        description="OCCTA Care: a UK help desk for your home Wi-Fi, phones, tablets and computers, device setup and data transfer, and next-day swaps of faulty OCCTA kit on Care Plus. From £4.99 a month. Not insurance. No minimum term, cancel any time."
         canonical="/care"
       />
       <StructuredData customSchema={createFAQSchema(CARE_FAQ.map((f) => ({ question: f.q, answer: f.a })))} />
@@ -36,8 +36,8 @@ export default function CareLanding() {
           Tech help at home, <span className="text-primary">from people who answer.</span>
         </HeroTitle>
         <p className="mt-6 max-w-[680px] text-lg leading-relaxed text-white/75">
-          OCCTA Care puts our UK team on call for your Wi-Fi, phones, tablets, laptops and printers. Faulty OCCTA router? We send the
-          swap faster. Need a repair? You get member prices. From £4.99 a month, nothing taken for 14 days, cancel whenever you like.
+          OCCTA Care puts our UK team on call for your Wi-Fi, phones, tablets, laptops and printers, and sets up your new devices for
+          you. From £4.99 a month, nothing taken for 14 days, cancel whenever you like.
         </p>
         <p className="mt-4 max-w-[680px] border-l-4 border-primary pl-4 text-sm text-white/80">
           Plain and simple: Care is a support service, not insurance. It doesn't pay for, repair or replace your own devices if they break,

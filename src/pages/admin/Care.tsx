@@ -132,8 +132,8 @@ export default function AdminCare() {
           </section>
           <section>
             <h2 className="font-display text-xl uppercase">What Care is, in one line</h2>
-            <p>A support service, not insurance. It never pays for, repairs or replaces a customer's own device. Faulty OCCTA kit is replaced for every customer (it's their legal right); Care only makes it faster.</p>
-            <p className="mt-2">Never say: {CARE_BANNED_PHRASES.map((b) => `"${b}"`).join(", ")}. Say: support, help, setup, member prices, fixed-price repairs.</p>
+            <p>A support service, not insurance. It never pays for, repairs or replaces a customer's own device. Faulty OCCTA kit is replaced for every customer within 5 working days (it's their legal right); Care Plus makes it next working day. Essentials doesn't change the swap time.</p>
+            <p className="mt-2">Never say: {CARE_BANNED_PHRASES.map((b) => `"${b}"`).join(", ")}. Say: support, help, setup, data transfer, faster OCCTA kit swaps (Care Plus). Don't offer repairs: Care has no repair partner yet.</p>
           </section>
           <section>
             <h2 className="font-display text-xl uppercase">Phone script (Sell by phone tab)</h2>

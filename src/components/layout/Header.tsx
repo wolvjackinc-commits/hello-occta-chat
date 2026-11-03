@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut, Search, Building2 } from "lucide-react";
+import { Menu, X, Phone, Wifi, Smartphone, PhoneCall, ShieldCheck, User, LogOut, Search, Building2, HeartHandshake } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { CONTACT_PHONE_DISPLAY, CONTACT_PHONE_TEL } from "@/lib/constants";
@@ -51,6 +51,7 @@ const Header = () => {
     { name: "Broadband", path: "/broadband", icon: Wifi },
     { name: "SIM Plans", path: "/sim-plans", icon: Smartphone },
     { name: "Digital Voice", path: "/landline", icon: PhoneCall },
+    { name: "Care", path: "/care", icon: HeartHandshake },
     { name: "Business", path: "/business", icon: Building2 },
     { name: "About", path: "/about" },
     { name: "Support", path: "/support" },

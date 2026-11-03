@@ -27,6 +27,8 @@ export const careAdmin = {
     careCall<Json>("care_admin_dispute_decide", { p_dispute: id, p_decision: decision, p_note: note, p_cancel_care: cancelCare, p_write_once: writeOnce }),
   ddiRequest: (sub: string, received: string, note: string) => careCall<Json>("care_admin_record_ddi_request", { p_sub: sub, p_received: received, p_note: note }),
   cancel: (sub: string, channel: string, reason: string) => careCall<Json>("care_admin_cancel", { p_sub: sub, p_channel: channel, p_reason: reason }),
+  pause: (sub: string, note: string) => careCall<Json>("care_admin_pause", { p_sub: sub, p_note: note }),
+  pulledItemCollected: (col: string, note: string) => careCall<Json>("care_admin_pulled_item_collected", { p_collection: col, p_note: note }),
   usage: (sub: string, kind: string, notes: string) => careCall<Json>("care_admin_record_usage", { p_sub: sub, p_kind: kind, p_notes: notes, p_occurred: new Date().toISOString() }),
   welcomeCall: (sub: string, outcome: string, note: string) => careCall<Json>("care_admin_welcome_call", { p_sub: sub, p_outcome: outcome, p_note: note }),
   refundAction: (id: string, action: "paid" | "cancel", paidOn?: string | null, ref?: string | null, reason?: string | null) =>
@@ -64,12 +66,11 @@ export const DDICA_CODES: [string, string][] = [
 
 export const USAGE_KINDS: [string, string][] = [
   ["support_call", "Support call / chat"], ["remote_session", "Remote help session"], ["wifi_setup", "Wi-Fi setup / tune-up"],
-  ["device_setup", "Device setup / data transfer"], ["router_replacement", "OCCTA router/hub replacement sent"], ["repair_quote", "Repair quote given"],
-  ["repair_referral", "Repair referred to partner"], ["health_check", "Health check (Plus)"], ["extender_loan", "Wi-Fi extender loaned (Plus)"], ["other", "Other"],
+  ["device_setup", "Device setup / data transfer"], ["router_replacement", "OCCTA router/hub replacement sent"], ["health_check", "Health check (Plus)"], ["extender_loan", "Wi-Fi extender loaned (Plus)"], ["other", "Other"],
 ];
 
 export const REVIEW_LABEL: Record<string, string> = {
-  age_extra_check: "75+: pause & call", support_needs: "Support needs", vulnerability_review_open: "Open vulnerability review",
+  age_extra_check: "75+: pause, welcome call before approval", support_needs: "Support needs", vulnerability_review_open: "Open vulnerability review",
   account_holder_mismatch: "Account holder name differs", phone_assisted: "Phone-assisted sale",
 };
 

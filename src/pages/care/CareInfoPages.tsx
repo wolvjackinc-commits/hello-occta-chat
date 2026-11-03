@@ -79,7 +79,7 @@ export function CareFaqPage() {
   useEffect(() => { logClientEvent({ event_type: "page_view", title: "OCCTA Care FAQ", source_module: "care" }); }, []);
   return (
     <Layout>
-      <SEO title="OCCTA Care questions | Is it insurance? How do I cancel?" description="Answers about OCCTA Care: it's a support service, not insurance; nothing is taken for 14 days; its own Direct Debit; cancel any time; how repairs and OCCTA router swaps work." canonical="/care/faq" />
+      <SEO title="OCCTA Care questions | Is it insurance? How do I cancel?" description="Answers about OCCTA Care: it's a support service, not insurance; nothing is taken for 14 days; its own Direct Debit; cancel any time; what it doesn't include and how OCCTA router swaps work." canonical="/care/faq" />
       <StructuredData customSchema={createFAQSchema(CARE_FAQ.map((f) => ({ question: f.q, answer: f.a })))} />
       <Hero kicker="Questions" title="OCCTA Care questions, answered straight" crumb="Questions" />
       <CareSubnav />

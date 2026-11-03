@@ -7,8 +7,12 @@
 // For each outbox item:
 //   1. Build the content once (careLetters.ts).
 //   2. Letter: render the PDF, store it (immutable, hashed), then post it via
-//      Stannp when STANNP_API_KEY is set, otherwise leave it in the print
-//      queue for staff (they mark it posted with the posting date).
+//      Stannp ONLY when STANNP_API_KEY is set AND STANNP_MODE=live (test mode
+//      never counts as posted), otherwise leave it in the print queue for
+//      staff (they mark it posted with the posting date). A letter handed to
+//      Stannp is 'sent_to_mail_house' with mail_house_on, never 'posted'.
+//      Notice for a payment only counts once it has been delivered
+//      (see public.care_notice_delivered_on).
 //      Braille or a missing address goes to 'needs_manual'. A carer copy is a
 //      second letter marked "COPY FOR <carer>".
 //   3. Email the same content, with the letter PDF attached.
@@ -20,6 +24,11 @@ import { buildCareLetter, careLetterText, type CareLetterContent, type CareRecip
 import { renderCareLetterPdf, sha256Bytes, toBase64 } from "../_shared/careLetterPdf.ts";
 
 const BUCKET = "care-documents";
+
+/** Today's date in the UK, as YYYY-MM-DD. */
+function londonToday(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+}
 const SITE = "https://www.occta.co.uk";
 
 type Outbox = {
@@ -59,7 +68,7 @@ function emailHtml(c: CareLetterContent): string {
 
 async function postViaStannp(pdf: Uint8Array<ArrayBuffer>, r: CareRecipient, apiKey: string): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const form = new FormData();
-  form.append("test", Deno.env.get("STANNP_MODE") === "live" ? "false" : "true");
+  form.append("test", "false");
   form.append("file", new Blob([pdf], { type: "application/pdf" }), "letter.pdf");
   form.append("duplex", "true");
   form.append("recipient[firstname]", r.name);
@@ -90,7 +99,8 @@ async function processItem(svc: ReturnType<typeof getServiceClient>, item: Outbo
   }
 
   const recipient = (item.payload.recipient ?? {}) as CareRecipient;
-  const content = buildCareLetter(item.template, item.payload, recipient, new Date());
+  const letterDate = new Date();
+  const content = buildCareLetter(item.template, item.payload, recipient, letterDate);
   let attachment: { filename: string; content: string; contentType: string } | undefined;
   let letterStatus: string | null = null;
 
@@ -110,14 +120,19 @@ async function processItem(svc: ReturnType<typeof getServiceClient>, item: Outbo
       const path = `letters/${letter.customer_id}/${letter.id}.pdf`;
       const up = await svc.storage.from(BUCKET).upload(path, pdf, { contentType: "application/pdf", upsert: false });
       if (up.error && !/exists/i.test(up.error.message)) throw new Error(`upload_failed_${up.error.message.slice(0, 60)}`);
-      const { error: uerr } = await svc.from("care_letters").update({ pdf_path: path, pdf_sha256: sha }).eq("id", letter.id).is("pdf_path", null);
+      const { error: uerr } = await svc.from("care_letters").update({ pdf_path: path, pdf_sha256: sha, letter_date: letterDate.toISOString().slice(0, 10) }).eq("id", letter.id).is("pdf_path", null);
       if (uerr) throw new Error(`letter_update_failed_${uerr.message.slice(0, 60)}`);
       letter.pdf_path = path;
     }
 
+    if (letter.status === "posting") {
+      // A previous attempt died while handing this letter to the mail house: never send it twice.
+      letterStatus = "needs_manual";
+      await svc.from("care_letters").update({ status: letterStatus, delivery: "manual", error: "check_stannp_before_posting: a previous attempt may already have sent it" }).eq("id", letter.id).eq("status", "posting");
+    }
     if (letter.status === "rendering") {
       const hasAddress = !!(recipient.address_line1 && recipient.postcode);
-      const stannpKey = Deno.env.get("STANNP_API_KEY");
+      const stannpKey = Deno.env.get("STANNP_MODE") === "live" ? Deno.env.get("STANNP_API_KEY") : undefined;
       if (!hasAddress) {
         letterStatus = "needs_manual";
         await svc.from("care_letters").update({ status: letterStatus, delivery: "manual", error: "no_postal_address" }).eq("id", letter.id);
@@ -125,10 +140,13 @@ async function processItem(svc: ReturnType<typeof getServiceClient>, item: Outbo
         letterStatus = "needs_manual";
         await svc.from("care_letters").update({ status: letterStatus, delivery: "manual", error: "braille_requested: send a Braille version" }).eq("id", letter.id);
       } else if (stannpKey) {
+        // Claim the letter first so a crash mid-request can't post it twice.
+        const { data: claimed } = await svc.from("care_letters").update({ status: "posting" }).eq("id", letter.id).eq("status", "rendering").select("id");
+        if (!claimed?.length) throw new Error("letter_already_claimed");
         const sent = await postViaStannp(pdf, recipient, stannpKey);
         letterStatus = sent.ok ? "sent_to_mail_house" : "awaiting_print";
         await svc.from("care_letters").update(sent.ok
-          ? { status: letterStatus, delivery: "stannp", provider_id: sent.id, posted_on: new Date().toISOString().slice(0, 10) }
+          ? { status: letterStatus, delivery: "stannp", provider_id: sent.id, mail_house_on: londonToday() }
           : { status: letterStatus, delivery: "print_queue", error: sent.error }).eq("id", letter.id);
       } else {
         letterStatus = "awaiting_print";
@@ -156,7 +174,20 @@ async function processItem(svc: ReturnType<typeof getServiceClient>, item: Outbo
 
   // Email copy (skipped when the customer has no email on file; the letter still goes).
   let emailStatus = "no_email";
-  if (recipient.email) {
+  let alreadyEmailed = false;
+  if (item.letter_id) {
+    const { data: l } = await svc.from("care_letters").select("email_status").eq("id", item.letter_id).maybeSingle();
+    alreadyEmailed = !!l?.email_status && (l.email_status === "sent" || l.email_status === "sending");
+    if (l?.email_status === "sending") {
+      // A previous attempt died mid-send: don't risk a duplicate. Posting still counts as notice.
+      emailStatus = "unknown_after_retry";
+      await svc.from("care_letters").update({ email_status: emailStatus }).eq("id", item.letter_id);
+    } else if (l?.email_status === "sent") {
+      emailStatus = "sent";
+    }
+  }
+  if (recipient.email && !alreadyEmailed) {
+    if (item.letter_id) await svc.from("care_letters").update({ email_status: "sending" }).eq("id", item.letter_id);
     const sent = await sendTrackedCommunication(svc, {
       template_name: `care_${item.template}`,
       recipient_email: recipient.email,
@@ -168,7 +199,8 @@ async function processItem(svc: ReturnType<typeof getServiceClient>, item: Outbo
     });
     emailStatus = sent.ok ? "sent" : `failed:${sent.error.slice(0, 80)}`;
     if (item.letter_id) {
-      await svc.from("care_letters").update({ email_status: emailStatus, email_log_id: sent.trackingLogId ?? null }).eq("id", item.letter_id);
+      await svc.from("care_letters").update({ email_status: emailStatus, email_log_id: sent.trackingLogId ?? null,
+        email_sent_at: sent.ok ? new Date().toISOString() : null }).eq("id", item.letter_id);
     }
     if (!sent.ok && !item.letter_id) throw new Error(`email_failed_${sent.error.slice(0, 60)}`);
   }

@@ -54,6 +54,7 @@ const ERROR_TEXT: Record<string, string> = {
   rate_limited: "Too many attempts. Please wait a few minutes.",
   encryption_unavailable: "We can't take bank details safely right now. Please try again shortly or call us.",
   support_needs_consent_required: "Please tick to let us record your support needs, or untick them.",
+  date_of_birth_required: "Please enter your date of birth.",
 };
 
 function errText(e: unknown) {
@@ -80,6 +81,7 @@ export default function CareJoin() {
   const [app, setApp] = useState<JoinStart | null>(null);
   const [ticks, setTicks] = useState<Record<string, string | null>>({ terms: null, over_18: null, early_start: null, dd: null, account_holder: null });
   const [bank, setBank] = useState({ account_holder_name: "", sort_code: "", account_number: "", bank_name: "" });
+  const [dob, setDob] = useState("");
   const [needs, setNeeds] = useState<string[]>([]);
   const [needsConsent, setNeedsConsent] = useState(false);
   const [carer, setCarer] = useState({ name: "", contact: "" });
@@ -154,6 +156,7 @@ export default function CareJoin() {
           account_holder: !!ticks.account_holder, account_holder_at: ticks.account_holder, early_start: !!ticks.early_start, early_start_at: ticks.early_start,
         },
         bank,
+        date_of_birth: app.date_of_birth_known ? null : dob || null,
         support_needs: needs, support_needs_consent: needsConsent, support_other: supportOther || null,
         carer_name: needs.includes("carer_copy") ? carer.name || null : null, carer_contact: needs.includes("carer_copy") ? carer.contact || null : null,
         page_url: window.location.pathname,
@@ -170,6 +173,7 @@ export default function CareJoin() {
   const acctOk = acctLen === 8 || acctLen === 7;
   const bankOk = sortOk && acctOk && bank.account_holder_name.trim().length >= 2 && !!ticks.dd && !!ticks.account_holder;
   const supportOk = needs.length === 0 || needsConsent;
+  const dobOk = /^\d{4}-\d{2}-\d{2}$/.test(dob) && dob > "1900-01-01" && dob <= new Date().toISOString().slice(0, 10);
 
   return (
     <Layout>
@@ -268,11 +272,18 @@ export default function CareJoin() {
                 <div className="space-y-3 border-[3px] border-foreground p-4">
                   <label className="flex items-start gap-3 text-sm"><Checkbox checked={!!ticks.terms} onCheckedChange={(v) => tick("terms", v === true)} data-testid="tick-terms" /> <span>I've read the key facts and agree to the OCCTA Care terms (version {CARE_TERMS_VERSION}). I understand Care is a support service, not insurance.</span></label>
                   <label className="flex items-start gap-3 text-sm"><Checkbox checked={!!ticks.over_18} onCheckedChange={(v) => tick("over_18", v === true)} data-testid="tick-18" /> <span>I'm 18 or over.</span></label>
+                  {!app.date_of_birth_known && (
+                    <div className="max-w-xs">
+                      <Label htmlFor="dob">Your date of birth</Label>
+                      <Input id="dob" type="date" max={new Date().toISOString().slice(0, 10)} value={dob} onChange={(e) => setDob(e.target.value)} data-testid="care-dob" />
+                      <p className="mt-1 text-xs text-muted-foreground">We don't have this on your account yet. We use it to check you're 18 or over and to give extra time and a call to customers who might want it.</p>
+                    </div>
+                  )}
                   <label className="flex items-start gap-3 text-sm"><Checkbox checked={!!ticks.early_start} onCheckedChange={(v) => tick("early_start", v === true)} /> <span><strong>Optional:</strong> I'd like to start using Care straight away, during my 14-day cooling-off period. (It's free during this time and I can still cancel.)</span></label>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setStep("choose")}>Back</Button>
-                  <Button disabled={!ticks.terms || !ticks.over_18} onClick={() => setStep("bank")} data-testid="care-facts-next">Continue</Button>
+                  <Button disabled={!ticks.terms || !ticks.over_18 || (!app.date_of_birth_known && !dobOk)} onClick={() => setStep("bank")} data-testid="care-facts-next">Continue</Button>
                 </div>
               </section>
             )}

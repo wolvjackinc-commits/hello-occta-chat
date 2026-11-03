@@ -11,6 +11,7 @@ on:
       - 'supabase/functions/_shared/care*.ts'
       - 'supabase/functions/_shared/directDebitGuarantee.ts'
       - 'supabase/migrations/20261102200000_occta_care.sql'
+      - 'supabase/migrations/20261103100000_occta_care_hardening.sql'
       - '.github/workflows/deploy-care.yml'
   push:
     branches: [main]

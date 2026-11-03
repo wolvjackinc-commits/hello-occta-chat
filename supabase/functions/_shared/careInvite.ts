@@ -37,12 +37,16 @@ export async function sendCareInvite(svc: ReturnType<typeof getServiceClient>, o
   if (error || !inv) return { ok: false, error: "invite_failed", status: 500 };
 
   const price = carePriceMinor(o.plan, o.frequency) ?? 0;
-  const link = `${SITE}/care/join?invite=${encodeURIComponent(raw)}`;
+  const join = `/care/join?invite=${encodeURIComponent(raw)}`;
+  // Someone who has never signed in (e.g. added on the call) sets a password first, then lands on the join page.
+  const { data: au } = await svc.auth.admin.getUserById(o.customerId);
+  const firstTime = !au?.user?.last_sign_in_at;
+  const link = firstTime ? `${SITE}/auth?claim=1&email=${encodeURIComponent(profile.email)}&next=${encodeURIComponent(join)}` : `${SITE}${join}`;
   const html = renderBrandedEmail({
     preheader: "Check the details and agree yourself. Nothing starts until you do.",
     eyebrow: "OCCTA Care",
     greeting: `Hi ${escapeHtml((profile.full_name ?? "there").split(" ")[0])}`,
-    intro: `<p style="margin:0 0 12px 0">Thanks for talking to us about OCCTA Care. As promised, here's your secure link to check the details and join yourself, if you'd like to.</p><p style="margin:0 0 12px 0"><strong>Nothing has been set up and nothing starts until you agree.</strong> There's no deadline; the link works for ${CARE_RULES.inviteValidDays} days, and you can always join later from My OCCTA.</p>`,
+    intro: `<p style="margin:0 0 12px 0">Thanks for talking to us about OCCTA Care. As promised, here's your secure link to check the details and join yourself, if you'd like to.</p><p style="margin:0 0 12px 0"><strong>Nothing has been set up and nothing starts until you agree.</strong> There's no deadline; the link works for ${CARE_RULES.inviteValidDays} days, and you can always join later from My OCCTA.</p>${firstTime ? `<p style="margin:0 0 12px 0">We've opened a free OCCTA account for you with this email. The button below asks you to set a password first (we email you a one-tap link), then takes you to the details.</p>` : ""}`,
     sections: [
       { heading: "What we talked about", html: `<p style="margin:0">${escapeHtml(carePlan(o.plan)!.name)} at ${escapeHtml(pounds(price))} ${o.frequency === "monthly" ? "a month" : o.frequency === "quarterly" ? "every 3 months" : "a year"}, VAT included, by its own Direct Debit. You can change this on the next page.</p>` },
       { heading: "Good to know", html: `<p style="margin:0 0 8px 0">OCCTA Care is a support service, not insurance. It doesn't pay for, repair or replace your own devices.</p><p style="margin:0 0 8px 0">Nothing is taken in your first 14 days, and you can cancel any time with no exit fee.</p><p style="margin:0">Didn't expect this email? Ignore it, or call us on 0800 260 6626.</p>` },

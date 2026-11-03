@@ -42,7 +42,7 @@ const Auth = () => {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [recoveryMode, setRecoveryMode] = useState(hashIsRecovery);
   const [newPassword, setNewPassword] = useState("");
-  const [claimEmail, setClaimEmail] = useState(prefillEmail);
+  const [claimEmail, setClaimEmail] = useState(searchParams.get("email") ?? prefillEmail);
   const [claimSending, setClaimSending] = useState(false);
   const [claimSent, setClaimSent] = useState(false);
 
@@ -158,7 +158,7 @@ const Auth = () => {
     setClaimSending(true);
     setMessage(null);
     const { error } = await supabase.functions.invoke("claim-dashboard-link", {
-      body: { email: parsed.data },
+      body: { email: parsed.data, next: searchParams.get("next") ?? undefined },
     });
     setClaimSending(false);
     if (error) {
@@ -335,7 +335,7 @@ const Auth = () => {
                 <div className="border-2 border-foreground bg-primary/10 p-4 space-y-3">
                   <div>
                     <p className="font-display uppercase text-sm">First time signing in?</p>
-                    <p className="text-xs text-muted-foreground">Used the "Open my dashboard" button from your order email? Enter the same email and we'll send a one-tap link to set your password.</p>
+                    <p className="text-xs text-muted-foreground">Enter the email we wrote to and we'll send you a one-tap link to set your password.</p>
                   </div>
                   {claimSent ? (
                     <p className="text-sm bg-success/10 border border-success/30 p-3">If <strong>{claimEmail}</strong> matches your OCCTA order email, a secure link is on its way. Check spam too, just in case.</p>

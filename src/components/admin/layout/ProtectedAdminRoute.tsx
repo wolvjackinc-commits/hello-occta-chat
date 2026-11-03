@@ -126,7 +126,7 @@ export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
   // the user returns exactly where they tried to go after signing in.
   if (status === "no-session") {
     const target = `${location.pathname}${location.search}${location.hash}` || "/admin/overview";
-    const next = target.startsWith("/admin") ? target : "/admin/overview";
+    const next = target.startsWith("/admin") || target.startsWith("/staff") ? target : "/admin/overview";
     return <Navigate to={`/auth?next=${encodeURIComponent(next)}`} replace />;
   }
 

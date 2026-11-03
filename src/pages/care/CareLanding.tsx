@@ -31,7 +31,7 @@ export default function CareLanding() {
       />
       <StructuredData customSchema={createFAQSchema(CARE_FAQ.map((f) => ({ question: f.q, answer: f.a })))} />
       <PosterStage ghost="CARE">
-        <HeroKicker>New for OCCTA customers</HeroKicker>
+        <HeroKicker>New from OCCTA, for any UK home</HeroKicker>
         <HeroTitle size="md">
           Tech help at home, <span className="text-primary">from people who answer.</span>
         </HeroTitle>

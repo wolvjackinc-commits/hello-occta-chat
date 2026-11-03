@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { careSales, salesError, SALE_STATUS, type J } from "@/lib/care/sales";
+import { careSales, parseTranscriptFile, salesError, SALE_STATUS, type J } from "@/lib/care/sales";
 import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, CARE_QA_PASS_SCORE } from "../../../supabase/functions/_shared/careSalesScript.ts";
 import { CARE_FREQUENCIES, CARE_PLANS, carePriceMinor, pounds } from "../../../supabase/functions/_shared/careTerms.ts";
 
@@ -43,7 +43,7 @@ export default function CareSalesDesk() {
           <Button variant="outline" size="sm" onClick={() => void supabase.auth.signOut().then(() => { window.location.href = "/auth"; })}>Sign out</Button></div>
       </header>
       {!cfg.ai && <p className="mx-4 mt-3 border-l-4 border-destructive pl-3 text-sm">Call scoring is offline (ANTHROPIC_API_KEY missing). Sales can be logged but not checked.</p>}
-      {!cfg.transcription && <p className="mx-4 mt-3 border-l-4 border-primary pl-3 text-sm">Automatic transcription is off. Upload the recording <strong>and</strong> paste the transcript from your phone system. (Admin: add OPENAI_API_KEY to switch it on.)</p>}
+      {!cfg.transcription && <p className="mx-4 mt-3 border-l-4 border-primary pl-3 text-sm">For each sale, download two files from Zoom: the call <strong>recording</strong> (MP4/M4A) and its <strong>transcript</strong> (.vtt). Upload both here.</p>}
       <main className="p-4">
         <Tabs value={tab} onValueChange={(v) => { setTab(v); if (v === "list") void load(); }}>
           <TabsList>
@@ -170,10 +170,11 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
         {editable && (
           <section className="border-2 border-foreground p-3">
             <p className="font-display uppercase">{s.qa ? "Re-check the call" : "Upload the call recording"}</p>
-            <Input type="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.webm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-2" />
+            <Input type="file" accept="audio/*,video/mp4,.mp3,.mp4,.wav,.m4a,.ogg,.webm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="mt-2" />
             {s.recording_path && !file && <p className="mt-1 text-xs">Recording on file ({Math.round((s.recording_bytes ?? 0) / 1024)} KB). Upload again only to replace it.</p>}
-            <Label className="mt-2 block">{cfg.transcription ? "Transcript (optional: leave empty to transcribe the recording automatically)" : "Call transcript (required: paste from your phone system)"}</Label>
-            <Textarea rows={5} value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste the full call transcript" />
+            <Label className="mt-2 block">{cfg.transcription ? "Zoom transcript (optional: leave empty to transcribe the recording automatically)" : "Zoom transcript (required)"}</Label>
+            <Input type="file" accept=".vtt,.srt,.txt,text/vtt,text/plain" className="mb-2" onChange={(e) => { const f = e.target.files?.[0]; if (f) void f.text().then((t) => setTranscript(parseTranscriptFile(t))); }} />
+            <Textarea rows={5} value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Upload the Zoom .vtt above, or paste the full call transcript" />
             <Button className="mt-2" disabled={!!busy || (!file && !s.recording_path) || (!cfg.transcription && transcript.trim().length < 200)} onClick={() => void check()}>
               {busy === "Call checked" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Check the call
             </Button>

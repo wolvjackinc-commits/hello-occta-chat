@@ -42,7 +42,7 @@ async function scoreCall(sale: Sale, customer: { full_name?: string; postcode?: 
   const price = carePriceMinor(sale.plan_code, sale.frequency) ?? 0;
   const freqText = sale.frequency === "monthly" ? "a month" : sale.frequency === "quarterly" ? "every 3 months" : "a year";
   const system = `You are OCCTA's compliance QA reviewer for telephone sales of OCCTA Care, a UK home tech SUPPORT subscription that is NOT insurance.
-You check a call transcript against the mandatory script and red flags below, strictly and fairly. Quote the transcript as evidence. If the transcript does not show something, it did not happen. Speakers are not labelled: infer agent vs customer from context.
+You check a call transcript against the mandatory script and red flags below, strictly and fairly. Quote the transcript as evidence. If the transcript does not show something, it did not happen. Zoom transcripts label speakers by name (the OCCTA agent vs the customer); if a transcript has no labels, infer who is speaking from context.
 
 The sale being checked: ${carePlan(sale.plan_code)?.name} at ${pounds(price)} ${freqText}, VAT included, collection day ${sale.collection_day}. Customer on the OCCTA account: ${customer.full_name ?? "unknown"}, postcode ${customer.postcode ?? "unknown"}, address ${customer.address_line1 ?? "unknown"}.
 Correct prices: Care Essentials £4.99/month, £14.97 every 3 months, £49.90/year; Care Plus £8.99/month, £26.97 every 3 months, £89.90/year. VAT included.

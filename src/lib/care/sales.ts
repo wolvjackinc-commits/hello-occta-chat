@@ -49,7 +49,7 @@ export const SALE_STATUS: Record<string, string> = {
 };
 
 export const SALES_ERRORS: Record<string, string> = {
-  transcription_not_configured: "Automatic transcription isn't switched on. Paste the call transcript from your phone system instead.",
+  transcription_not_configured: "Upload the Zoom transcript (.vtt) for this call too, or paste it.",
   recording_too_large_for_auto_transcription: "That recording is over 25 MB. Export it as MP3, or paste the transcript.",
   recording_required: "Upload the call recording first. It's the evidence if the sale is ever disputed.",
   transcript_too_short: "That transcript is too short to check. Paste the whole call.",
@@ -64,4 +64,19 @@ export function salesError(e: unknown): string {
   const m = String((e as Error)?.message ?? e);
   const key = Object.keys(SALES_ERRORS).find((k) => m.includes(k));
   return key ? SALES_ERRORS[key] : m;
+}
+
+/** Turns a Zoom transcript (.vtt, or .srt/.txt) into "[mm:ss] Speaker: words" lines. */
+export function parseTranscriptFile(text: string): string {
+  if (!/-->/.test(text)) return text.trim();
+  const out: string[] = [];
+  let stamp = "";
+  for (const raw of text.replace(/\r/g, "").split("\n")) {
+    const line = raw.trim();
+    if (!line || /^WEBVTT/i.test(line) || /^\d+$/.test(line) || /^NOTE\b/.test(line)) continue;
+    const t = line.match(/^(\d{1,2}:)?(\d{1,2}):(\d{2})[.,]\d{3}\s*-->/);
+    if (t) { const h = Number((t[1] ?? "0:").replace(":", "")), m = Number(t[2]) + h * 60; stamp = `[${String(m).padStart(2, "0")}:${t[3]}]`; continue; }
+    out.push(`${stamp} ${line}`.trim());
+  }
+  return out.join("\n");
 }

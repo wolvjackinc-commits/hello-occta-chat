@@ -16,7 +16,7 @@ import { CARE_PLANS, carePlan, carePriceMinor, pounds } from "../../../../supaba
 
 const d = (v?: string | null) => (v ? new Date(v.length === 10 ? `${v}T12:00:00` : v).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—");
 const per = (f: string) => (f === "monthly" ? "a month" : f === "quarterly" ? "every 3 months" : "a year");
-const LIVE = ["pending_review", "pending_mandate", "active", "paused", "cancel_pending"];
+const LIVE = ["pending_review", "pending_mandate", "active", "cancel_pending"];
 
 const NEEDS = [
   ["large_print", "Large print letters"], ["braille", "Braille letters"], ["carer_copy", "Copy letters to someone who helps me"],
@@ -79,7 +79,7 @@ export default function CareTab() {
   const otherPrice = s && otherPlan ? carePriceMinor(otherPlan.code, s.frequency) ?? 0 : 0;
   const planFacts = s && otherPlan ? [
     `New plan: ${otherPlan.name} at ${pounds(otherPrice)} ${per(s.frequency)}, VAT included.`,
-    "The new price is collected from your next payment that's at least 10 working days away. We'll confirm the date in writing.",
+    `You keep ${carePlan(s.plan_code)?.name} for the period you've already paid for. ${otherPlan.name} and the new price start with your next payment period that's at least 10 working days away, and we'll confirm the date in writing.`,
     "No minimum term and no exit fee. OCCTA Care is a support service, not insurance.",
   ] : [];
 
@@ -90,7 +90,7 @@ export default function CareTab() {
       const sha = await sha256HexBrowser(JSON.stringify(planFacts));
       const r = await careApi.changePlan(otherPlan.code, planFacts, sha);
       if (!r.ok) throw new Error(r.error ?? "change_failed");
-      toast({ title: `Moved to ${otherPlan.name}`, description: r.effective_date ? `New price from ${d(r.effective_date)}. We've written to confirm.` : "We've written to confirm." });
+      toast({ title: `Switching to ${otherPlan.name}`, description: r.effective_date ? `${otherPlan.name} and the new price start on ${d(r.effective_date)}. We've written to confirm.` : "We've written to confirm." });
       setPlanOpen(false); setPlanAgree(false); await load();
     } catch (e) { toast({ title: "Couldn't change plan", description: String((e as Error).message), variant: "destructive" }); }
     finally { setBusy(false); }
@@ -118,8 +118,9 @@ export default function CareTab() {
       <div className="space-y-4" data-testid="care-tab-join">
         <div className="border-[3px] border-foreground p-5">
           <p className="font-display text-2xl uppercase">OCCTA Care</p>
-          <p className="mt-2 max-w-2xl text-sm">Our UK team on call for your Wi-Fi, phones, tablets and computers, faster swaps of faulty OCCTA kit and member repair prices. From £4.99 a month. Nothing taken for 14 days, cancel any time. A support service, not insurance.</p>
-          {s && <p className="mt-3 text-sm text-muted-foreground">Your last Care ({s.reference}) is {CARE_STATUS_TEXT[s.status]?.toLowerCase() ?? s.status}.</p>}
+          <p className="mt-2 max-w-2xl text-sm">Our UK team on call for your Wi-Fi, phones, tablets and computers, with device setup and data transfer included. From £4.99 a month. Nothing taken for 14 days, cancel any time. A support service, not insurance.</p>
+          {s && s.status === "paused" && <p className="mt-3 border-l-4 border-destructive pl-3 text-sm" data-testid="care-paused">Your Care ({s.reference}) is paused and no payments are being taken. Nothing is owed. You can join again whenever you like.</p>}
+          {s && s.status !== "paused" && <p className="mt-3 text-sm text-muted-foreground">Your last Care ({s.reference}) is {CARE_STATUS_TEXT[s.status]?.toLowerCase() ?? s.status}.</p>}
           {elig && !elig.eligible ? (
             <ul className="mt-3 list-disc pl-5 text-sm">{elig.reasons.map((r) => <li key={r}>{CARE_REASON_TEXT[r] ?? r}</li>)}</ul>
           ) : (
@@ -147,10 +148,15 @@ export default function CareTab() {
           <div><dt className="text-muted-foreground">Direct Debit</dt><dd>{s!.mandate ? `${s!.mandate.holder}, account ending ${s!.mandate.last4} (${s!.mandate.status === "active" ? "active" : "being set up"})` : "—"}</dd></div>
           {s!.status === "cancel_pending" && <div><dt className="text-muted-foreground">Ends</dt><dd>{d(s!.cancel_effective_date)}</dd></div>}
         </dl>
-        {s!.status === "paused" && <p className="mt-3 border-l-4 border-destructive pl-3 text-sm">Care is paused and no payments are being taken. Nothing is owed. Call us if you'd like to restart it.</p>}
+        {s!.pending_from && (
+          <p className="mt-3 border-l-4 border-primary pl-3 text-sm" data-testid="care-pending-change">
+            {s!.pending_plan_code ? `Changing to ${carePlan(s!.pending_plan_code)?.name} at ` : "Your price changes to "}
+            {pounds(s!.pending_price_minor ?? 0)} {per(s!.frequency)} from {d(s!.pending_from)}. We've written to you about it.
+          </p>
+        )}
         <div className="mt-5 flex flex-wrap gap-2">
           {["active", "pending_mandate", "pending_review", "cancel_pending"].includes(s!.status) && <Button onClick={() => setHelpOpen(true)} data-testid="care-get-help">Get help</Button>}
-          {["active", "pending_mandate"].includes(s!.status) && otherPlan && <Button variant="outline" onClick={() => setPlanOpen(true)}>Switch to {otherPlan.name}</Button>}
+          {["active", "pending_mandate"].includes(s!.status) && otherPlan && !s!.pending_from && <Button variant="outline" onClick={() => setPlanOpen(true)}>Switch to {otherPlan.name}</Button>}
           <Button variant="outline" onClick={() => { setNeeds(o?.support_needs?.needs ?? []); setNeedsConsent(false); setNeedsOpen(true); }}>Support needs</Button>
           {s!.status !== "cancel_pending" && <Button variant="outline" onClick={() => setCancelOpen(true)} data-testid="care-cancel">Cancel Care</Button>}
         </div>
@@ -205,7 +211,6 @@ export default function CareTab() {
             <SelectContent>{CARE_REQUEST_KINDS.filter((k) => s!.plan_code === "plus" || !["health_check", "extender"].includes(k.code)).map((k) => <SelectItem key={k.code} value={k.code}>{k.label}</SelectItem>)}</SelectContent>
           </Select>
           <Textarea maxLength={2000} placeholder="What do you need help with?" value={helpText} onChange={(e) => setHelpText(e.target.value)} />
-          {helpKind === "repair_quote" && <p className="text-xs text-muted-foreground">We'll get you a fixed member price first. Repairs are optional and paid by you, per repair. Care doesn't pay for device repairs.</p>}
           <DialogFooter><Button onClick={() => void doHelp()} disabled={busy || helpText.trim().length < 3}>Send</Button></DialogFooter>
         </DialogContent>
       </Dialog>

@@ -7,21 +7,24 @@
 //   send_invite     — phone-assisted sale: email the customer a link to complete sign-up themselves
 //   revoke_invite
 //   evidence_pack   — one PDF with everything we hold about a member's agreement and payments
-//   print_batch     — one PDF of every letter waiting to be printed, then mark them 'in batch'
+//   print_batch     — one PDF of every letter waiting to be printed (the exact stored, hashed PDFs joined together), then mark them 'in batch'
 //   dispatch_now    — run the letter/email worker immediately
+import { PDFDocument } from "npm:pdf-lib@1.17.1";
 import { getServiceClient, jsonResponse, corsHeaders, requireStaff, generateTokenPair, sendTrackedCommunication, escapeHtml } from "../_shared/quoteHelpers.ts";
 import { decryptJson } from "../_shared/ddCrypto.ts";
 import { getCronSecret } from "../_shared/cronSecret.ts";
 import { renderBrandedEmail } from "../_shared/brandedEmailShell.ts";
 import { providerInstructionText } from "../_shared/directDebitGuarantee.ts";
 import { CARE_DD, CARE_PHONE_SCRIPT, CARE_RULES, carePlan, careFrequency, carePriceMinor, pounds } from "../_shared/careTerms.ts";
-import { buildCareLetter, longDate, type CareRecipient } from "../_shared/careLetters.ts";
-import { renderCareLetterBatch, renderCareReportPdf, sha256Bytes } from "../_shared/careLetterPdf.ts";
+import { longDate } from "../_shared/careLetters.ts";
+import { renderCareReportPdf, sha256Bytes } from "../_shared/careLetterPdf.ts";
 
 const BUCKET = "care-documents";
 const SITE = "https://www.occta.co.uk";
 const STAFF = ["admin", "super_admin", "finance_admin", "support_agent", "sales_agent", "sales_admin", "compliance_admin"];
 const FINANCE = ["admin", "super_admin", "finance_admin"];
+// Evidence packs hold special-category data (support needs, carers): finance and compliance only.
+const EVIDENCE = ["admin", "super_admin", "finance_admin", "compliance_admin"];
 
 const dt = (v: unknown) => (v ? new Date(String(v)).toLocaleString("en-GB", { timeZone: "Europe/London" }) : "-");
 
@@ -78,8 +81,10 @@ Deno.serve(async (req) => {
     if (callRef.length < 3) return jsonResponse({ error: "call_reference_required" }, 400);
 
     const { data: elig } = await svc.rpc("care_eligibility", { p_customer: customerId });
-    const e = elig as { eligible?: boolean; reasons?: string[] } | null;
+    const e = elig as { eligible?: boolean; reasons?: string[]; no_sales_contact?: boolean } | null;
     if (!e?.eligible) return jsonResponse({ error: "not_eligible", reasons: e?.reasons ?? [] }, 400);
+    // The customer asked not to be offered things: staff may not sell to them (they can still join themselves).
+    if (e.no_sales_contact) return jsonResponse({ error: "not_eligible", reasons: ["no_sales_contact"] }, 400);
     const { data: profile } = await svc.from("profiles").select("full_name, email").eq("id", customerId).maybeSingle();
     if (!profile?.email) return jsonResponse({ error: "no_email_on_account" }, 400);
 
@@ -129,6 +134,8 @@ Deno.serve(async (req) => {
 
   // ------------------------------------------------------------- evidence_pack
   if (action === "evidence_pack") {
+    const ev = await requireStaff(req, EVIDENCE);
+    if ("error" in ev) return jsonResponse({ error: "finance_or_compliance_role_required" }, 403);
     const subId = String(body.subscription_id ?? "");
     const purpose = String(body.purpose ?? "internal_review");
     if (!["indemnity_challenge", "ddi_copy", "complaint", "customer_request", "internal_review"].includes(purpose)) return jsonResponse({ error: "invalid_purpose" }, 400);
@@ -139,7 +146,7 @@ Deno.serve(async (req) => {
       svc.from("care_consents").select("*").eq("subscription_id", subId).order("created_at"),
       svc.from("care_mandates").select("id, reference, provider_code, status, account_holder_name, bank_name, masked_account_last4, masked_sort_last2, signed_at, lodge_due_by, lodged_at, provider_reference, activated_at, rejected_at, rejection_reason, cancel_requested_at, cancelled_at, cancel_source, cancel_reason_code").eq("subscription_id", subId).order("created_at"),
       svc.from("care_collections").select("*").eq("subscription_id", subId).order("due_date"),
-      svc.from("care_letters").select("id, letter_type, status, delivery, pdf_sha256, posted_on, email_status, provider_id, copy_for, created_at").eq("subscription_id", subId).order("created_at"),
+      svc.from("care_letters").select("id, letter_type, status, delivery, pdf_sha256, posted_on, mail_house_on, email_status, email_sent_at, provider_id, copy_for, created_at, dedupe_key").eq("subscription_id", subId).order("created_at"),
       svc.from("communications_log").select("template_name, recipient_email, subject, status, sent_at, opened_at").eq("user_id", s.customer_id).like("template_name", "care_%").order("created_at"),
       svc.from("care_usage").select("kind, notes, occurred_at, source").eq("subscription_id", subId).order("occurred_at"),
       svc.from("care_requests").select("kind, details, status, created_at").eq("subscription_id", subId).order("created_at"),
@@ -185,9 +192,9 @@ Deno.serve(async (req) => {
       ], lines: [`Instruction wording: ${providerInstructionText({ legal_collection_name: CARE_DD.collectionName, service_user_number: CARE_DD.serviceUserNumber, advance_notice_working_days: CARE_DD.noticeWorkingDays })}`] });
     }
     sections.push({ heading: "Collections and advance notice", lines: (cols.data ?? []).map((c: Record<string, unknown>) =>
-      `${longDate(String(c.due_date))}: ${pounds(Number(c.amount_minor))} for ${longDate(String(c.period_start))}-${longDate(String(c.period_end))}, ${c.kind}, status ${c.status}; notice ${c.notice_kind ?? "-"} sent ${dt(c.notice_sent_at)}${c.bank_received_date ? `; money received ${longDate(String(c.bank_received_date))}` : ""}${c.unpaid_reason_code ? `; returned (ARUDD ${c.unpaid_reason_code})` : ""}`) });
+      `${longDate(String(c.due_date))}: ${pounds(Number(c.amount_minor))} for ${longDate(String(c.period_start))}-${longDate(String(c.period_end))}, ${c.kind}, status ${c.status}; notice ${c.notice_kind ?? "-"} queued ${dt(c.notice_sent_at)}${c.notice_dedupe ? ` (letter ${c.notice_dedupe})` : ""}${c.bank_received_date ? `; money received ${longDate(String(c.bank_received_date))}` : ""}${c.unpaid_reason_code ? `; returned (ARUDD ${c.unpaid_reason_code})` : ""}`) });
     sections.push({ heading: "Letters (PDF hashes prove content)", lines: (letters.data ?? []).map((l: Record<string, unknown>) =>
-      `${dt(l.created_at)}: ${l.letter_type}${l.copy_for ? ` (copy for ${l.copy_for})` : ""}; ${l.status}${l.posted_on ? `, posted ${longDate(String(l.posted_on))}` : ""}${l.provider_id ? `, mail house ${l.provider_id}` : ""}; email ${l.email_status ?? "-"}; sha256 ${l.pdf_sha256 ?? "-"}`) });
+      `${dt(l.created_at)}: ${l.letter_type} [${l.dedupe_key ?? "-"}]${l.copy_for ? ` (copy for ${l.copy_for})` : ""}; ${l.status}${l.posted_on ? `, posted ${longDate(String(l.posted_on))}` : ""}${l.mail_house_on ? `, handed to mail house ${longDate(String(l.mail_house_on))}${l.provider_id ? ` (${l.provider_id})` : ""}` : ""}; email ${l.email_status ?? "-"}${l.email_sent_at ? ` at ${dt(l.email_sent_at)}` : ""}; sha256 ${l.pdf_sha256 ?? "-"}`) });
     sections.push({ heading: "Emails", lines: (comms.data ?? []).map((c: Record<string, unknown>) => `${dt(c.sent_at)}: ${c.subject} to ${c.recipient_email} (${c.status}${c.opened_at ? `, opened ${dt(c.opened_at)}` : ""})`) });
     sections.push({ heading: "Service used", lines: [...(usage.data ?? []).map((u: Record<string, unknown>) => `${dt(u.occurred_at)}: ${u.kind}${u.notes ? ` - ${u.notes}` : ""}`),
       ...(reqs.data ?? []).map((r: Record<string, unknown>) => `${dt(r.created_at)}: customer request ${r.kind} (${r.status})`)] });
@@ -212,16 +219,23 @@ Deno.serve(async (req) => {
   // --------------------------------------------------------------- print_batch
   if (action === "print_batch") {
     const ids = Array.isArray(body.letter_ids) ? (body.letter_ids as unknown[]).map(String) : null;
-    let q = svc.from("care_letters").select("id, letter_type, payload, recipient, large_print, copy_for, created_at, pdf_path").in("status", ["awaiting_print", "needs_manual"]).not("pdf_path", "is", null).order("created_at").limit(200);
+    let q = svc.from("care_letters").select("id, letter_type, copy_for, created_at, pdf_path").in("status", ["awaiting_print", "needs_manual"]).not("pdf_path", "is", null).order("created_at").limit(200);
     if (ids?.length) q = q.in("id", ids);
     const { data: letters, error } = await q;
     if (error) return jsonResponse({ error: error.message }, 500);
     if (!letters?.length) return jsonResponse({ error: "nothing_to_print" }, 400);
-    // Re-render from the stored, immutable content with the ORIGINAL letter date.
-    const pdf = renderCareLetterBatch(letters.map((l: Record<string, unknown>) => ({
-      content: buildCareLetter(String(l.letter_type), l.payload as Record<string, unknown>, l.recipient as CareRecipient, new Date(String(l.created_at))),
-      largePrint: !!l.large_print, copyFor: (l.copy_for as string) ?? null,
-    })));
+    // Join the exact stored PDFs (the ones whose hashes are on record), never a re-render.
+    const merged = await PDFDocument.create();
+    for (const l of letters as Record<string, unknown>[]) {
+      const { data: blob, error: derr } = await svc.storage.from(BUCKET).download(String(l.pdf_path));
+      if (derr || !blob) return jsonResponse({ error: "stored_pdf_unreadable", letter_id: l.id }, 500);
+      const doc = await PDFDocument.load(new Uint8Array(await blob.arrayBuffer()));
+      const pages = await merged.copyPages(doc, doc.getPageIndices());
+      for (const pg of pages) merged.addPage(pg);
+      // Duplex printing: start every letter on a fresh sheet.
+      if (pages.length % 2 === 1) merged.addPage([pages[0].getWidth(), pages[0].getHeight()]);
+    }
+    const pdf = new Uint8Array(await merged.save()) as Uint8Array<ArrayBuffer>;
     const sha = await sha256Bytes(pdf);
     const number = `CARE-PRINT-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
     const path = `batches/${number}.pdf`;

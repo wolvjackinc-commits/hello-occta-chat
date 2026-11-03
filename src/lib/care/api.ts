@@ -27,6 +27,7 @@ export type CareSubscriptionView = {
   id: string; reference: string; plan_code: "essentials" | "plus"; frequency: "monthly" | "quarterly" | "annual"; price_minor: number;
   collection_day: number; status: string; joined_at: string; cooling_off_ends_at: string; service_starts_on: string;
   first_collection_date: string; cancel_effective_date: string | null; cancelled_at: string | null; terms_version: string;
+  status_reason?: string | null; pending_plan_code?: "essentials" | "plus" | null; pending_price_minor?: number | null; pending_from?: string | null;
   mandate: { status: string; last4: string; sort_last2: string; bank_name: string | null; holder: string } | null;
 };
 
@@ -98,6 +99,7 @@ export const CARE_REASON_TEXT: Record<string, string> = {
   overdue_bill: "You have an overdue OCCTA bill. Once it's paid you can join. If money is tight, please talk to us first.",
   already_member: "You already have OCCTA Care.",
   contact_us_first: "Please call us on 0800 260 6626 and we'll help you set up Care.",
+  no_sales_contact: "You asked us not to offer you things, so our team can't sign you up. You can still join yourself on this page.",
 };
 
 export const CARE_STATUS_TEXT: Record<string, string> = {
@@ -115,7 +117,6 @@ export const CARE_REQUEST_KINDS: { code: string; label: string }[] = [
   { code: "wifi_setup", label: "Wi-Fi setup or tune-up" },
   { code: "device_setup", label: "Set up a phone, tablet or computer" },
   { code: "router_fault", label: "My OCCTA router or hub isn't working" },
-  { code: "repair_quote", label: "A repair quote for my device" },
   { code: "health_check", label: "Book my yearly health check (Care Plus)" },
   { code: "extender", label: "Wi-Fi extender loan (Care Plus)" },
 ];

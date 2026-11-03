@@ -84,7 +84,7 @@ export function MemberDialog({ id, onClose, onChanged }: { id: string | null; on
                 {s.status === "pending_review" && (
                   <div className="border-2 border-destructive p-3">
                     <p className="text-sm font-semibold">Review before the mandate is lodged</p>
-                    <p className="text-xs text-muted-foreground">{s.review_hold_until ? `Pause until ${dt(s.review_hold_until)}. ` : ""}Call the customer: check they understand it's not insurance, the price, and that they can cancel free. Decline if in any doubt (nothing has been taken).</p>
+                    <p className="text-xs text-muted-foreground">{s.review_hold_until ? `Pause until ${dt(s.review_hold_until)}. ` : ""}Call the customer: check they understand it's not insurance, the price, and that they can cancel free. Decline if in any doubt (nothing has been taken).{(s.review_reasons ?? []).includes("age_extra_check") ? " For 75+ customers, record the welcome call below before approving." : ""} Their first payment notice is sent when you approve.</p>
                     <div className="mt-2 flex gap-2">
                       <Button size="sm" disabled={busy} onClick={() => run("Approved", () => careAdmin.review(s.id, "approve", note))}>Approve</Button>
                       <Button size="sm" variant="destructive" disabled={busy} onClick={() => run("Declined", () => careAdmin.review(s.id, "decline", note))}>Decline</Button>
@@ -92,9 +92,9 @@ export function MemberDialog({ id, onClose, onChanged }: { id: string | null; on
                   </div>
                 )}
 
-                {s.welcome_call_due_on && !s.welcome_call_done_at && ["pending_mandate", "active"].includes(s.status) && (
+                {!s.welcome_call_done_at && (s.welcome_call_due_on || (s.review_reasons ?? []).length > 0) && ["pending_review", "pending_mandate", "active"].includes(s.status) && (
                   <div className="border-2 border-foreground p-3">
-                    <p className="text-sm font-semibold">Welcome call due {dd(s.welcome_call_due_on)}</p>
+                    <p className="text-sm font-semibold">Welcome call {s.welcome_call_due_on ? `due ${dd(s.welcome_call_due_on)}` : "needed"}</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button size="sm" disabled={busy} onClick={() => run("Welcome call: confirmed", () => careAdmin.welcomeCall(s.id, "confirmed", note))}>Confirmed they want it</Button>
                       <Button size="sm" variant="outline" disabled={busy} onClick={() => run("Welcome call: no answer", () => careAdmin.welcomeCall(s.id, "no_answer", note))}>No answer</Button>
@@ -110,6 +110,14 @@ export function MemberDialog({ id, onClose, onChanged }: { id: string | null; on
                       <SelectContent>{USAGE_KINDS.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>
                     <Button size="sm" className="mt-2" disabled={busy} onClick={() => run("Usage recorded", () => careAdmin.usage(s.id, usageKind, note))}>Record</Button>
                   </div>
+
+                  {["active", "pending_mandate", "pending_review"].includes(s.status) && (
+                    <div className="border-2 border-foreground p-3">
+                      <p className="text-sm font-semibold">Pause Care (money tight, or the customer asks)</p>
+                      <p className="text-xs text-muted-foreground">Stops all payments straight away; nothing is owed. They can join again from My OCCTA whenever they like. Put what they told you in the note.</p>
+                      <Button size="sm" variant="outline" className="mt-2" disabled={busy || note.trim().length < 5} onClick={() => run("Paused", () => careAdmin.pause(s.id, note))}>Pause Care</Button>
+                    </div>
+                  )}
 
                   {!["cancelled", "declined"].includes(s.status) && (
                     <div className="border-2 border-foreground p-3">

@@ -30,6 +30,7 @@ export function DirectDebitPanel({ onOpenMember, onChanged }: { onOpenMember: (i
   }, [colTab]);
   useEffect(() => { void load().catch(() => {}); }, [load]);
   const { busy, run: act } = useCareAction(() => { void load(); onChanged(); });
+  const [pulledWarn, setPulledWarn] = useState<string | null>(null);
 
   async function createRun() {
     const r = await act("Collection run created", () => careAdmin.createRun(sel));
@@ -83,11 +84,12 @@ export function DirectDebitPanel({ onOpenMember, onChanged }: { onOpenMember: (i
 
       <section>
         <h2 className="font-display text-xl uppercase">Collections</h2>
-        <p className="text-sm text-muted-foreground">A collection becomes ready only when the mandate is active and written notice went out at least 12 working days before the date. Never mark one paid until the money is in the bank.</p>
+        <p className="text-sm text-muted-foreground">A collection becomes ready only when the mandate is active and the notice actually reached the customer at least 10 working days before the date (email sent, or letter posted + 2 working days). Letters waiting in the print queue don't count. Mark paid only once the money is in the bank and the return window (3 working days) has passed.</p>
+        {pulledWarn && <p className="mt-3 border-l-4 border-destructive pl-3 text-sm" role="alert">{pulledWarn} <button className="underline" onClick={() => setPulledWarn(null)}>Dismiss</button></p>}
         <Tabs value={colTab} onValueChange={setColTab} className="mt-3">
           <TabsList>
             <TabsTrigger value="ready">Ready to submit</TabsTrigger><TabsTrigger value="submitted">Awaiting result</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming (35 days)</TabsTrigger><TabsTrigger value="unpaid">Returned</TabsTrigger><TabsTrigger value="paid">Paid</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming (35 days)</TabsTrigger><TabsTrigger value="unpaid">Returned</TabsTrigger><TabsTrigger value="paid">Paid</TabsTrigger><TabsTrigger value="pulled">Pulled from a run</TabsTrigger>
           </TabsList>
           <TabsContent value={colTab}>
             {colTab === "ready" && (
@@ -108,13 +110,18 @@ export function DirectDebitPanel({ onOpenMember, onChanged }: { onOpenMember: (i
                     <TableCell className="text-xs">{c.full_name}<br />{c.account_number}</TableCell>
                     <TableCell>{gbp(c.amount_minor)}</TableCell>
                     <TableCell className="text-xs">{c.kind}</TableCell>
-                    <TableCell className="text-xs">{c.notice_kind ?? "—"}<br />{dt(c.notice_sent_at)}</TableCell>
+                    <TableCell className="text-xs">{c.notice_kind ?? "—"}<br />{c.notice_delivered_on ? `reached customer ${dd(c.notice_delivered_on)}` : c.notice_dedupe ? <span className="text-destructive">not delivered yet</span> : "—"}</TableCell>
                     <TableCell className="space-x-1 whitespace-nowrap">
                       {c.status === "submitted" && <>
                         <Button size="sm" onClick={() => { setF({ ...f, date: today() }); setDlg({ kind: "paid", row: c }); }}>Paid</Button>
                         <Button size="sm" variant="destructive" onClick={() => { setF({ ...f, code: "0" }); setDlg({ kind: "unpaid", row: c }); }}>Returned</Button>
                       </>}
+                      {c.status === "paid" && <Button size="sm" variant="outline" onClick={() => { setF({ ...f, code: "0" }); setDlg({ kind: "unpaid", row: c }); }}>Late return</Button>}
                       {c.status === "paid" && <Button size="sm" variant="outline" onClick={() => { setF({ ...f, code: "1", date: today(), amount: "" }); setDlg({ kind: "indemnity", row: c }); }}>Indemnity claim</Button>}
+                      {c.status === "cancelled" && c.run_submitted_at && !String(c.cancelled_reason ?? "").includes("collected anyway") && (
+                        <Button size="sm" variant="destructive" disabled={busy} onClick={() => void act("Recorded and full refund queued", () => careAdmin.pulledItemCollected(c.id, "Bank collected it after it was pulled from the run"))}>Collected anyway</Button>
+                      )}
+                      {c.status === "cancelled" && <span className="block text-[10px] text-muted-foreground">{c.cancelled_reason}</span>}
                       {c.status === "unpaid" && <span className="text-xs">ARUDD {c.unpaid_reason_code}</span>}
                     </TableCell>
                   </TableRow>
@@ -134,7 +141,7 @@ export function DirectDebitPanel({ onOpenMember, onChanged }: { onOpenMember: (i
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => run && downloadText(`${run.run_number}.csv`, String(run.csv))}>Download again</Button>
             <Button variant="destructive" disabled={busy} onClick={async () => { if (run) { await act("Run voided", () => careAdmin.runAction(String(run.run_id), "void", null, "Not submitted to AccessPay")); setRun(null); } }}>Void</Button>
-            <Button disabled={busy} onClick={async () => { if (run) { await act("Run marked submitted", () => careAdmin.runAction(String(run.run_id), "submitted")); setRun(null); } }}>Submitted in AccessPay</Button>
+            <Button disabled={busy} onClick={async () => { if (run) { const r = await act("Run marked submitted", () => careAdmin.runAction(String(run.run_id), "submitted")); setRun(null); if (r && Array.isArray(r.pulled) && r.pulled.length) { setPulledWarn(`${String(r.warning)} (${r.pulled.map((x: { reference: string }) => x.reference).join(", ")})`); setColTab("pulled"); } } }}>Submitted in AccessPay</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -177,7 +184,7 @@ export function DirectDebitPanel({ onOpenMember, onChanged }: { onOpenMember: (i
             <DialogFooter><Button disabled={busy} onClick={async () => { await act("Marked paid", () => careAdmin.recordResult(dlg.row.id, "paid", f.date, null, null)); setDlg(null); }}>Confirm paid</Button></DialogFooter>
           </>)}
           {dlg?.kind === "unpaid" && (<>
-            <DialogHeader><DialogTitle>Returned unpaid · {dlg.row.reference}</DialogTitle><DialogDescription>One re-try is scheduled with fresh notice, unless the code means the Instruction has ended. After 2 misses Care pauses. Nothing is chased.</DialogDescription></DialogHeader>
+            <DialogHeader><DialogTitle>Returned unpaid · {dlg.row.reference}</DialogTitle><DialogDescription>Code 0 (refer to payer): one re-try with fresh notice. Codes that end the Instruction pause Care. Any other code: no re-try, and you get a task to call the customer. After 2 misses Care pauses. Nothing is chased.</DialogDescription></DialogHeader>
             <Select value={f.code} onValueChange={(v) => setF({ ...f, code: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{ARUDD_CODES.map(([k, l]) => <SelectItem key={k} value={k}>{l}</SelectItem>)}</SelectContent></Select>
             <DialogFooter><Button variant="destructive" disabled={busy} onClick={async () => { await act("Recorded return", () => careAdmin.recordResult(dlg.row.id, "unpaid", null, f.code, null)); setDlg(null); }}>Record</Button></DialogFooter>
           </>)}

@@ -158,7 +158,7 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
             heading: "What's not included",
             lines: [
               "Care does not pay for, repair or replace your own phone, tablet, computer or other devices if they break down, are damaged, lost or stolen.",
-              "Repairs to your own devices are optional. We give you a fixed member price first, and you pay for each repair you choose.",
+              "Repairs to your own devices aren't part of Care.",
             ],
           },
           {
@@ -187,18 +187,29 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
         title: "Your OCCTA Care Direct Debit",
         subject: `Your OCCTA Care Direct Debit (${recipient.reference})`,
         preheader: "Confirmation of your Direct Debit and payment schedule.",
-        paragraphs: [
-          "This confirms the Direct Debit Instruction you gave us for OCCTA Care. It's separate from any other OCCTA Direct Debit, so it never affects your broadband, phone or SIM.",
-          `This letter is also your advance notice. Unless we write to tell you otherwise, we will collect ${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}, then ${pounds(price)} every ${careFrequencyNoun(freq)} on the ${day} of the month (or the next working day).`,
-          "If anything below is wrong, please contact us straight away.",
-        ],
+        paragraphs: payload.pending_review
+          ? [
+              "This confirms the Direct Debit Instruction you gave us for OCCTA Care. It's separate from any other OCCTA Direct Debit, so it never affects your broadband, phone or SIM.",
+              "Before we set it up with your bank, a member of our team will check Care is right for you. Nothing will be taken before then.",
+              `If we go ahead, we'll write to you with the date and amount of your first payment at least ${CARE_DD.noticeWorkingDays} working days before it's taken. After that, payments are ${pounds(price)} every ${careFrequencyNoun(freq)} on the ${day} of the month (or the next working day).`,
+              "If anything below is wrong, please contact us straight away.",
+            ]
+          : [
+              "This confirms the Direct Debit Instruction you gave us for OCCTA Care. It's separate from any other OCCTA Direct Debit, so it never affects your broadband, phone or SIM.",
+              `This letter is also your advance notice. Unless we write to tell you otherwise, we will collect ${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}, then ${pounds(price)} every ${careFrequencyNoun(freq)} on the ${day} of the month (or the next working day).`,
+              "If anything below is wrong, please contact us straight away.",
+            ],
         facts: [
           ["Collected by", `${CARE_DD.collectionName} (Service User Number ${CARE_DD.serviceUserNumber})`],
           ["Reference on your statement", recipient.reference],
           ["Account holder", str(payload.account_holder_name)],
           ["Bank account", `${str(payload.bank_name) ? `${str(payload.bank_name)}, ` : ""}sort code ending ${str(payload.masked_sort_last2)}, account ending ${str(payload.masked_account_last4)}`],
-          ["First payment", `${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}`],
+          ...(payload.pending_review
+            ? [["First payment", "We'll write with the date at least 10 working days before"] as [string, string]]
+            : [["First payment", `${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}`] as [string, string]]),
           ["Then", `${pounds(price)} every ${careFrequencyNoun(freq)}, on the ${day}`],
+          ["Notice", `At least ${CARE_DD.noticeWorkingDays} working days before any payment or change`],
+          ["Questions", `${OCCTA_CONTACT.phone}`],
         ],
         guarantee: guaranteeText(),
       };
@@ -217,8 +228,11 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
         facts: [
           ["Amount", pounds(num(payload.amount_minor))],
           ["Date", longDate(str(payload.due_date))],
+          ["How often", str(payload.kind) === "represent" ? "One-off re-try of a returned payment" : `Every ${careFrequencyNoun(freq)}, on the same day of the month`],
           ["Reference", recipient.reference],
           ["Collected by", `${CARE_DD.collectionName} (SUN ${CARE_DD.serviceUserNumber})`],
+          ["Notice", `At least ${CARE_DD.noticeWorkingDays} working days before each payment`],
+          ["Questions", `${OCCTA_CONTACT.phone}`],
         ],
         guarantee: guaranteeText(),
       };
@@ -249,10 +263,10 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
           subject: `Your OCCTA Care plan change (${recipient.reference})`,
           preheader: `You've moved to ${to}.`,
           paragraphs: [
-            `You've changed from ${from} to ${to}. Your new price is ${priceWithNoun(num(payload.new_price_minor), freq)}, VAT included.`,
+            `You've asked to change from ${from} to ${to}. Your new price will be ${priceWithNoun(num(payload.new_price_minor), freq)}, VAT included.`,
             payload.effective_date
-              ? `The new price is collected from your payment on or just after ${longDate(str(payload.effective_date))}. This letter is your advance notice of that change.`
-              : "The new price applies from your next payment, and we'll write again with the exact date and amount at least 10 working days before.",
+              ? `${to} and the new price start on ${longDate(str(payload.effective_date))}, the start of your next payment period. Until then you keep ${from}, which you've already paid for. The first payment at the new price is collected on or just after ${longDate(str(payload.due_date || payload.effective_date))}, and this letter is your advance notice of it.`
+              : `${to} and the new price start from your next payment period. We'll write again with the exact date and amount at least 10 working days before.`,
           ],
           facts: [["New plan", to], ["New price", pounds(num(payload.new_price_minor))]],
           guarantee: guaranteeText(),
@@ -284,11 +298,11 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
         paragraphs: [
           `Your Care renews for ${freq === "annual" ? "another year" : "another 3 months"} from ${longDate(str(payload.period_start))}. We will collect ${pounds(num(payload.amount_minor))} by Direct Debit on or just after ${longDate(str(payload.due_date))}.`,
           used > 0
-            ? `In the last ${freq === "annual" ? "12" : "3"} months you used Care ${used} time${used === 1 ? "" : "s"}.`
+            ? `In the last ${num(payload.usage_months) || (freq === "annual" ? 12 : 3)} months you used Care ${used} time${used === 1 ? "" : "s"}.`
             : "We haven't helped you with anything recently. If you don't think Care is worth it for you, please cancel before the date above and nothing more will be taken.",
           "This letter is your advance notice of the payment.",
         ],
-        facts: [["Amount", pounds(num(payload.amount_minor))], ["Date", longDate(str(payload.due_date))], ["Covers", `${longDate(str(payload.period_start))} to ${longDate(str(payload.period_end))}`]],
+        facts: [["Amount", pounds(num(payload.amount_minor))], ["Date", longDate(str(payload.due_date))], ["Period", `${longDate(str(payload.period_start))} to ${longDate(str(payload.period_end))}`], ["Questions", `${OCCTA_CONTACT.phone}`]],
         guarantee: guaranteeText(),
       };
     }
@@ -320,10 +334,14 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
         preheader: "We'll try once more. No fees.",
         paragraphs: [
           `We tried to collect ${pounds(num(payload.amount_minor))} for Care around ${longDate(str(payload.due_date))}, but your bank returned it because ${aruddText(str(payload.reason_code))}.`,
-          `We'll try once more on or just after ${longDate(str(payload.retry_date))}. This letter is your advance notice of that re-try. There are no fees for a missed Care payment.`,
+          payload.retry_date
+            ? `We'll try once more on or just after ${longDate(str(payload.retry_date))}. This letter is your advance notice of that re-try. There are no fees for a missed Care payment.`
+            : "We won't try to take it again without speaking to you first. There are no fees for a missed Care payment, and we'll be in touch.",
           "If you'd rather not continue, or if money is tight right now, just tell us and we'll cancel or pause Care with no charge. We never pass Care balances to debt collectors.",
         ],
-        facts: [["Amount", pounds(num(payload.amount_minor))], ["We'll try again", longDate(str(payload.retry_date))]],
+        facts: payload.retry_date
+          ? [["Amount", pounds(num(payload.amount_minor))], ["We'll try again", longDate(str(payload.retry_date))], ["Reference", recipient.reference], ["Questions", `${OCCTA_CONTACT.phone}`]]
+          : [["Amount", pounds(num(payload.amount_minor))], ["Reference", recipient.reference], ["Questions", `${OCCTA_CONTACT.phone}`]],
         guarantee: guaranteeText(),
       };
     }
@@ -336,11 +354,13 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
         subject: `Your OCCTA Care is paused (${recipient.reference})`,
         preheader: "No more payments will be taken. Nothing is owed.",
         paragraphs: [
-          ended
-            ? `Your bank told us your Care Direct Debit can't be used any more (${aruddText(str(payload.reason_code))}).`
-            : "We weren't able to collect your last two Care payments.",
+          str(payload.reason) === "customer_request"
+            ? "As you asked, we've paused your OCCTA Care."
+            : ended
+              ? `Your bank told us your Care Direct Debit can't be used any more (${aruddText(str(payload.reason_code))}).`
+              : "We weren't able to collect your last two Care payments.",
           "We've paused Care and won't take any more payments. You don't owe us anything for Care, and we won't chase you or charge any fees.",
-          "If you'd like to start Care again, you can rejoin from My OCCTA or give us a call. If you're having a hard time at the moment, we're happy to help with your other OCCTA services too.",
+          "If you'd like to start Care again, you can join again from My OCCTA → OCCTA Care whenever you like, or give us a call. If you're having a hard time at the moment, we're happy to help with your other OCCTA services too.",
         ],
         closing: [NOT_INSURANCE_LINE, SUPPORT_LINE],
       };
@@ -430,9 +450,8 @@ export function buildCareLetter(type: CareLetterType | string, payload: P, recip
         subject: `About your OCCTA Care payment refund (${recipient.reference})`,
         preheader: "Your bank refunded a Care payment.",
         paragraphs: [
-          `Your bank refunded a Care payment of ${pounds(num(payload.amount_minor))} under the Direct Debit Guarantee, and we've ended your Care.`,
-          "Our records show Care was set up with your agreement and you were given notice of the payment. If you think the refund was a mistake, you can pay it back by bank transfer, but you don't have to reply to this letter and we won't chase it.",
-          "If something went wrong with Care, please tell us so we can put it right.",
+          `Your bank refunded a Care payment of ${pounds(num(payload.amount_minor))} under the Direct Debit Guarantee, and we've ended your Care. You don't need to do anything, and you don't owe us anything for Care.`,
+          "If something went wrong with Care, please tell us so we can put it right. If you'd like Care again in future, you can join again from My OCCTA.",
         ],
         closing: [SUPPORT_LINE],
       };

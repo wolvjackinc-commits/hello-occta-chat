@@ -12,7 +12,10 @@ import {
 import { buildCareLetter, careLetterText } from "../../../../supabase/functions/_shared/careLetters.ts";
 
 const root = path.resolve(__dirname, "../../../..");
-const migration = readFileSync(path.join(root, "supabase/migrations/20261102200000_occta_care.sql"), "utf8");
+// Every Care migration, in order: the schema plus later hardening.
+const careMigrations = readdirSync(path.join(root, "supabase/migrations")).filter((f) => /_occta_care.*\.sql$/.test(f)).sort();
+const migration = careMigrations.map((f) => readFileSync(path.join(root, "supabase/migrations", f), "utf8")).join("\n");
+const hardening = readFileSync(path.join(root, "supabase/migrations/20261103100000_occta_care_hardening.sql"), "utf8");
 
 const recipient = {
   name: "Mrs Test Person", email: "t@example.com", address_line1: "1 Test Road", city: "Huddersfield", postcode: "HD3 3WU",
@@ -117,7 +120,43 @@ describe("OCCTA Care wording", () => {
     const faq = CARE_FAQ.find((f) => /router/i.test(f.q))!;
     expect(faq.a).toMatch(/every customer/i);
     expect(faq.a).toMatch(/legal right/i);
+    expect(faq.a).toMatch(/within 5 working days/);
     expect(CARE_NOT_INCLUDED.join(" ")).toMatch(/doesn't change your legal rights/i);
+    // Essentials gets nothing faster than every customer already gets, so it must not list a router swap at all.
+    expect(CARE_PLANS.find((p) => p.code === "essentials")!.features.join(" ")).not.toMatch(/router|hub/i);
+    // Plus's faster swap is always stated against the standard everyone gets.
+    const plusSwap = CARE_PLANS.find((p) => p.code === "plus")!.features.find((f) => /router|hub/i.test(f))!;
+    expect(plusSwap).toMatch(/standard for every customer is within 5 working days/);
+  });
+
+  it("offers no repairs or repair prices (there is no repair partner)", () => {
+    const sales = [...CARE_PLANS.flatMap((p) => [p.tagline, ...p.features]), ...CARE_TERMS.flatMap((s) => s.points), ...CARE_FAQ.map((f) => f.a)].join(" ");
+    expect(sales).not.toMatch(/member price|repair partner|repair quote|fixed[- ]price repair/i);
+    const brain = readFileSync(path.join(root, "supabase/functions/occta-companion/brain.ts"), "utf8");
+    const careLine = brain.split("\n").find((l) => l.startsWith("**OCCTA Care.**"))!;
+    expect(careLine).toMatch(/never offer repairs/i);
+    expect(careLine).not.toMatch(/(Essentials|Plus)[^.]*member repair prices/i);
+  });
+});
+
+describe("OCCTA Care money rules (hardening)", () => {
+  it("notice counts only once delivered, not when queued", () => {
+    expect(hardening).toContain("CREATE OR REPLACE FUNCTION public.care_notice_delivered_on");
+    expect(hardening).toMatch(/care_notice_ok\(c\.notice_dedupe, c\.due_date\)/);
+    expect(hardening).not.toMatch(/care_working_days_between\(c\.notice_sent_at/);
+  });
+  it("price and plan changes apply only from their effective period", () => {
+    expect(hardening).toContain("pending_price_minor");
+    expect(hardening).not.toMatch(/UPDATE public\.care_subscriptions SET price_minor = p_new_minor/);
+  });
+  it("re-presents only ARUDD 0, and paid needs the return window", () => {
+    expect(hardening).toContain("p_reason_code = '0' AND c.kind <> 'represent'");
+    expect(hardening).toContain("care_add_working_days(c.due_date, 3)");
+  });
+  it("Stannp test mode never counts as posted", () => {
+    const dispatch = readFileSync(path.join(root, "supabase/functions/care-dispatch/index.ts"), "utf8");
+    expect(dispatch).toContain('Deno.env.get("STANNP_MODE") === "live" ? Deno.env.get("STANNP_API_KEY") : undefined');
+    expect(dispatch).not.toMatch(/delivery: "stannp", provider_id: sent\.id, posted_on/);
   });
 });
 
@@ -150,6 +189,28 @@ describe("OCCTA Care letters", () => {
   it("missed-payment letters promise no fees and no debt collectors", () => {
     expect(careLetterText(buildCareLetter("payment_failed", payloads.payment_failed, recipient))).toMatch(/never pass Care balances to debt collectors/);
     expect(careLetterText(buildCareLetter("service_paused", payloads.service_paused, recipient))).toMatch(/don't owe us anything/);
+  });
+
+  it("advance notices carry the Bacs contents: amount, date, frequency, reference, notice period, name and phone", () => {
+    const t = careLetterText(buildCareLetter("advance_notice", payloads.advance_notice, recipient));
+    for (const x of ["£14.97", "15 January 2027", "Every 3 months", "OCCTA CARE-100001", "10 working days", "APS Re OCCTA", "0800 260 6626"]) expect(t, x).toContain(x);
+  });
+
+  it("a return that isn't lack of funds promises no automatic re-try", () => {
+    const t = careLetterText(buildCareLetter("payment_failed", { ...payloads.payment_failed, reason_code: "4", retry_date: null }, recipient));
+    expect(t).toMatch(/won't try to take it again without speaking to you/);
+  });
+
+  it("a sale waiting for review gets no payment date in its Direct Debit confirmation", () => {
+    const t = careLetterText(buildCareLetter("dd_confirmation", { ...payloads.dd_confirmation, pending_review: true }, recipient));
+    expect(t).not.toContain("1 December 2026");
+    expect(t).toMatch(/at least 10 working days before/);
+  });
+
+  it("the indemnity letter never asks for the money back", () => {
+    const t = careLetterText(buildCareLetter("indemnity_followup", payloads.indemnity_followup, recipient));
+    expect(t).not.toMatch(/pay it back|bank transfer/i);
+    expect(t).toMatch(/don't owe us anything/);
   });
 
   it("the cancellation confirmation states the refund", () => {

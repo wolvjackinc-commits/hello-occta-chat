@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
           ["Recording on file", String(q.recording_path ?? "-")]] as [string, string][]; })() : []),
     ], lines: ["Script lines confirmed as read out:", ...((inv.data.script_confirmed as { script?: string[] })?.script ?? []).map((l) => `- ${l}`)] });
     if (mand) {
-      const prov = await careProvider(svc, mand.provider_code);
+      const prov = await careProvider(svc, mand.provider_code as string | null);
       sections.push({ heading: "Direct Debit Instruction (paperless)", rows: [
         ["Collected by", `${prov.name}, Service User Number ${prov.sun} (${prov.portal})`], ["Reference", String(mand.reference)],
         ["Account holder", String(mand.account_holder_name)], ["Bank", `${mand.bank_name ?? "-"}, sort code ending ${mand.masked_sort_last2}, account ending ${mand.masked_account_last4}`],

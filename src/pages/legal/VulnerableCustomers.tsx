@@ -46,6 +46,18 @@ export default function VulnerableCustomers() {
         <li>A nominated trusted person — a family member, carer or advocate — who can deal with us on your behalf with your consent, or a registered power of attorney.</li>
       </ul>
 
+      <h3>OCCTA Care</h3>
+      <p>OCCTA Care is an optional support service, not insurance. To make sure nobody joins it without understanding it:</p>
+      <ul>
+        <li>We never pressure anyone to join. If you've asked us not to offer you extras, our sales team won't offer you Care.</li>
+        <li>Every phone sale is recorded and checked before you get a sign-up link. You always sign up yourself, and we never take bank details over the phone.</li>
+        <li>A sale is held for a manager's review if the customer seemed confused, unsure or under pressure, or mentioned circumstances that make them vulnerable.</li>
+        <li>If you're 75 or over, we call you to check Care is right for you before it starts.</li>
+        <li>Nothing is taken in your first 14 days, and there's no minimum term or exit fee. Cancel any time by phone (0800 260 6626), email, letter, chat or in My OCCTA.</li>
+        <li>If money is tight, tell us and we can pause Care or cancel it with no charge. If you haven't used Care for 6 months, we'll ask whether you still want it.</li>
+        <li>A trusted person or power of attorney can cancel Care for you.</li>
+      </ul>
+
       <h3>Bereavement</h3>
       <p>If you're managing the account of someone who has died, contact us and we'll guide you through closing or transferring the account at a pace that suits you, and explain any final amounts clearly.</p>
 

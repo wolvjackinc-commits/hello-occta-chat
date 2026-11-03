@@ -267,10 +267,16 @@ export const CARE_TERMS: TermsSection[] = [
 ];
 
 /** Key facts shown (and hashed) immediately before a customer agrees. */
+/** 1 -> "1st", 22 -> "22nd", 23 -> "23rd". */
+export function careOrdinal(n: number): string {
+  const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
+  return `${n}${s}`;
+}
+
 export function careKeyFacts(opts: { planCode: string; frequency: string; priceMinor: number; collectionDay: number; firstCollectionDate?: string | null; ddName?: string }): string[] {
   const plan = carePlan(opts.planCode);
   const freq = careFrequency(opts.frequency);
-  const day = opts.collectionDay === 15 ? "15th" : "1st";
+  const day = careOrdinal(opts.collectionDay);
   return [
     `Plan: ${plan?.name ?? opts.planCode}. Price: ${pounds(opts.priceMinor)} ${freq?.code === "monthly" ? "a month" : freq?.code === "quarterly" ? "every 3 months" : "a year"}, VAT included.`,
     `Paid by its own Direct Debit to ${opts.ddName ?? CARE_DD.collectionName}, on the ${day} of the month.`,

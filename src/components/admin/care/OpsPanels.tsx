@@ -93,7 +93,9 @@ export function LettersPanel({ onChanged }: { onChanged: () => void }) {
               <TableCell className="text-xs">{dt(l.created_at)}</TableCell>
               <TableCell className="text-xs">{CARE_LETTER_LABEL[l.letter_type] ?? l.letter_type}{l.large_print ? " · LARGE PRINT" : ""}{l.copy_for ? ` · copy for ${l.copy_for}` : ""}<br /><span className="font-mono">{l.reference}</span></TableCell>
               <TableCell className="text-xs">{l.name}<br />{l.postcode}</TableCell>
-              <TableCell className="text-xs">{l.status}{l.posted_on ? ` ${dd(l.posted_on)}` : ""}{l.error ? <><br /><span className="text-destructive">{l.error}</span></> : null}</TableCell>
+              <TableCell className="text-xs">{l.status}{l.posted_on ? ` ${dd(l.posted_on)}` : ""}{l.received_on ? <><br />received {dd(l.received_on)}</> : null}
+                {(l.tracking_url || l.royal_mail_ref) && <><br /><a className="underline" target="_blank" rel="noopener noreferrer" href={l.tracking_url || `https://www.royalmail.com/track-your-item#/tracking-results/${encodeURIComponent(l.royal_mail_ref)}`}>Royal Mail {l.royal_mail_ref ?? "tracking"}</a></>}
+                {l.error ? <><br /><span className="text-destructive">{l.error}</span></> : null}</TableCell>
               <TableCell className="text-xs">{l.email_status ?? "—"}</TableCell>
               <TableCell>{l.pdf_path && <Button size="sm" variant="outline" onClick={() => void openStoragePath(l.pdf_path)}><FileText className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>

@@ -72,7 +72,7 @@ function NewSale({ onCreated }: { onCreated: (id: string) => void }) {
   const [q, setQ] = useState(""); const [found, setFound] = useState<J[] | null>(null); const [cust, setCust] = useState<J | null>(null);
   const [plan, setPlan] = useState("essentials"); const [freq, setFreq] = useState("monthly"); const [day, setDay] = useState("1");
   const [callRef, setCallRef] = useState(""); const [callAt, setCallAt] = useState(localNow()); const [notes, setNotes] = useState(""); const [busy, setBusy] = useState(false);
-  const [nc, setNc] = useState<Record<string, string> | null>(null);
+  const [nc, setNc] = useState<Record<string, string> | null>({});
   async function addNew() {
     if (!nc) return; setBusy(true);
     try { const r = await careSales.createCustomer(nc); const c = { ...r.customer, name: r.customer.full_name }; setFound([c]); setCust(c); setNc(null); toast({ title: "Account opened", description: "Now log what they agreed on the call." }); }
@@ -89,20 +89,23 @@ function NewSale({ onCreated }: { onCreated: (id: string) => void }) {
   return (
     <div className="mt-4 grid max-w-3xl gap-4">
       <section className="border-[3px] border-foreground p-4">
-        <p className="font-display uppercase">1. Find or add the customer</p>
-        <p className="text-xs text-muted-foreground">Anyone at a UK home address can have Care, whether or not they're with OCCTA. Search by account number, email, mobile or full postcode. If they're new to OCCTA, add them.</p>
-        <div className="mt-2 flex gap-2"><Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void search()} placeholder="e.g. OCC100234 or HD3 3WU" /><Button onClick={() => void search()} disabled={busy || q.trim().length < 4}>Search</Button></div>
-        {found && found.length === 0 && !nc && <p className="mt-2 text-sm">No account found. <button className="underline" onClick={() => setNc({ email: q.includes("@") ? q.trim() : "" })}>Add them as a new customer</button></p>}
-        {!nc && !(found && found.length === 0) && <button className="mt-2 text-xs underline" onClick={() => setNc({})}>New to OCCTA? Add a new customer</button>}
+        <p className="font-display uppercase">1. Add the customer</p>
+        <p className="text-xs text-muted-foreground">Anyone at a UK home address can have Care, whether or not they're with OCCTA.</p>
+        {!nc && <Button className="mt-2" onClick={() => { setNc({}); setFound(null); setCust(null); }}>Add a new customer</Button>}
         {nc && (
           <div className="mt-3 grid gap-2 border-2 border-foreground/30 p-3 sm:grid-cols-2">
             {([["full_name", "Full name"], ["email", "Email (optional)"], ["phone", "Mobile or phone"], ["address_line1", "Address line 1"], ["address_line2", "Address line 2 (optional)"], ["city", "Town or city"], ["postcode", "Postcode"]] as const).map(([k, l]) => (
               <div key={k}><Label htmlFor={`nc-${k}`}>{l}</Label><Input id={`nc-${k}`} value={nc[k] ?? ""} onChange={(e) => setNc({ ...nc, [k]: e.target.value })} /></div>
             ))}
             <p className="text-xs text-muted-foreground sm:col-span-2">This opens a free OCCTA account for them. Email is optional: every Care letter is posted.</p>
-            <div className="flex gap-2 sm:col-span-2"><Button disabled={busy} onClick={() => void addNew()}>Add customer</Button><Button variant="outline" onClick={() => setNc(null)}>Cancel</Button></div>
+            <div className="flex gap-2 sm:col-span-2"><Button disabled={busy} onClick={() => void addNew()}>Add customer</Button></div>
           </div>
         )}
+        {nc ? <button className="mt-3 text-xs underline" onClick={() => setNc(null)}>Already with OCCTA? Search for their account instead</button> : (<>
+          <p className="mt-3 text-xs text-muted-foreground">Existing OCCTA customer: search by account number, email, mobile or full postcode.</p>
+          <div className="mt-1 flex gap-2"><Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void search()} placeholder="e.g. OCC100234 or HD3 3WU" /><Button variant="outline" onClick={() => void search()} disabled={busy || q.trim().length < 4}>Search</Button></div>
+          {found && found.length === 0 && <p className="mt-2 text-sm">No account found. <button className="underline" onClick={() => setNc({ email: q.includes("@") ? q.trim() : "" })}>Add them as a new customer</button></p>}
+        </>)}
         {found?.map((c) => (
           <button key={c.id} onClick={() => setCust(c)} className={`mt-2 block w-full border-2 p-2 text-left text-sm ${cust?.id === c.id ? "border-primary bg-primary/10" : "border-foreground/20"}`}>
             <strong>{c.name}</strong> · {c.account_number} · {c.address_line1}, {c.postcode} · {c.email_masked}
@@ -229,7 +232,8 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
         )}
 
         {s.supervisor_decision && <p className="border-l-4 border-primary pl-3 text-sm">Supervisor {s.supervisor_name} {s.supervisor_decision === "approve" ? "approved" : s.supervisor_decision === "bypass" ? "bypassed the call check" : "declined"} at {dt(s.supervisor_at)}: {s.supervisor_note}</p>}
-        {canSend && <CompleteSignup sale={s} />}
+        {canSend && <CompleteSignup sale={s} onDone={() => void load()} />}
+        {s.status === "joined" && s.subscription_id && <FollowUp saleId={id} />}
 
         <section className="flex flex-wrap items-end gap-2 border-t-2 border-foreground pt-3">
           {sup && ["awaiting_recording", "scoring", "passed", "held", "declined"].includes(s.status) && (<>
@@ -277,22 +281,25 @@ function Report() {
 }
 
 // Telesales: take everything on the call. The server runs the full sign-up checks and posts the letters.
-function CompleteSignup({ sale }: { sale: J }) {
-  const [plan, setPlan] = useState<string>(sale.plan_code); const [freq, setFreq] = useState<string>(sale.frequency); const [day, setDay] = useState(String(sale.collection_day));
-  const [prov, setProv] = useState("accesspay"); const [startNow, setStartNow] = useState(false); const [dob, setDob] = useState("");
+function CompleteSignup({ sale, onDone }: { sale: J; onDone: () => void }) {
+  const [plan, setPlan] = useState<string>(sale.plan_code); const [freq, setFreq] = useState<string>(sale.frequency); const [prov, setProv] = useState("accesspay"); const [firstDate, setFirstDate] = useState(""); const [earliest, setEarliest] = useState("");
+  useEffect(() => { void careSales.earliestFirstDate().then(setEarliest).catch(() => setEarliest("")); }, []);
+  const fdDay = firstDate ? Number(firstDate.slice(8, 10)) : 0;
+  const dateProblem = !firstDate ? "Choose the first payment date." : earliest && firstDate < earliest ? `The earliest date is ${earliest.split("-").reverse().join("/")} (we must post 10 working days' notice first).`
+    : fdDay > 28 ? "Choose a day from the 1st to the 28th." : prov === "accesspay" && ![1, 15].includes(fdDay) ? "AccessPay can only collect on the 1st or the 15th." : null; const [startNow, setStartNow] = useState(false); const [dob, setDob] = useState("");
   const [bank, setBank] = useState({ account_holder_name: sale.customer?.name ?? "", sort_code: "", account_number: "", bank_name: "" });
   const [c, setC] = useState({ ddi_read: false, account_holder: false, customer_agreed: false, over_18: false });
   const [busy, setBusy] = useState(false); const [done, setDone] = useState<J | null>(null);
   const price = carePriceMinor(plan, freq as never) ?? 0;
   const dd = DD_PROVIDERS[prov];
   const sortOk = bank.sort_code.replace(/\D/g, "").length === 6; const acctOk = [7, 8].includes(bank.account_number.replace(/\D/g, "").length);
-  const ready = sortOk && acctOk && bank.account_holder_name.trim().length >= 2 && Object.values(c).every(Boolean);
+  const ready = !dateProblem && sortOk && acctOk && bank.account_holder_name.trim().length >= 2 && Object.values(c).every(Boolean);
   async function submit() {
     setBusy(true);
     try {
-      const r = await careSales.complete(sale.id, { plan, frequency: freq, collection_day: Number(day), provider_code: prov, start_now: startNow,
+      const r = await careSales.complete(sale.id, { plan, frequency: freq, first_payment_date: firstDate, provider_code: prov, start_now: startNow,
         date_of_birth: dob || null, bank, confirm: c });
-      setDone(r); toast({ title: `Signed up: ${r.reference}`, description: "Summary and Direct Debit confirmation are queued to post." });
+      setDone(r); toast({ title: `Signed up: ${r.reference}`, description: "Summary and Direct Debit confirmation are ready to post." }); onDone();
     } catch (e) { toast({ title: "Couldn't complete the sign-up", description: salesError(e), variant: "destructive" }); } finally { setBusy(false); }
   }
   if (done) return (
@@ -309,10 +316,12 @@ function CompleteSignup({ sale }: { sale: J }) {
       <div className="grid gap-3 sm:grid-cols-4">
         <div><Label>Plan</Label><Select value={plan} onValueChange={setPlan}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CARE_PLANS.map((p) => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}</SelectContent></Select></div>
         <div><Label>How often</Label><Select value={freq} onValueChange={setFreq}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CARE_FREQUENCIES.map((f) => <SelectItem key={f.code} value={f.code}>{f.label}</SelectItem>)}</SelectContent></Select></div>
-        <div><Label>Payment day</Label><Select value={day} onValueChange={setDay}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="1">1st of the month</SelectItem><SelectItem value="15">15th of the month</SelectItem></SelectContent></Select></div>
+        <div><Label htmlFor="cs-first">First payment date</Label><Input id="cs-first" type="date" min={earliest || undefined} value={firstDate} onChange={(e) => setFirstDate(e.target.value)} aria-invalid={!!firstDate && !!dateProblem} />
+          <p className="mt-1 text-xs text-muted-foreground">{prov === "accesspay" ? "AccessPay: the 1st or 15th only." : "FastPay: any day from the 1st to the 28th."} Then the same day each period.</p>
+          {firstDate && dateProblem && <p className="text-xs text-destructive" role="alert">{dateProblem}</p>}</div>
         <div><Label>Price</Label><p className="pt-2 font-semibold">{pounds(price)} {freq === "monthly" ? "a month" : freq === "quarterly" ? "every 3 months" : "a year"}</p></div>
       </div>
-      <label className="flex items-start gap-2 text-sm"><Checkbox checked={startNow} onCheckedChange={(v) => setStartNow(v === true)} /> <span>Customer asked for support to start today (they can still cancel in the 14 days; nothing is taken before then).</span></label>
+      <label className="flex items-start gap-2 text-sm"><Checkbox checked={startNow} onCheckedChange={(v) => setStartNow(v === true)} /> <span>Customer asked for support to start today (they can still cancel within the 14 days).</span></label>
       <div className="grid gap-3 sm:grid-cols-2">
         <div><Label htmlFor="cs-prov">Direct Debit goes on</Label><DDProviderSelect id="cs-prov" value={prov} onChange={setProv} /></div>
         <div><Label htmlFor="cs-dob">Date of birth (if we don't have it)</Label><Input id="cs-dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} /></div>
@@ -333,6 +342,73 @@ function CompleteSignup({ sale }: { sale: J }) {
         ))}
       </div>
       <Button disabled={busy || !ready} onClick={() => void submit()}>{busy ? "Saving…" : "Complete sign-up"}</Button>
+    </section>
+  );
+}
+
+const LETTER_NAME: Record<string, string> = { welcome_pack: "Care summary (welcome pack)", dd_confirmation: "Direct Debit confirmation and Guarantee" };
+const royalMailLink = (ref: string) => `https://www.royalmail.com/track-your-item#/tracking-results/${encodeURIComponent(ref.trim())}`;
+const fmt = (d?: string | null) => (d ? d.slice(0, 10).split("-").reverse().join("/") : "-");
+
+// After sign-up: the letters, their posting and tracking, and the payment-reminder call. Add and update only.
+function FollowUp({ saleId }: { saleId: string }) {
+  const [f, setF] = useState<J | null>(null); const [busy, setBusy] = useState(false);
+  const [edit, setEdit] = useState<Record<string, Record<string, string>>>({});
+  const [call, setCall] = useState({ outcome: "reminded", note: "" });
+  const load = useCallback(async () => { try { setF(await careSales.followup(saleId)); } catch (e) { toast({ title: "Couldn't load the letters", description: salesError(e), variant: "destructive" }); } }, [saleId]);
+  useEffect(() => { void load(); }, [load]);
+  async function run(label: string, fn: () => Promise<unknown>) {
+    setBusy(true);
+    try { await fn(); toast({ title: label }); await load(); } catch (e) { toast({ title: "Not saved", description: salesError(e), variant: "destructive" }); } finally { setBusy(false); }
+  }
+  if (!f?.subscription) return null;
+  const sub = f.subscription as J; const letters = (f.letters ?? []) as J[]; const calls = (f.calls ?? []) as J[];
+  const received = letters.some((l) => l.received_on);
+  return (
+    <section className="space-y-4 border-[3px] border-foreground p-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="font-display uppercase">Letters & follow-up · {sub.reference}</p>
+        <p className="text-sm">{CARE_PLANS.find((p) => p.code === sub.plan_code)?.name} · {pounds(sub.price_minor)} {sub.frequency} · {sub.provider} · mandate {sub.mandate_status} · status {sub.status}</p>
+      </div>
+      <p className="text-sm">Cooling-off ends {fmt(sub.cooling_off_ends_on)} · {f.next_payment ? `next payment ${pounds(f.next_payment.amount_minor)} on ${fmt(f.next_payment.due_date)}` : "no payment scheduled"}</p>
+      <div className="space-y-3">
+        {letters.map((l) => {
+          const e = edit[l.id] ?? {}; const set = (k: string, v: string) => setEdit({ ...edit, [l.id]: { ...e, [k]: v } });
+          const track = (e.tracking_url ?? l.tracking_url) || ((e.royal_mail_ref ?? l.royal_mail_ref) ? royalMailLink(e.royal_mail_ref ?? l.royal_mail_ref) : null);
+          return (
+            <div key={l.id} className="border-2 border-foreground/30 p-3 text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <strong>{LETTER_NAME[l.letter_type] ?? String(l.letter_type).replace(/_/g, " ")}</strong>
+                <Badge variant="outline">{l.status}</Badge>
+                <span className="text-xs text-muted-foreground">dated {fmt(l.letter_date ?? l.created_at)}{l.email_sent_at ? ` · emailed ${fmt(l.email_sent_at)}` : ""}</span>
+                {l.pdf && <Button size="sm" variant="outline" disabled={busy} onClick={() => void careSales.letterUrl(saleId, l.id).then((r) => r.url && window.open(r.url, "_blank", "noopener")).catch((er) => toast({ title: "Couldn't open the letter", description: salesError(er), variant: "destructive" }))}>Open letter (PDF)</Button>}
+                {track && <a className="text-xs underline" href={track} target="_blank" rel="noopener noreferrer">Track with Royal Mail</a>}
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                <div><Label htmlFor={`po-${l.id}`}>Posted on</Label><Input id={`po-${l.id}`} type="date" value={e.posted_on ?? l.posted_on ?? ""} onChange={(ev) => set("posted_on", ev.target.value)} /></div>
+                <div><Label htmlFor={`rm-${l.id}`}>Royal Mail reference</Label><Input id={`rm-${l.id}`} value={e.royal_mail_ref ?? l.royal_mail_ref ?? ""} onChange={(ev) => set("royal_mail_ref", ev.target.value)} placeholder="e.g. AB123456789GB" /></div>
+                <div><Label htmlFor={`tu-${l.id}`}>Tracking link (optional)</Label><Input id={`tu-${l.id}`} value={e.tracking_url ?? l.tracking_url ?? ""} onChange={(ev) => set("tracking_url", ev.target.value)} placeholder="https://..." /></div>
+                <div><Label htmlFor={`rc-${l.id}`}>Received on</Label><Input id={`rc-${l.id}`} type="date" value={e.received_on ?? l.received_on ?? ""} onChange={(ev) => set("received_on", ev.target.value)} /></div>
+              </div>
+              {Object.keys(e).length > 0 && <Button size="sm" className="mt-2" disabled={busy} onClick={() => void run("Letter updated", () => careSales.letterUpdate(l.id, e)).then(() => setEdit({ ...edit, [l.id]: {} }))}>Save</Button>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="border-2 border-foreground/30 p-3 text-sm">
+        <p className="font-semibold">Payment reminder call</p>
+        {!received ? <p className="text-xs text-muted-foreground">Opens once a letter is marked as received. Then call the customer to check they got it and remind them about the first payment.</p> : (<>
+          <p className="text-xs text-muted-foreground">Check they received the letters and remind them: {f.next_payment ? `${pounds(f.next_payment.amount_minor)} on ${fmt(f.next_payment.due_date)}` : "the first payment"}, collected by {sub.provider}, cancel any time.</p>
+          <div className="mt-2 flex flex-wrap items-end gap-2">
+            <div className="w-48"><Label>Outcome</Label><Select value={call.outcome} onValueChange={(v) => setCall({ ...call, outcome: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
+              <SelectItem value="reminded">Spoke and reminded</SelectItem><SelectItem value="no_answer">No answer</SelectItem><SelectItem value="call_back">Asked to call back</SelectItem><SelectItem value="wants_to_cancel">Wants to cancel</SelectItem>
+            </SelectContent></Select></div>
+            <div className="min-w-[240px] flex-1"><Label>Note</Label><Input value={call.note} onChange={(ev) => setCall({ ...call, note: ev.target.value })} placeholder="What was said" /></div>
+            <Button disabled={busy || call.note.trim().length < 3} onClick={() => void run(call.outcome === "wants_to_cancel" ? "Cancelled and confirmed to the customer in writing" : "Call saved", () => careSales.reminderCall(saleId, call.outcome, call.note)).then(() => setCall({ outcome: "reminded", note: "" }))}>Save call</Button>
+          </div>
+        </>)}
+        {calls.length > 0 && <ul className="mt-2 space-y-1 text-xs">{calls.map((c, i) => <li key={i}>{dt(c.at)} · {String(c.outcome).replace(/_/g, " ")} · {c.by ?? "staff"}: {c.note}</li>)}</ul>}
+      </div>
     </section>
   );
 }

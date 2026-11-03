@@ -148,7 +148,9 @@ Deno.serve(async (req) => {
       ["Staff user", String(inv.data.created_by)], ["Call reference / recording", String(inv.data.call_reference ?? "-")], ["Notes", String(inv.data.call_notes ?? "-")],
       ["Link sent", `${dt(inv.data.created_at)} to ${inv.data.sent_to_email}`], ["Customer completed", dt(inv.data.used_at)],
       ...(((inv.data.script_confirmed as { qa?: Record<string, unknown> })?.qa) ? (() => { const q = (inv.data.script_confirmed as { qa: Record<string, unknown> }).qa;
-        return [["Sales Desk sale", String(q.sale_reference ?? "-")], ["Call check", `${q.decision ?? "-"} (score ${q.score ?? "-"})${q.supervisor_decision ? `, supervisor ${q.supervisor_decision}` : ""}`],
+        // A bypassed call check is internal only: the pack shows the sale and recording, not the check.
+        return [["Sales Desk sale", String(q.sale_reference ?? "-")],
+          ...(q.supervisor_decision === "bypass" ? [] : [["Call check", `${q.decision ?? "-"} (score ${q.score ?? "-"})${q.supervisor_decision ? `, supervisor ${q.supervisor_decision}` : ""}`]]),
           ["Recording on file", String(q.recording_path ?? "-")]] as [string, string][]; })() : []),
     ], lines: ["Script lines confirmed as read out:", ...((inv.data.script_confirmed as { script?: string[] })?.script ?? []).map((l) => `- ${l}`)] });
     if (mand) {

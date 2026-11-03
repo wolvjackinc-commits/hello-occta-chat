@@ -239,9 +239,11 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
               <Button disabled={!!busy || note.trim().length < 10} onClick={() => void act("Approved", () => careSales.decide(id, "approve", note))}>Approve</Button>
               <Button variant="destructive" disabled={!!busy || note.trim().length < 10} onClick={() => void act("Declined", () => careSales.decide(id, "decline", note))}>Decline</Button>
             </>}
-            {s.status !== "passed" && <Button variant="secondary" disabled={!!busy || note.trim().length < 20} title="Continue even though the call didn't pass or couldn't be checked. Your reason is logged." onClick={() => void act("Call check bypassed: you can now send the link", () => careSales.decide(id, "bypass", note))}>Bypass call check</Button>}
           </>)}
-          {!sup && ["awaiting_recording", "scoring", "held", "declined"].includes(s.status) && <p className="text-xs text-muted-foreground">Call didn't pass or couldn't be checked? A supervisor can bypass the check with a reason, and then you can send the link.</p>}
+          {["awaiting_recording", "scoring", "held", "declined"].includes(s.status) && (<>
+            {!sup && <div className="min-w-[260px] flex-1"><Label>Reason for bypassing (required)</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why this sale should go ahead" /></div>}
+            <Button variant="secondary" disabled={!!busy || note.trim().length < 20} title="Continue even though the call didn't pass or couldn't be checked. The reason is saved and can't be changed." onClick={() => void act("Call check bypassed: you can now send the link", () => careSales.decide(id, "bypass", note))}>Bypass call check</Button>
+          </>)}
           {!["joined", "withdrawn"].includes(s.status) && <Button variant="outline" disabled={!!busy} onClick={() => void act("Withdrawn", () => careSales.withdraw(id, note || "withdrawn by staff"))}>Withdraw sale</Button>}
         </section>
       </DialogContent>

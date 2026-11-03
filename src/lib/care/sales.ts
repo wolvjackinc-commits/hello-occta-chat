@@ -63,6 +63,8 @@ export const SALES_ERRORS: Record<string, string> = {
   full_name_required: "Enter the customer's first and last name.",
   invalid_email: "Enter a valid email address.",
   bypass_reason_required_min_20_chars: "Write why you're bypassing the call check (at least 20 characters).",
+  already_bypassed: "This sale was already bypassed. The reason is locked.",
+  bypass_reason_is_locked: "The bypass reason is locked and can't be changed.",
   nothing_to_bypass: "This sale doesn't need a bypass.",
   cannot_approve_your_own_sale: "A different supervisor must approve your own sale.",
   ai_not_configured: "Call scoring isn't available (ANTHROPIC_API_KEY missing). Tell an admin.",

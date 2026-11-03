@@ -1748,6 +1748,7 @@ export type Database = {
           key_facts_shown_at: string | null
           plan_code: string
           price_minor: number
+          provider_code: string | null
           status: string
           submitted_at: string | null
           terms_version: string
@@ -1769,6 +1770,7 @@ export type Database = {
           key_facts_shown_at?: string | null
           plan_code: string
           price_minor: number
+          provider_code?: string | null
           status?: string
           submitted_at?: string | null
           terms_version: string
@@ -1790,6 +1792,7 @@ export type Database = {
           key_facts_shown_at?: string | null
           plan_code?: string
           price_minor?: number
+          provider_code?: string | null
           status?: string
           submitted_at?: string | null
           terms_version?: string
@@ -1809,6 +1812,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "care_plans"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "care_applications_provider_code_fkey"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "dd_providers"
+            referencedColumns: ["provider_code"]
           },
           {
             foreignKeyName: "care_applications_terms_version_fkey"
@@ -2313,6 +2323,7 @@ export type Database = {
           frequency: string
           id: string
           plan_code: string
+          provider_code: string | null
           revoked_at: string | null
           revoked_reason: string | null
           script_confirmed: Json
@@ -2332,6 +2343,7 @@ export type Database = {
           frequency: string
           id?: string
           plan_code: string
+          provider_code?: string | null
           revoked_at?: string | null
           revoked_reason?: string | null
           script_confirmed: Json
@@ -2351,6 +2363,7 @@ export type Database = {
           frequency?: string
           id?: string
           plan_code?: string
+          provider_code?: string | null
           revoked_at?: string | null
           revoked_reason?: string | null
           script_confirmed?: Json
@@ -2365,6 +2378,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "care_plans"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "care_invites_provider_code_fkey"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "dd_providers"
+            referencedColumns: ["provider_code"]
           },
         ]
       }
@@ -17724,6 +17744,10 @@ export type Database = {
           p_plan: string
           p_reason: string
         }
+        Returns: Json
+      }
+      care_admin_set_default_provider: {
+        Args: { p_provider: string }
         Returns: Json
       }
       care_admin_set_plan_price: {

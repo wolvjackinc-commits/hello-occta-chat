@@ -14,7 +14,7 @@ export type InviteResult =
 
 export async function sendCareInvite(svc: ReturnType<typeof getServiceClient>, o: {
   customerId: string; plan: string; frequency: string; day: number; actor: string; callRef: string; callNotes?: string;
-  scriptConfirmed: Record<string, unknown>;
+  scriptConfirmed: Record<string, unknown>; provider?: string | null;
 }): Promise<InviteResult> {
   const { data: elig } = await svc.rpc("care_eligibility", { p_customer: o.customerId });
   const e = elig as { eligible?: boolean; reasons?: string[]; no_sales_contact?: boolean } | null;
@@ -29,7 +29,7 @@ export async function sendCareInvite(svc: ReturnType<typeof getServiceClient>, o
   const { raw, hash } = await generateTokenPair();
   const expires = new Date(Date.now() + CARE_RULES.inviteValidDays * 86400_000);
   const { data: inv, error } = await svc.from("care_invites").insert({
-    token_hash: hash, customer_id: o.customerId, plan_code: o.plan, frequency: o.frequency, collection_day: o.day, created_by: o.actor,
+    token_hash: hash, customer_id: o.customerId, plan_code: o.plan, frequency: o.frequency, collection_day: o.day, created_by: o.actor, provider_code: o.provider || null,
     script_confirmed: { ...o.scriptConfirmed, confirmed_at: new Date().toISOString(), script: CARE_PHONE_SCRIPT.map((l) => l.line) },
     call_reference: o.callRef.slice(0, 120), call_notes: (o.callNotes ?? "").slice(0, 2000) || null,
     sent_to_email: profile.email, expires_at: expires.toISOString(),

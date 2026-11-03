@@ -89,10 +89,15 @@ const NOT_INSURANCE_LINE =
 const SUPPORT_LINE =
   "If anything would make this easier, such as large print, Braille, more time, or someone helping you, just tell us. If money is tight, we can pause or cancel Care with no charge.";
 
-function guaranteeText(): string {
+/** Who collects this member's Direct Debit (AccessPay or FastPay). care-dispatch adds it from the mandate. */
+function ddOf(payload: P): { name: string; sun: string } {
+  return { name: str(payload.dd_collection_name) || CARE_DD.collectionName, sun: str(payload.dd_service_user_number) || CARE_DD.serviceUserNumber };
+}
+
+function guaranteeText(payload: P): string {
   return providerGuaranteeText({
-    legal_collection_name: CARE_DD.collectionName,
-    service_user_number: CARE_DD.serviceUserNumber,
+    legal_collection_name: ddOf(payload).name,
+    service_user_number: ddOf(payload).sun,
     advance_notice_working_days: CARE_DD.noticeWorkingDays,
   });
 }
@@ -155,7 +160,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: [
           ["Plan", p?.name ?? str(payload.plan_code)],
           ["Price", `${priceWithNoun(price, freq)}, VAT included`],
-          ["How you pay", `Its own Direct Debit to ${CARE_DD.collectionName}, on the ${ordinalDay(num(payload.collection_day))} of the month`],
+          ["How you pay", `Its own Direct Debit to ${ddOf(payload).name}, on the ${ordinalDay(num(payload.collection_day))} of the month`],
           ["First payment", `${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}`],
           ["Cooling-off ends", longDate(str(payload.cooling_off_ends_on))],
           ["Minimum term", "None. Cancel any time, no exit fee."],
@@ -210,7 +215,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
               "If anything below is wrong, please contact us straight away.",
             ],
         facts: [
-          ["Collected by", `${CARE_DD.collectionName} (Service User Number ${CARE_DD.serviceUserNumber})`],
+          ["Collected by", `${ddOf(payload).name} (Service User Number ${ddOf(payload).sun})`],
           ["Reference on your statement", recipient.reference],
           ["Account holder", str(payload.account_holder_name)],
           ["Bank account", `${str(payload.bank_name) ? `${str(payload.bank_name)}, ` : ""}sort code ending ${str(payload.masked_sort_last2)}, account ending ${str(payload.masked_account_last4)}`],
@@ -221,7 +226,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           ["Notice", `At least ${CARE_DD.noticeWorkingDays} working days before any payment or change`],
           ["Questions", `${OCCTA_CONTACT.phone}`],
         ],
-        guarantee: guaranteeText(),
+        guarantee: guaranteeText(payload),
       };
     }
 
@@ -240,11 +245,11 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           ["Date", longDate(str(payload.due_date))],
           ["How often", str(payload.kind) === "represent" ? "One-off re-try of a returned payment" : `Every ${careFrequencyNoun(freq)}, on the same day of the month`],
           ["Reference", recipient.reference],
-          ["Collected by", `${CARE_DD.collectionName} (SUN ${CARE_DD.serviceUserNumber})`],
+          ["Collected by", `${ddOf(payload).name} (SUN ${ddOf(payload).sun})`],
           ["Notice", `At least ${CARE_DD.noticeWorkingDays} working days before each payment`],
           ["Questions", `${OCCTA_CONTACT.phone}`],
         ],
-        guarantee: guaranteeText(),
+        guarantee: guaranteeText(payload),
       };
     }
 
@@ -261,7 +266,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
             "If you don't want to continue at the new price, you can cancel free at any time before then. Anything you've already paid for keeps the old price.",
           ],
           facts: [["Old price", pounds(num(payload.old_price_minor))], ["New price", pounds(num(payload.new_price_minor))], ["From", longDate(str(payload.effective_date))]],
-          guarantee: guaranteeText(),
+          guarantee: guaranteeText(payload),
         };
       }
       if (kind === "plan_change") {
@@ -279,7 +284,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
               : `${to} and the new price start from your next payment period. We'll write again with the exact date and amount at least 10 working days before.`,
           ],
           facts: [["New plan", to], ["New price", pounds(num(payload.new_price_minor))]],
-          guarantee: guaranteeText(),
+          guarantee: guaranteeText(payload),
         };
       }
       return {
@@ -294,7 +299,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
             : "We've moved it so that you get a full 10 working days' notice. You don't need to do anything.",
         ],
         facts: [["Amount", pounds(num(payload.amount_minor))], ["New date", longDate(str(payload.new_date))]],
-        guarantee: guaranteeText(),
+        guarantee: guaranteeText(payload),
       };
     }
 
@@ -313,7 +318,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           "This letter is your advance notice of the payment.",
         ],
         facts: [["Amount", pounds(num(payload.amount_minor))], ["Date", longDate(str(payload.due_date))], ["Period", `${longDate(str(payload.period_start))} to ${longDate(str(payload.period_end))}`], ["Questions", `${OCCTA_CONTACT.phone}`]],
-        guarantee: guaranteeText(),
+        guarantee: guaranteeText(payload),
       };
     }
 
@@ -352,7 +357,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: payload.retry_date
           ? [["Amount", pounds(num(payload.amount_minor))], ["We'll try again", longDate(str(payload.retry_date))], ["Reference", recipient.reference], ["Questions", `${OCCTA_CONTACT.phone}`]]
           : [["Amount", pounds(num(payload.amount_minor))], ["Reference", recipient.reference], ["Questions", `${OCCTA_CONTACT.phone}`]],
-        guarantee: guaranteeText(),
+        guarantee: guaranteeText(payload),
       };
     }
 
@@ -482,7 +487,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: [
           ["Plan", p?.name ?? str(payload.plan_code)],
           ["Price", `${priceWithNoun(num(payload.price_minor), freq)}, VAT included`],
-          ["Paid by", `Its own Direct Debit to ${CARE_DD.collectionName}, on the ${ordinalDay(num(payload.collection_day))} of the month`],
+          ["Paid by", `Its own Direct Debit to ${ddOf(payload).name}, on the ${ordinalDay(num(payload.collection_day))} of the month`],
           ["Agreed on", c.agreed_at ? longDate(str(c.agreed_at).slice(0, 10)) : "-"],
           ["Confirmed by", c.verified === "sms_otp" ? "A one-time code sent to your mobile" : c.verified ? "A one-time code sent to your email" : "-"],
           ["How you joined", c.channel === "phone_assisted" ? "Online, using a secure link after a call with our team" : "Online, in My OCCTA"],
@@ -490,7 +495,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           ["Minimum term", "None. Cancel any time, no exit fee."],
         ],
         boxes: [{ heading: "Key facts you agreed to", lines: Array.isArray(c.key_facts) ? c.key_facts.map(String) : [] }],
-        guarantee: guaranteeText(),
+        guarantee: guaranteeText(payload),
       };
     }
 

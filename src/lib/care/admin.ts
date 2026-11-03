@@ -40,6 +40,7 @@ export const careAdmin = {
   supportNeeds: (customer: string, needs: string[], block: boolean, note: string, source: string) =>
     careCall<Json>("care_admin_update_support_needs", { p_customer: customer, p_needs: needs, p_sales_block: block, p_note: note, p_consent_source: source, p_carer_name: null, p_carer_contact: null }),
   lettersPosted: (ids: string[], postedOn: string) => careCall<Json>("care_admin_letters_posted", { p_letter_ids: ids, p_posted_on: postedOn }),
+  setDefaultProvider: (provider: string) => careCall<Json>("care_admin_set_default_provider", { p_provider: provider }),
   settings: (salesOpen: boolean, hours: string | null) => careCall<Json>("care_admin_settings", { p_sales_open: salesOpen, p_support_hours: hours }),
   setPlanPrice: (plan: string, monthlyMinor: number, active: boolean) => careCall<Json>("care_admin_set_plan_price", { p_plan: plan, p_monthly_minor: monthlyMinor, p_active: active }),
   schedulePriceChange: (plan: string, freq: string, newMinor: number, effective: string, reason: string) =>

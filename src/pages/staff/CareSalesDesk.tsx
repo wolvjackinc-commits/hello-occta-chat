@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { careSales, salesError, SALE_STATUS, type J } from "@/lib/care/sales";
 import { transcribeRecording } from "@/lib/care/transcribe";
+import { DDProviderSelect } from "@/components/care/DDProviderSelect";
 import { CARE_QA_RED_FLAGS, CARE_SALES_SCRIPT, CARE_QA_PASS_SCORE } from "../../../supabase/functions/_shared/careSalesScript.ts";
 import { CARE_FREQUENCIES, CARE_PLANS, carePriceMinor, pounds } from "../../../supabase/functions/_shared/careTerms.ts";
 
@@ -137,7 +138,7 @@ function SalesTable({ rows, onOpen }: { rows: J[]; onOpen: (id: string) => void 
 
 function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; transcription: boolean }; onClose: () => void }) {
   const [s, setS] = useState<J | null>(null); const [file, setFile] = useState<File | null>(null); const [stage, setStage] = useState<string | null>(null);
-  const [busy, setBusy] = useState<string | null>(null); const [note, setNote] = useState(""); const [audio, setAudio] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null); const [note, setNote] = useState(""); const [prov, setProv] = useState("accesspay"); const [audio, setAudio] = useState<string | null>(null);
   const load = useCallback(async () => { try { setS(await careSales.get(id)); } catch (e) { toast({ title: "Couldn't open sale", description: salesError(e), variant: "destructive" }); } }, [id]);
   useEffect(() => { void load(); }, [load]);
   async function act(label: string, f: () => Promise<unknown>) {
@@ -212,7 +213,10 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
         {s.invite && <p className="text-sm">Link sent {dt(s.invite.sent_at)} (email {s.invite.email_status}) · expires {dt(s.invite.expires_at)}{s.invite.used_at ? ` · used ${dt(s.invite.used_at)}` : ""}</p>}
 
         <section className="flex flex-wrap items-end gap-2 border-t-2 border-foreground pt-3">
-          {canSend && <Button disabled={!!busy} onClick={() => void act("Sign-up link emailed to the customer", () => careSales.sendLink(id))}>Send the customer their sign-up link</Button>}
+          {canSend && (<>
+            <div className="min-w-[220px]"><Label htmlFor="dd-prov">Direct Debit collected through</Label><DDProviderSelect id="dd-prov" value={prov} onChange={setProv} /></div>
+            <Button disabled={!!busy} onClick={() => void act("Sign-up link emailed to the customer", () => careSales.sendLink(id, prov))}>Send the customer their sign-up link</Button>
+          </>)}
           {sup && ["passed", "held", "declined"].includes(s.status) && (<>
             <div className="min-w-[260px] flex-1"><Label>Supervisor note (required)</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What you checked, e.g. listened at 03:10, price was confirmed" /></div>
             <Button disabled={!!busy || note.trim().length < 10} onClick={() => void act("Approved", () => careSales.decide(id, "approve", note))}>Approve</Button>

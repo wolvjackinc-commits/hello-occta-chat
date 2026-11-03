@@ -110,10 +110,10 @@ export function CareNotIncluded({ className = "" }: { className?: string }) {
   );
 }
 
-export function CareDDGuarantee() {
+export function CareDDGuarantee({ dd }: { dd?: { name: string; sun: string } }) {
   const text = providerGuaranteeText({
-    legal_collection_name: CARE_DD.collectionName,
-    service_user_number: CARE_DD.serviceUserNumber,
+    legal_collection_name: dd?.name ?? CARE_DD.collectionName,
+    service_user_number: dd?.sun ?? CARE_DD.serviceUserNumber,
     advance_notice_working_days: CARE_DD.noticeWorkingDays,
   });
   return (

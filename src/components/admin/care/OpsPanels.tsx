@@ -15,6 +15,7 @@ import { careAdmin, dd, dt, gbp, today, type Json } from "@/lib/care/admin";
 import { careAdminFn, CARE_LETTER_LABEL } from "@/lib/care/api";
 import { CARE_FREQUENCIES, CARE_PHONE_SCRIPT, CARE_PLANS, carePriceMinor, pounds } from "../../../../supabase/functions/_shared/careTerms.ts";
 import { openStoragePath, useCareAction } from "./MemberDialog";
+import { DDProviderSelect } from "@/components/care/DDProviderSelect";
 
 // ------------------------------------------------------------------ Disputes
 export function DisputesPanel({ onOpenMember, onChanged }: { onOpenMember: (id: string) => void; onChanged: () => void }) {
@@ -150,6 +151,7 @@ export function PhoneSalePanel({ onChanged }: { onChanged: () => void }) {
   const [day, setDay] = useState("1");
   const [script, setScript] = useState<Record<string, boolean>>({});
   const [callRef, setCallRef] = useState("");
+  const [prov, setProv] = useState("accesspay");
   const [notes, setNotes] = useState("");
   const { busy, run } = useCareAction(onChanged);
   const price = carePriceMinor(plan, freq) ?? 0;
@@ -178,9 +180,10 @@ export function PhoneSalePanel({ onChanged }: { onChanged: () => void }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div><Label>Call recording reference</Label><Input value={callRef} onChange={(e) => setCallRef(e.target.value)} placeholder="Phone system call ID" /></div>
         <div><Label>Notes</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></div>
+        <div><Label htmlFor="phone-dd-prov">Direct Debit collected through</Label><DDProviderSelect id="phone-dd-prov" value={prov} onChange={setProv} /></div>
       </div>
       <Button disabled={busy || !customer || !all || callRef.trim().length < 3} onClick={async () => {
-        const r = await run("Link emailed to the customer", () => careAdminFn.sendInvite({ customer_id: customer!.id, plan, frequency: freq, collection_day: Number(day), script_confirmed: script, call_reference: callRef, call_notes: notes }));
+        const r = await run("Link emailed to the customer", () => careAdminFn.sendInvite({ customer_id: customer!.id, plan, frequency: freq, collection_day: Number(day), script_confirmed: script, call_reference: callRef, call_notes: notes, provider_code: prov }));
         if (r) { setScript({}); setCallRef(""); setNotes(""); }
       }}>Email the sign-up link</Button>
       <p className="text-xs text-muted-foreground">If the customer can't join (for example an overdue bill, no postal address, or a business account), the reason shows when you press the button.</p>
@@ -222,6 +225,11 @@ export function SettingsPanel({ overview, onChanged }: { overview: Json | null; 
       <div className="flex items-center gap-3 border-[3px] border-foreground p-4">
         <Switch checked={!!st.sales_open} onCheckedChange={(v) => run(v ? "Sales open" : "Sales closed", () => careAdmin.settings(v, null))} disabled={busy} />
         <div><p className="font-semibold">New sign-ups {st.sales_open ? "OPEN" : "CLOSED"}</p><p className="text-xs text-muted-foreground">Closing stops new joins and invites. Existing members are unaffected.</p></div>
+      </div>
+      <div className="border-[3px] border-foreground p-4">
+        <Label htmlFor="default-dd-prov">Direct Debit provider for customers who join online themselves</Label>
+        <p className="text-xs text-muted-foreground">Phone sales choose the provider when the link is sent. The customer's instruction names the provider, so lodge each mandate in the portal it shows.</p>
+        <div className="mt-2 max-w-xs"><DDProviderSelect id="default-dd-prov" value={st.provider_code ?? "accesspay"} onChange={(v) => void run("Default provider saved", () => careAdmin.setDefaultProvider(v))} /></div>
       </div>
       <div className="border-[3px] border-foreground p-4">
         <Label>Support hours shown to customers</Label>

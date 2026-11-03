@@ -14,6 +14,7 @@ import { getServiceClient, jsonResponse, corsHeaders, requireStaff, generateToke
 import { decryptJson } from "../_shared/ddCrypto.ts";
 import { getCronSecret } from "../_shared/cronSecret.ts";
 import { sendCareInvite } from "../_shared/careInvite.ts";
+import { careProvider, CARE_PROVIDER_CODES } from "../_shared/careProvider.ts";
 import { providerInstructionText } from "../_shared/directDebitGuarantee.ts";
 import { CARE_DD, CARE_PHONE_SCRIPT, CARE_RULES, carePlan, careFrequency, carePriceMinor, pounds } from "../_shared/careTerms.ts";
 import { longDate } from "../_shared/careLetters.ts";
@@ -48,7 +49,7 @@ Deno.serve(async (req) => {
     if ("error" in fin) return jsonResponse({ error: "finance_role_required" }, 403);
     const reason = String(body.reason ?? "").trim();
     if (reason.length < 5) return jsonResponse({ error: "reason_required" }, 400);
-    const { data: m } = await svc.from("care_mandates").select("id, subscription_id, customer_id, reference, status, bank_details_ciphertext, enc_nonce")
+    const { data: m } = await svc.from("care_mandates").select("id, subscription_id, customer_id, reference, status, provider_code, bank_details_ciphertext, enc_nonce")
       .eq("id", String(body.mandate_id ?? "")).maybeSingle();
     if (!m) return jsonResponse({ error: "not_found" }, 404);
     if (!["awaiting_lodgement", "lodged", "cancel_requested"].includes(m.status)) return jsonResponse({ error: "not_needed_for_this_status" }, 400);
@@ -62,9 +63,10 @@ Deno.serve(async (req) => {
     await svc.from("care_events").insert({ subscription_id: m.subscription_id, customer_id: m.customer_id, actor_type: "staff", actor_id: actor,
       event: "bank_details_revealed", details: { mandate_id: m.id, reason } });
     await audit(svc, actor, "care_bank_details_revealed", m.id, { reason, reference: m.reference });
+    const prov = await careProvider(svc, m.provider_code);
     return jsonResponse({ ok: true, reference: m.reference, account_holder_name: plain.account_holder_name, sort_code: plain.sort_code,
-      account_number: plain.account_number, bank_name: plain.bank_name ?? null, service_user_number: CARE_DD.serviceUserNumber,
-      collection_name: CARE_DD.collectionName });
+      account_number: plain.account_number, bank_name: plain.bank_name ?? null, service_user_number: prov.sun,
+      collection_name: prov.name, provider_name: prov.portal });
   }
 
   // --------------------------------------------------------------- send_invite
@@ -79,8 +81,10 @@ Deno.serve(async (req) => {
     if (!carePlan(plan) || !careFrequency(frequency) || ![1, 15].includes(day)) return jsonResponse({ error: "invalid_choice" }, 400);
     const callRef = String(body.call_reference ?? "").trim();
     if (callRef.length < 3) return jsonResponse({ error: "call_reference_required" }, 400);
+    const provider = body.provider_code ? String(body.provider_code) : null;
+    if (provider && !CARE_PROVIDER_CODES.includes(provider)) return jsonResponse({ error: "invalid_provider" }, 400);
 
-    const r = await sendCareInvite(svc, { customerId, plan, frequency, day, actor, callRef, callNotes: String(body.call_notes ?? ""), scriptConfirmed: confirmed });
+    const r = await sendCareInvite(svc, { customerId, plan, frequency, day, actor, callRef, callNotes: String(body.call_notes ?? ""), scriptConfirmed: confirmed, provider });
     if (!r.ok) return jsonResponse({ error: r.error, reasons: r.reasons ?? [] }, r.status ?? 400);
     await audit(svc, actor, "care_invite_sent", r.invite_id, { customer_id: customerId, plan, frequency });
     return jsonResponse(r);
@@ -148,13 +152,14 @@ Deno.serve(async (req) => {
           ["Recording on file", String(q.recording_path ?? "-")]] as [string, string][]; })() : []),
     ], lines: ["Script lines confirmed as read out:", ...((inv.data.script_confirmed as { script?: string[] })?.script ?? []).map((l) => `- ${l}`)] });
     if (mand) {
+      const prov = await careProvider(svc, mand.provider_code);
       sections.push({ heading: "Direct Debit Instruction (paperless)", rows: [
-        ["Collected by", `${CARE_DD.collectionName}, Service User Number ${CARE_DD.serviceUserNumber}`], ["Reference", String(mand.reference)],
+        ["Collected by", `${prov.name}, Service User Number ${prov.sun} (${prov.portal})`], ["Reference", String(mand.reference)],
         ["Account holder", String(mand.account_holder_name)], ["Bank", `${mand.bank_name ?? "-"}, sort code ending ${mand.masked_sort_last2}, account ending ${mand.masked_account_last4}`],
         ["Authorised", `${dt(mand.signed_at)} online, after one-time code verification${join ? ` to ${join.verification_destination}` : ""}${join?.ip ? `, from IP ${join.ip}` : ""}`],
         ["Lodged with provider", `${dt(mand.lodged_at)}${mand.provider_reference ? ` (provider ref ${mand.provider_reference})` : ""}`], ["Active", dt(mand.activated_at)],
         ["Status", `${mand.status}${mand.cancel_source ? ` (${mand.cancel_source}${mand.cancel_reason_code ? ` ${mand.cancel_reason_code}` : ""})` : ""}`],
-      ], lines: [`Instruction wording: ${providerInstructionText({ legal_collection_name: CARE_DD.collectionName, service_user_number: CARE_DD.serviceUserNumber, advance_notice_working_days: CARE_DD.noticeWorkingDays })}`] });
+      ], lines: [`Instruction wording: ${providerInstructionText({ legal_collection_name: prov.name, service_user_number: prov.sun, advance_notice_working_days: CARE_DD.noticeWorkingDays })}`] });
     }
     sections.push({ heading: "Collections and advance notice", lines: (cols.data ?? []).map((c: Record<string, unknown>) =>
       `${longDate(String(c.due_date))}: ${pounds(Number(c.amount_minor))} for ${longDate(String(c.period_start))}-${longDate(String(c.period_end))}, ${c.kind}, status ${c.status}; notice ${c.notice_kind ?? "-"} queued ${dt(c.notice_sent_at)}${c.notice_dedupe ? ` (letter ${c.notice_dedupe})` : ""}${c.bank_received_date ? `; money received ${longDate(String(c.bank_received_date))}` : ""}${c.unpaid_reason_code ? `; returned (ARUDD ${c.unpaid_reason_code})` : ""}`) });

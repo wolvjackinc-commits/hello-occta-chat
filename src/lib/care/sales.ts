@@ -30,8 +30,8 @@ export const careSales = {
     if (error) throw new Error(error.message);
     return u.path;
   },
-  score: (saleId: string, recordingPath: string | null, transcript: string) =>
-    fn<{ ok: boolean; decision: string; score: number }>({ action: "score", sale_id: saleId, recording_path: recordingPath, transcript }),
+  score: (saleId: string, recordingPath: string | null, transcript: string, source: "audio_local" | null = null) =>
+    fn<{ ok: boolean; decision: string; score: number }>({ action: "score", sale_id: saleId, recording_path: recordingPath, transcript, transcript_source: source }),
   recordingUrl: (saleId: string) => fn<{ ok: boolean; url: string | null }>({ action: "recording_url", sale_id: saleId }),
   sendLink: (saleId: string) => fn<{ ok: boolean; invite_id: string; expires_at: string; email: string }>({ action: "send_link", sale_id: saleId }),
 };
@@ -49,7 +49,8 @@ export const SALE_STATUS: Record<string, string> = {
 };
 
 export const SALES_ERRORS: Record<string, string> = {
-  transcription_not_configured: "Automatic transcription isn't switched on. Paste the call transcript from your phone system instead.",
+  transcription_not_configured: "This computer couldn't transcribe the recording. Try Chrome or Edge, and the audio-only M4A file from Zoom.",
+  recording_too_short: "That recording is under 20 seconds. Check you chose the right file.",
   recording_too_large_for_auto_transcription: "That recording is over 25 MB. Export it as MP3, or paste the transcript.",
   recording_required: "Upload the call recording first. It's the evidence if the sale is ever disputed.",
   transcript_too_short: "That transcript is too short to check. Paste the whole call.",

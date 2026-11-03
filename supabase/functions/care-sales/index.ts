@@ -112,6 +112,30 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: true, role, transcription: !!Deno.env.get("OPENAI_API_KEY"), ai: !!Deno.env.get("ANTHROPIC_API_KEY") });
   }
 
+  // Care isn't only for broadband customers: open a free OCCTA account for someone new on the call.
+  if (action === "create_customer") {
+    const t = (k: string, max = 120) => String(body[k] ?? "").trim().slice(0, max);
+    const email = t("email", 200).toLowerCase();
+    const name = t("full_name"), line1 = t("address_line1"), city = t("city", 80);
+    const postcode = t("postcode", 10).toUpperCase().replace(/\s+/g, " ");
+    const phone = t("phone", 20).replace(/[^\d+ ]/g, "");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResponse({ error: "invalid_email" }, 400);
+    if (!/[A-Za-z]{2,} [A-Za-z]{2,}/.test(name)) return jsonResponse({ error: "full_name_required" }, 400);
+    if (line1.length < 3 || city.length < 2 || !/^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/.test(postcode)) return jsonResponse({ error: "uk_address_required" }, 400);
+    const { data: existing } = await svc.from("profiles").select("id").ilike("email", email).limit(1).maybeSingle();
+    if (existing) return jsonResponse({ error: "account_exists_search_instead" }, 409);
+    const { data: created, error: cerr } = await svc.auth.admin.createUser({ email, email_confirm: true, user_metadata: { full_name: name } });
+    if (cerr || !created?.user) return jsonResponse({ error: "account_create_failed", detail: cerr?.message }, 500);
+    const id = created.user.id;
+    const { error: perr } = await svc.from("profiles").upsert({ id, email, full_name: name, phone: phone || null, address_line1: line1,
+      address_line2: t("address_line2") || null, city, postcode, account_type: "residential" }, { onConflict: "id" });
+    if (perr) return jsonResponse({ error: "account_create_failed", detail: perr.message }, 500);
+    await svc.from("care_events").insert({ customer_id: id, actor_type: "staff", actor_id: uid, event: "account_opened_for_care_sale", details: { email } });
+    const { data: prof } = await svc.from("profiles").select("id, full_name, account_number, postcode, address_line1, email").eq("id", id).single();
+    const { data: elig } = await svc.rpc("care_eligibility", { p_customer: id });
+    return jsonResponse({ ok: true, customer: { ...prof, email_masked: email.replace(/^(.{2}).*(@.*)$/, "$1***$2"), eligibility: elig } });
+  }
+
   const { data: sale } = await svc.from("care_sales").select("*").eq("id", String(body.sale_id ?? "")).maybeSingle() as { data: Sale | null };
   if (!sale || (sale.agent_id !== uid && role !== "supervisor")) return jsonResponse({ error: "not_found" }, 404);
   const editable = ["awaiting_recording", "passed", "held", "declined"].includes(sale.status);

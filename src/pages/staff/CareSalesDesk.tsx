@@ -69,6 +69,12 @@ function NewSale({ onCreated }: { onCreated: (id: string) => void }) {
   const [q, setQ] = useState(""); const [found, setFound] = useState<J[] | null>(null); const [cust, setCust] = useState<J | null>(null);
   const [plan, setPlan] = useState("essentials"); const [freq, setFreq] = useState("monthly"); const [day, setDay] = useState("1");
   const [callRef, setCallRef] = useState(""); const [callAt, setCallAt] = useState(localNow()); const [notes, setNotes] = useState(""); const [busy, setBusy] = useState(false);
+  const [nc, setNc] = useState<Record<string, string> | null>(null);
+  async function addNew() {
+    if (!nc) return; setBusy(true);
+    try { const r = await careSales.createCustomer(nc); const c = { ...r.customer, name: r.customer.full_name }; setFound([c]); setCust(c); setNc(null); toast({ title: "Account opened", description: "Now log what they agreed on the call." }); }
+    catch (e) { toast({ title: "Couldn't add the customer", description: salesError(e), variant: "destructive" }); } finally { setBusy(false); }
+  }
   async function search() { setBusy(true); try { setFound(await careSales.find(q)); } catch (e) { toast({ title: "Search failed", description: salesError(e), variant: "destructive" }); } finally { setBusy(false); } }
   async function create() {
     if (!cust) return; setBusy(true);
@@ -80,10 +86,20 @@ function NewSale({ onCreated }: { onCreated: (id: string) => void }) {
   return (
     <div className="mt-4 grid max-w-3xl gap-4">
       <section className="border-[3px] border-foreground p-4">
-        <p className="font-display uppercase">1. Find the customer's OCCTA account</p>
-        <p className="text-xs text-muted-foreground">Account number, email, mobile or postcode. Care is only for existing residential OCCTA customers.</p>
+        <p className="font-display uppercase">1. Find or add the customer</p>
+        <p className="text-xs text-muted-foreground">Anyone at a UK home address can have Care, whether or not they're with OCCTA. Search by account number, email, mobile or full postcode. If they're new to OCCTA, add them.</p>
         <div className="mt-2 flex gap-2"><Input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void search()} placeholder="e.g. OCC100234 or HD3 3WU" /><Button onClick={() => void search()} disabled={busy || q.trim().length < 4}>Search</Button></div>
-        {found && found.length === 0 && <p className="mt-2 text-sm">No account found. The customer needs an OCCTA account first.</p>}
+        {found && found.length === 0 && !nc && <p className="mt-2 text-sm">No account found. <button className="underline" onClick={() => setNc({ email: q.includes("@") ? q.trim() : "" })}>Add them as a new customer</button></p>}
+        {!nc && !(found && found.length === 0) && <button className="mt-2 text-xs underline" onClick={() => setNc({})}>New to OCCTA? Add a new customer</button>}
+        {nc && (
+          <div className="mt-3 grid gap-2 border-2 border-foreground/30 p-3 sm:grid-cols-2">
+            {([["full_name", "Full name"], ["email", "Email"], ["phone", "Mobile"], ["address_line1", "Address line 1"], ["address_line2", "Address line 2 (optional)"], ["city", "Town or city"], ["postcode", "Postcode"]] as const).map(([k, l]) => (
+              <div key={k}><Label htmlFor={`nc-${k}`}>{l}</Label><Input id={`nc-${k}`} value={nc[k] ?? ""} onChange={(e) => setNc({ ...nc, [k]: e.target.value })} /></div>
+            ))}
+            <p className="text-xs text-muted-foreground sm:col-span-2">This opens a free OCCTA account. The customer gets an email to set their password, then checks the details and joins Care themselves.</p>
+            <div className="flex gap-2 sm:col-span-2"><Button disabled={busy} onClick={() => void addNew()}>Add customer</Button><Button variant="outline" onClick={() => setNc(null)}>Cancel</Button></div>
+          </div>
+        )}
         {found?.map((c) => (
           <button key={c.id} onClick={() => setCust(c)} className={`mt-2 block w-full border-2 p-2 text-left text-sm ${cust?.id === c.id ? "border-primary bg-primary/10" : "border-foreground/20"}`}>
             <strong>{c.name}</strong> · {c.account_number} · {c.address_line1}, {c.postcode} · {c.email_masked}

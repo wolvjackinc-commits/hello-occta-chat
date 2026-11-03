@@ -57,6 +57,30 @@ const ERROR_TEXT: Record<string, string> = {
   date_of_birth_required: "Please enter your date of birth.",
 };
 
+// New OCCTA accounts often have no address yet; Care letters are posted, so ask for it here.
+function CareAddressForm({ onSaved }: { onSaved: () => void }) {
+  const [a, setA] = useState({ address_line1: "", address_line2: "", city: "", postcode: "" });
+  const [busy, setBusy] = useState(false); const [err, setErr] = useState<string | null>(null);
+  const pcOk = /^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i.test(a.postcode.trim());
+  async function save() {
+    setBusy(true); setErr(null);
+    const { data } = await supabase.auth.getUser();
+    const { error } = await supabase.from("profiles").update({ address_line1: a.address_line1.trim(), address_line2: a.address_line2.trim() || null,
+      city: a.city.trim(), postcode: a.postcode.trim().toUpperCase() }).eq("id", data.user?.id ?? "");
+    setBusy(false);
+    if (error) setErr("Couldn't save your address. Please try again or call us."); else onSaved();
+  }
+  return (
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {([["address_line1", "Address line 1"], ["address_line2", "Address line 2 (optional)"], ["city", "Town or city"], ["postcode", "Postcode"]] as const).map(([k, l]) => (
+        <div key={k}><Label htmlFor={`addr-${k}`}>{l}</Label><Input id={`addr-${k}`} value={a[k]} onChange={(e) => setA({ ...a, [k]: e.target.value })} /></div>
+      ))}
+      {err && <p className="text-sm text-destructive sm:col-span-2" role="alert">{err}</p>}
+      <Button className="sm:col-span-2" disabled={busy || a.address_line1.trim().length < 3 || a.city.trim().length < 2 || !pcOk} onClick={() => void save()}>Save my address</Button>
+    </div>
+  );
+}
+
 function errText(e: unknown) {
   const m = e instanceof Error ? e.message : String(e);
   return ERROR_TEXT[m] ?? m;
@@ -203,8 +227,11 @@ export default function CareJoin() {
         {signedIn === false && (
           <div className="mt-8 max-w-xl border-[3px] border-foreground p-6">
             <p className="font-display uppercase">Sign in to join</p>
-            <p className="mt-2 text-sm">OCCTA Care is for OCCTA home customers. Sign in to My OCCTA and we'll bring you back here.</p>
-            <Button asChild className="mt-4"><Link to={`/auth?next=${encodeURIComponent(`/care/join${window.location.search}`)}`}>Sign in</Link></Button>
+            <p className="mt-2 text-sm">OCCTA Care is open to any UK home, even if you don't get broadband from us. Sign in, or create a free OCCTA account, and we'll bring you back here.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button asChild><Link to={`/auth?next=${encodeURIComponent(`/care/join${window.location.search}`)}`}>Sign in</Link></Button>
+              <Button asChild variant="outline"><Link to={`/auth?mode=signup&next=${encodeURIComponent(`/care/join${window.location.search}`)}`}>Create a free account</Link></Button>
+            </div>
           </div>
         )}
 
@@ -213,6 +240,7 @@ export default function CareJoin() {
             <p className="font-display uppercase">You can't join just now</p>
             <ul className="mt-3 list-disc space-y-1 pl-5 text-sm">{elig.reasons.map((r) => <li key={r}>{CARE_REASON_TEXT[r] ?? r}</li>)}</ul>
             {elig.reasons.includes("already_member") && <Button asChild className="mt-4"><Link to="/dashboard?tab=care">Go to My Care</Link></Button>}
+            {elig.reasons.includes("no_postal_address") && <CareAddressForm onSaved={() => void careApi.myOverview().then((o) => setElig(o.eligibility ?? null))} />}
           </div>
         )}
 

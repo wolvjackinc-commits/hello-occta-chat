@@ -36,6 +36,9 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}))
   const email = normaliseEmail(body.email)
   if (!validEmail(email)) return jsonResponse({ error: 'invalid_email' }, 400)
+  // Only our own Care join page may be the destination; anything else goes to the dashboard.
+  const rawNext = String(body.next ?? '')
+  const next = /^\/care\/join\?invite=[\w%.-]+$/.test(rawNext) ? rawNext : '/dashboard'
 
   const ip = getRequestIp(req) ?? 'noip'
   const rateKey = `${ip}:${email}`
@@ -73,7 +76,7 @@ Deno.serve(async (req) => {
   // Let the managed auth email pipeline send the actual message. It now uses
   // the corrected robots.www.occta.co.uk sender in auth-email-hook.
   const sent = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${PUBLIC_APP_ORIGIN}/auth?welcome=1&next=%2Fdashboard`,
+    redirectTo: `${PUBLIC_APP_ORIGIN}/auth?welcome=1&next=${encodeURIComponent(next)}`,
   })
   if (sent.error) {
     console.error('[claim-dashboard-link] recovery email failed', { email, error: sent.error.message })

@@ -90,7 +90,7 @@ export async function sha256HexBrowser(text: string): Promise<string> {
 export const CARE_REASON_TEXT: Record<string, string> = {
   not_signed_in: "Sign in to your OCCTA account to join.",
   sales_closed: "OCCTA Care isn't taking new members right now.",
-  no_account: "Care is for OCCTA customers. Your account isn't set up yet.",
+  no_account: "Your OCCTA account isn't set up yet. Please try again in a minute, or call us.",
   business_account: "Care is for home customers. Please call us about business support.",
   account_not_active: "Your OCCTA account isn't active, so Care can't be added.",
   under_18: "You need to be 18 or over to join.",

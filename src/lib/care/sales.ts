@@ -32,6 +32,7 @@ export const careSales = {
   },
   score: (saleId: string, recordingPath: string | null, transcript: string, source: "audio_local" | null = null) =>
     fn<{ ok: boolean; decision: string; score: number }>({ action: "score", sale_id: saleId, recording_path: recordingPath, transcript, transcript_source: source }),
+  createCustomer: (b: Record<string, string>) => fn<{ ok: boolean; customer: J }>({ action: "create_customer", ...b }),
   recordingUrl: (saleId: string) => fn<{ ok: boolean; url: string | null }>({ action: "recording_url", sale_id: saleId }),
   sendLink: (saleId: string, provider: string) => fn<{ ok: boolean; invite_id: string; expires_at: string; email: string }>({ action: "send_link", sale_id: saleId, provider_code: provider }),
 };
@@ -57,6 +58,10 @@ export const SALES_ERRORS: Record<string, string> = {
   sale_not_passed_or_approved: "This sale hasn't passed the call check or been approved by a supervisor.",
   customer_already_has_an_open_care_sale: "This customer already has an open Care sale.",
   customer_asked_for_no_offers: "This customer asked not to be offered things. They can join themselves from My OCCTA.",
+  account_exists_search_instead: "That email already has an OCCTA account. Search for it instead.",
+  uk_address_required: "Enter the full UK home address, including a valid postcode.",
+  full_name_required: "Enter the customer's first and last name.",
+  invalid_email: "Enter a valid email address.",
   cannot_approve_your_own_sale: "A different supervisor must approve your own sale.",
   ai_not_configured: "Call scoring isn't available (ANTHROPIC_API_KEY missing). Tell an admin.",
 };

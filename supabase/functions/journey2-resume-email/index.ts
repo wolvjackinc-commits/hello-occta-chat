@@ -140,6 +140,8 @@ Deno.serve(async (req) => {
     .in("status", ["active", "contract_prepared"])
     .is("contract_acceptance_id", null)
     .is("post_contract_applied_at", null)
+    // Staff marked "do not contact" in the Journey Control recovery desk.
+    .is("recovery_opt_out_at", null)
     .or("test_session.is.null,test_session.eq.false")
     .gt("expires_at", nowIso)
     .lt("last_activity_at", stage1Cutoff)
@@ -218,6 +220,7 @@ Deno.serve(async (req) => {
       .eq("id", s.id)
       .eq("reminder_count", count)
       .is("contract_acceptance_id", null)
+      .is("recovery_opt_out_at", null)
       .not("abandoned_at", "is", null)
       .is("completed_at", null)
       .is("submitted_at", null)

@@ -5,7 +5,7 @@
 // Runtime-free (no Deno or browser imports): the web app's unit tests build
 // every letter type and check the wording rules.
 import {
-  CARE_DD, CARE_RULES, CARE_TERMS_VERSION, carePlan, careFrequency, careFrequencyNoun, careOrdinal, pounds,
+  CARE_DD, CARE_RULES, CARE_TERMS_VERSION, carePlan, careFrequency, careFrequencyNoun, carePayWhen, pounds,
   type CareLetterType,
 } from "./careTerms.ts";
 import { providerGuaranteeText } from "./directDebitGuarantee.ts";
@@ -74,7 +74,6 @@ export function longDate(value: string | Date | null | undefined): string {
   return d.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/London" });
 }
 
-const ordinalDay = careOrdinal;
 
 function priceWithNoun(minor: number, frequency: string): string {
   return `${pounds(minor)} ${frequency === "monthly" ? "a month" : frequency === "quarterly" ? "every 3 months" : "a year"}`;
@@ -159,12 +158,10 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: [
           ["Plan", p?.name ?? str(payload.plan_code)],
           ["Price", `${priceWithNoun(price, freq)}, VAT included`],
-          ["How you pay", `Its own Direct Debit to ${ddOf(payload).name}, on the ${ordinalDay(num(payload.collection_day))} of the month`],
+          ["How you pay", `Its own Direct Debit to ${ddOf(payload).name}, ${carePayWhen(freq, num(payload.collection_day))}`],
           ["First payment", `${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}`],
           ["Cooling-off ends", longDate(str(payload.cooling_off_ends_on))],
           ["Minimum term", "None. Cancel any time, no exit fee."],
-          ["Your reference", recipient.reference],
-          ["Terms version", str(payload.terms_version) || CARE_TERMS_VERSION],
         ],
         boxes: [
           { heading: "What's included", lines: p?.features ?? [] },
@@ -182,21 +179,13 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
               "After that, you can still cancel whenever you like.",
             ],
           },
-          {
-            heading: "Getting help",
-            lines: [
-              `Call ${OCCTA_CONTACT.phone} (Monday to Saturday, 8am to 8pm), email ${OCCTA_CONTACT.email}, or use My OCCTA → Care at ${OCCTA_CONTACT.web}.`,
-              "Please quote your Care reference.",
-            ],
-          },
         ],
-        closing: [SUPPORT_LINE],
+        closing: [`Need help? Call ${OCCTA_CONTACT.phone} (Monday to Saturday, 8am to 8pm), email ${OCCTA_CONTACT.email} or use My OCCTA, quoting ${recipient.reference}.`, SUPPORT_LINE],
       };
     }
 
     case "dd_confirmation": {
       const price = num(payload.price_minor);
-      const day = ordinalDay(num(payload.collection_day));
       return {
         ...base,
         title: "Your OCCTA Care Direct Debit",
@@ -206,12 +195,12 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           ? [
               "This confirms the Direct Debit Instruction you gave us for OCCTA Care. It's separate from any other OCCTA Direct Debit, so it never affects your broadband, phone or SIM.",
               "Before we set it up with your bank, a member of our team will check Care is right for you. Nothing will be taken before then.",
-              `If we go ahead, we'll write to you with the date and amount of your first payment at least ${CARE_DD.noticeWorkingDays} working days before it's taken. After that, payments are ${pounds(price)} every ${careFrequencyNoun(freq)} on the ${day} of the month (or the next working day).`,
+              `If we go ahead, we'll write to you with the date and amount of your first payment at least ${CARE_DD.noticeWorkingDays} working days before it's taken. After that, payments are ${pounds(price)} ${carePayWhen(freq, num(payload.collection_day))} (or the next working day).`,
               "If anything below is wrong, please contact us straight away.",
             ]
           : [
               "This confirms the Direct Debit Instruction you gave us for OCCTA Care. It's separate from any other OCCTA Direct Debit, so it never affects your broadband, phone or SIM.",
-              `This letter is also your advance notice. Unless we write to tell you otherwise, we will collect ${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}, then ${pounds(price)} every ${careFrequencyNoun(freq)} on the ${day} of the month (or the next working day).`,
+              `This letter is also your advance notice. Unless we write to tell you otherwise, we will collect ${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}, then ${pounds(price)} ${carePayWhen(freq, num(payload.collection_day))} (or the next working day).`,
               "If anything below is wrong, please contact us straight away.",
             ],
         facts: [
@@ -222,7 +211,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           ...(payload.pending_review
             ? [["First payment", "We'll write with the date at least 10 working days before"] as [string, string]]
             : [["First payment", `${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}`] as [string, string]]),
-          ["Then", `${pounds(price)} every ${careFrequencyNoun(freq)}, on the ${day}`],
+          ["Then", `${pounds(price)} ${carePayWhen(freq, num(payload.collection_day))}`],
           ["Notice", `At least ${CARE_DD.noticeWorkingDays} working days before any payment or change`],
           ["Questions", `${OCCTA_CONTACT.phone}`],
         ],
@@ -244,7 +233,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: [
           ["Amount", pounds(num(payload.amount_minor))],
           ["Date", longDate(str(payload.due_date))],
-          ["How often", str(payload.kind) === "represent" ? "One-off re-try of a returned payment" : `Every ${careFrequencyNoun(freq)}, on the same day of the month`],
+          ["How often", str(payload.kind) === "represent" ? "One-off re-try of a returned payment" : freq === "annual" ? "Once a year, on the same date" : `Every ${careFrequencyNoun(freq)}, on the same day of the month`],
           ["Reference", recipient.reference],
           ["Collected by", `${ddOf(payload).name} (SUN ${ddOf(payload).sun})`],
           ["Notice", `At least ${CARE_DD.noticeWorkingDays} working days before each payment`],
@@ -417,7 +406,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         paragraphs: [
           "This confirms we've cancelled your OCCTA Care. No more Care payments will be taken.",
           eff && eff > today
-            ? `You can keep using Care until ${longDate(eff)}, the end of the month you've already paid for.`
+            ? `You can keep using Care until ${longDate(eff)}, the end of the period you've already paid for.`
             : "Your Care has ended today.",
           refund > 0
             ? `We'll refund ${pounds(refund)} to your bank account by bank transfer within ${CARE_RULES.refundWithinDays} days${payload.refunds && Array.isArray(payload.refunds) && (payload.refunds as unknown[]).length ? " (for time you'd paid for but won't use)" : ""}. We'll write again when it's sent.`
@@ -488,10 +477,10 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: [
           ["Plan", p?.name ?? str(payload.plan_code)],
           ["Price", `${priceWithNoun(num(payload.price_minor), freq)}, VAT included`],
-          ["Paid by", `Its own Direct Debit to ${ddOf(payload).name}, on the ${ordinalDay(num(payload.collection_day))} of the month`],
+          ["Paid by", `Its own Direct Debit to ${ddOf(payload).name}, ${carePayWhen(freq, num(payload.collection_day))}`],
           ["Agreed on", c.agreed_at ? longDate(str(c.agreed_at).slice(0, 10)) : "-"],
-          ["Confirmed by", c.verified === "sms_otp" ? "A one-time code sent to your mobile" : c.verified ? "A one-time code sent to your email" : "-"],
-          ["How you joined", c.channel === "phone_assisted" ? "Online, using a secure link after a call with our team" : "Online, in My OCCTA"],
+          ["Confirmed by", c.verified === "call_recording" ? "Your agreement on a recorded phone call" : c.verified === "sms_otp" ? "A one-time code sent to your mobile" : c.verified === "email_code" ? "A one-time code sent to your email" : "-"],
+          ["How you joined", c.channel === "phone_assisted" ? "By phone with our team" : "Online, in My OCCTA"],
           ["Terms version", str(payload.terms_version)],
           ["Minimum term", "None. Cancel any time, no exit fee."],
         ],

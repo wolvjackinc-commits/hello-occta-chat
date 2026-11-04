@@ -12,7 +12,7 @@
 // public.care_terms_versions (migration). Never edit a published version:
 // every member's consent records the version and hash they agreed to.
 
-export const CARE_TERMS_VERSION = "care-2026-11-v3";
+export const CARE_TERMS_VERSION = "care-2026-11-v4";
 export const CARE_TERMS_EFFECTIVE = "3 November 2026";
 export const CARE_TERMS_PATH = "/legal/occta-care-terms";
 export const CARE_PAGE_PATH = "/care";
@@ -193,7 +193,7 @@ export const CARE_TERMS: TermsSection[] = [
     points: [
       "Care is paid by its own Direct Debit, separate from any other OCCTA Direct Debit. It is collected for OCCTA by APS Re OCCTA (Service User Number 538166) or FastPay Ltd (Service User Number 246668). The Direct Debit Instruction you agree to, and your confirmation, name which one. It shows on your statement under that name, with a reference starting OCCTA CARE-.",
       "We take nothing until your 14-day cooling-off period has ended. Your welcome pack tells you the date and amount of your first payment.",
-      "Payments are taken on the 1st or 15th of the month (you choose). If that's not a working day, it's taken on the next working day.",
+      "Payments are taken on the day of the month agreed when you join (from the 1st to the 28th) and confirmed in writing. If that's not a working day, it's taken on the next working day.",
       "We will tell you at least 10 working days before any payment, and before any change to the amount, date or how often we collect. Your payments are protected by the Direct Debit Guarantee.",
       "OCCTA takes payment for Care by Direct Debit only. We never ask for card details.",
     ],
@@ -267,6 +267,13 @@ export const CARE_TERMS: TermsSection[] = [
 ];
 
 /** Key facts shown (and hashed) immediately before a customer agrees. */
+/** "on the 23rd of each month" / "every 3 months, on the 23rd" / "once a year". */
+export function carePayWhen(frequency: string, day: number): string {
+  if (frequency === "annual") return "once a year";
+  if (frequency === "quarterly") return `every 3 months, on the ${careOrdinal(day)}`;
+  return `on the ${careOrdinal(day)} of each month`;
+}
+
 /** 1 -> "1st", 22 -> "22nd", 23 -> "23rd". */
 export function careOrdinal(n: number): string {
   const s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
@@ -276,10 +283,9 @@ export function careOrdinal(n: number): string {
 export function careKeyFacts(opts: { planCode: string; frequency: string; priceMinor: number; collectionDay: number; firstCollectionDate?: string | null; ddName?: string }): string[] {
   const plan = carePlan(opts.planCode);
   const freq = careFrequency(opts.frequency);
-  const day = careOrdinal(opts.collectionDay);
   return [
     `Plan: ${plan?.name ?? opts.planCode}. Price: ${pounds(opts.priceMinor)} ${freq?.code === "monthly" ? "a month" : freq?.code === "quarterly" ? "every 3 months" : "a year"}, VAT included.`,
-    `Paid by its own Direct Debit to ${opts.ddName ?? CARE_DD.collectionName}, on the ${day} of the month.`,
+    `Paid by its own Direct Debit to ${opts.ddName ?? CARE_DD.collectionName}, ${carePayWhen(opts.frequency, opts.collectionDay)}.`,
     opts.firstCollectionDate
       ? `Nothing is taken until your 14-day cooling-off period ends. Your first payment is expected on ${opts.firstCollectionDate}, and we'll confirm it in writing at least 10 working days before.`
       : "Nothing is taken until your 14-day cooling-off period ends. We'll confirm your first payment in writing at least 10 working days before.",
@@ -296,7 +302,7 @@ export const CARE_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "When do I pay?",
-    a: "Nothing is taken in your first 14 days. Your first payment is after the cooling-off period, on the 1st or 15th of the month (your choice), and we write to you at least 10 working days before.",
+    a: "Nothing is taken in your first 14 days. Your first payment is after the cooling-off period, on the day of the month agreed when you join, and we write to you at least 10 working days before.",
   },
   {
     q: "How do I cancel?",

@@ -68,6 +68,8 @@ function para(c: Cursor, text: string, footer: () => void, opts: { bold?: boolea
   c.doc.setFontSize(size);
   const width = A4.w - M.left - M.right - (opts.indent ?? 0);
   const lines = c.doc.splitTextToSize(pdfSafe(text), width) as string[];
+  // Short paragraphs and bullets stay in one piece across a page break.
+  if (lines.length <= 4) ensure(c, lines.length * lineH(size), footer);
   for (const l of lines) {
     ensure(c, lineH(size), footer);
     c.doc.text(l, M.left + (opts.indent ?? 0), c.y);
@@ -112,13 +114,15 @@ export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { l
     for (const [k, v] of content.facts) {
       doc.setFontSize(size);
       const vLines = doc.splitTextToSize(pdfSafe(v), A4.w - M.left - M.right - keyW - 4) as string[];
-      const h = vLines.length * lineH(size) + 2.2;
+      doc.setFont("helvetica", "bold");
+      const kLines = doc.splitTextToSize(pdfSafe(k), keyW - 3) as string[];
+      const h = Math.max(vLines.length, kLines.length) * lineH(size) + 2.2;
       ensure(c, h, footer);
       doc.setDrawColor(17, 17, 17);
       doc.setLineWidth(0.2);
       doc.line(M.left, c.y - lineH(size) + 0.6, A4.w - M.right, c.y - lineH(size) + 0.6);
       doc.setFont("helvetica", "bold");
-      doc.text(pdfSafe(k), M.left, c.y);
+      kLines.forEach((l, i) => doc.text(l, M.left, c.y + i * lineH(size)));
       doc.setFont("helvetica", "normal");
       vLines.forEach((l, i) => doc.text(l, M.left + keyW, c.y + i * lineH(size)));
       c.y += h;
@@ -127,7 +131,7 @@ export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { l
   }
 
   for (const b of content.boxes ?? []) {
-    ensure(c, 18, footer);
+    ensure(c, large ? 26 : 18, footer);
     doc.setFillColor(255, 222, 0);
     doc.rect(M.left, c.y - 4, 2.2, 5, "F");
     para(c, b.heading.toUpperCase(), footer, { bold: true, size: large ? 13 : 9.5, indent: 4 });

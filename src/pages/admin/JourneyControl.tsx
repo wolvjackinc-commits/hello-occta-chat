@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import CheckoutJourneyMonitor from "@/components/admin/CheckoutJourneyMonitor";
+import CheckoutRecoveryDesk from "@/components/admin/CheckoutRecoveryDesk";
 import {
   ACTIVE_RECENCY_HOURS,
   CONVERSION_DENOMINATOR_LABEL,
@@ -180,6 +181,7 @@ export default function AdminJourneyControl() {
             <RefreshCw className="w-4 h-4 mr-2" aria-hidden="true" />Try again
           </Button>
         </div>
+        <CheckoutRecoveryDesk />
         <CheckoutJourneyMonitor />
       </div>
     );
@@ -365,6 +367,8 @@ export default function AdminJourneyControl() {
         ) : null}
       </section>
 
+
+      <CheckoutRecoveryDesk />
 
       <CheckoutJourneyMonitor />
     </div>

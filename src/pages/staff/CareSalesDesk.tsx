@@ -357,6 +357,33 @@ function FollowUp({ saleId }: { saleId: string }) {
   const [call, setCall] = useState({ outcome: "reminded", note: "" });
   const load = useCallback(async () => { try { setF(await careSales.followup(saleId)); } catch (e) { toast({ title: "Couldn't load the letters", description: salesError(e), variant: "destructive" }); } }, [saleId]);
   useEffect(() => { void load(); }, [load]);
+  // Letters are made a few seconds after sign-up: keep checking until every one has its PDF (up to 3 minutes).
+  const pending = ((f?.letters ?? []) as J[]).some((l) => !l.pdf && !["cancelled", "failed"].includes(l.status));
+  const [polls, setPolls] = useState(0);
+  useEffect(() => {
+    if (!pending || polls > 45) return;
+    const t = setTimeout(() => { setPolls((n) => n + 1); void load(); }, 4000);
+    return () => clearTimeout(t);
+  }, [pending, polls, load]);
+  async function pdf(letterId: string, how: "view" | "download" | "print", name: string) {
+    try {
+      const r = await careSales.letterUrl(saleId, letterId);
+      if (!r.url) throw new Error("not_found");
+      if (how === "view") { window.open(r.url, "_blank", "noopener"); return; }
+      const blob = await (await fetch(r.url)).blob();
+      const url = URL.createObjectURL(blob);
+      if (how === "download") {
+        const a = document.createElement("a"); a.href = url; a.download = `${name}.pdf`; a.click();
+      } else {
+        const frame = document.createElement("iframe");
+        frame.style.position = "fixed"; frame.style.width = "0"; frame.style.height = "0"; frame.style.border = "0";
+        frame.src = url; document.body.appendChild(frame);
+        frame.onload = () => { frame.contentWindow?.focus(); frame.contentWindow?.print(); };
+        setTimeout(() => frame.remove(), 60000);
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (er) { toast({ title: "Couldn't open the letter", description: salesError(er), variant: "destructive" }); }
+  }
   async function run(label: string, fn: () => Promise<unknown>) {
     setBusy(true);
     try { await fn(); toast({ title: label }); await load(); } catch (e) { toast({ title: "Not saved", description: salesError(e), variant: "destructive" }); } finally { setBusy(false); }
@@ -379,9 +406,13 @@ function FollowUp({ saleId }: { saleId: string }) {
             <div key={l.id} className="border-2 border-foreground/30 p-3 text-sm">
               <div className="flex flex-wrap items-center gap-2">
                 <strong>{LETTER_NAME[l.letter_type] ?? String(l.letter_type).replace(/_/g, " ")}</strong>
-                <Badge variant="outline">{l.status}</Badge>
+                <Badge variant="outline">{l.status === "awaiting_print" ? "ready to print" : l.status}</Badge>
                 <span className="text-xs text-muted-foreground">dated {fmt(l.letter_date ?? l.created_at)}{l.email_sent_at ? ` · emailed ${fmt(l.email_sent_at)}` : ""}</span>
-                {l.pdf && <Button size="sm" variant="outline" disabled={busy} onClick={() => void careSales.letterUrl(saleId, l.id).then((r) => r.url && window.open(r.url, "_blank", "noopener")).catch((er) => toast({ title: "Couldn't open the letter", description: salesError(er), variant: "destructive" }))}>Open letter (PDF)</Button>}
+                {l.pdf ? (<>
+                  <Button size="sm" variant="outline" onClick={() => void pdf(l.id, "view", "")}>View</Button>
+                  <Button size="sm" variant="outline" onClick={() => void pdf(l.id, "download", `${sub.reference} ${LETTER_NAME[l.letter_type] ?? l.letter_type}`.replace(/[^\w -]+/g, ""))}>Download</Button>
+                  <Button size="sm" variant="outline" onClick={() => void pdf(l.id, "print", "")}>Print</Button>
+                </>) : !["cancelled", "failed"].includes(l.status) && <span className="text-xs text-muted-foreground" role="status">Making the PDF…</span>}
                 {track && <a className="text-xs underline" href={track} target="_blank" rel="noopener noreferrer">Track with Royal Mail</a>}
               </div>
               <div className="mt-2 grid gap-2 sm:grid-cols-4">

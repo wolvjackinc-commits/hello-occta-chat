@@ -24,7 +24,7 @@ export function pdfSafe(s: string): string {
 const A4 = { w: 210, h: 297 };
 const M = { left: 20, right: 20, top: 30, bottom: 22 };
 
-interface Cursor { doc: jsPDF; y: number; size: number; large: boolean }
+interface Cursor { doc: jsPDF; y: number; size: number; large: boolean; gap?: number }
 
 function lineH(size: number) { return size * 0.42; }
 
@@ -75,13 +75,27 @@ function para(c: Cursor, text: string, footer: () => void, opts: { bold?: boolea
     c.doc.text(l, M.left + (opts.indent ?? 0), c.y);
     c.y += lineH(size);
   }
-  c.y += lineH(size) * 0.45;
+  c.y += lineH(size) * (c.gap ?? 0.45);
+}
+
+function bullet(c: Cursor, text: string, footer: () => void, indent: number) {
+  c.doc.setFont("helvetica", "normal");
+  c.doc.setFontSize(c.size);
+  const x = M.left + indent;
+  const lines = c.doc.splitTextToSize(pdfSafe(text), A4.w - M.right - x - 4.5) as string[];
+  ensure(c, lines.length * lineH(c.size), footer);
+  c.doc.setFillColor(17, 17, 17);
+  c.doc.circle(x + 1.2, c.y - lineH(c.size) * 0.32, c.large ? 0.85 : 0.6, "F");
+  for (const l of lines) { c.doc.text(l, x + 4.5, c.y); c.y += lineH(c.size); }
+  c.y += lineH(c.size) * (c.gap ?? 0.45) * 0.6;
 }
 
 /** Draws one letter starting on the current page of `doc`. */
-export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { largePrint?: boolean; copyFor?: string | null } = {}) {
+export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { largePrint?: boolean; copyFor?: string | null; compact?: boolean } = {}) {
   const large = !!opts.largePrint;
-  const c: Cursor = { doc, y: 0, size: large ? 15 : 10.5, large };
+  // compact: slightly smaller type and spacing, used only when that keeps a letter to one page.
+  const sc = opts.compact && !large ? 0.92 : 1;
+  const c: Cursor = { doc, y: 0, size: (large ? 15 : 10.5) * sc, large, gap: opts.compact ? 0.3 : 0.45 };
   const label = `${content.reference} - ${content.type}`;
   const footer = footerFor(doc, label);
   const startPage = doc.getCurrentPageInfo().pageNumber;
@@ -104,19 +118,19 @@ export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { l
   if (content.accountNumber) doc.text(pdfSafe(`OCCTA account: ${content.accountNumber}`), A4.w - M.right, 58, { align: "right" });
 
   c.y = Math.max(ay + 8, 82);
-  para(c, content.title, footer, { bold: true, size: large ? 20 : 15 });
+  para(c, content.title, footer, { bold: true, size: (large ? 20 : 15) * sc });
   para(c, content.greeting, footer);
   for (const p of content.paragraphs) para(c, p, footer);
 
   if (content.facts?.length) {
-    const size = large ? 13 : 9.5;
+    const size = (large ? 13 : 9.5) * sc;
     const keyW = large ? 62 : 52;
     for (const [k, v] of content.facts) {
       doc.setFontSize(size);
       const vLines = doc.splitTextToSize(pdfSafe(v), A4.w - M.left - M.right - keyW - 4) as string[];
       doc.setFont("helvetica", "bold");
       const kLines = doc.splitTextToSize(pdfSafe(k), keyW - 3) as string[];
-      const h = Math.max(vLines.length, kLines.length) * lineH(size) + 2.2;
+      const h = Math.max(vLines.length, kLines.length) * lineH(size) + 2.2 * sc;
       ensure(c, h, footer);
       doc.setDrawColor(17, 17, 17);
       doc.setLineWidth(0.2);
@@ -134,12 +148,13 @@ export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { l
     ensure(c, large ? 26 : 18, footer);
     doc.setFillColor(255, 222, 0);
     doc.rect(M.left, c.y - 4, 2.2, 5, "F");
-    para(c, b.heading.toUpperCase(), footer, { bold: true, size: large ? 13 : 9.5, indent: 4 });
-    for (const l of b.lines) para(c, `-  ${l}`, footer, { indent: 4 });
+    para(c, b.heading.toUpperCase(), footer, { bold: true, size: (large ? 13 : 9.5) * sc, indent: 4 });
+    for (const l of b.lines) bullet(c, l, footer, 4);
+    c.y += lineH(c.size) * 0.3;
   }
 
   if (content.guarantee) {
-    const size = large ? 11.5 : 8;
+    const size = (large ? 11.5 : 8) * sc;
     doc.setFontSize(size);
     const gl = doc.splitTextToSize(pdfSafe(content.guarantee), A4.w - M.left - M.right - 8) as string[];
     const boxH = gl.length * lineH(size) + 12;
@@ -153,13 +168,15 @@ export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { l
     doc.setFont("helvetica", "normal");
     doc.setFontSize(size);
     for (const l of gl) { ensure(c, lineH(size), footer); doc.text(l, M.left + 4, c.y); c.y += lineH(size); }
-    c.y += 6;
+    c.y += 6 * sc;
   }
 
-  const closeSize = large ? 13 : 9;
+  const closeSize = (large ? 13 : 9) * sc;
+  // The closing lines and the sign-off move together, so "Yours sincerely" is never alone on a page.
+  doc.setFontSize(closeSize);
+  const closeH = content.closing.reduce((h, l) => h + ((doc.splitTextToSize(pdfSafe(l), A4.w - M.left - M.right) as string[]).length + 0.45) * lineH(closeSize), 0);
+  ensure(c, closeH + lineH(c.size) * 1.6, footer);
   for (const l of content.closing) para(c, l, footer, { size: closeSize });
-  // Keep the sign-off in one piece so it never sits alone on a new page.
-  ensure(c, lineH(c.size) * 1.6, footer);
   para(c, "Yours sincerely, the OCCTA Care team", footer, { bold: true });
 
   // Footers for every page of this letter.
@@ -172,10 +189,21 @@ export function drawCareLetter(doc: jsPDF, content: CareLetterContent, opts: { l
   doc.setPage(endPage);
 }
 
+/** Normal letters use compact spacing only when that keeps them to a single page; otherwise they flow onto page 2. */
+function fitsOnePageCompact(content: CareLetterContent, opts: { largePrint?: boolean; copyFor?: string | null }): boolean {
+  if (opts.largePrint) return false;
+  const probe = new jsPDF({ unit: "mm", format: "a4" });
+  drawCareLetter(probe, content, opts);
+  if (probe.getNumberOfPages() === 1) return false;
+  const tight = new jsPDF({ unit: "mm", format: "a4" });
+  drawCareLetter(tight, content, { ...opts, compact: true });
+  return tight.getNumberOfPages() === 1;
+}
+
 export function renderCareLetterPdf(content: CareLetterContent, opts: { largePrint?: boolean; copyFor?: string | null } = {}): Uint8Array<ArrayBuffer> {
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
   doc.setProperties({ title: pdfSafe(`${content.title} - ${content.reference}`), author: "OCCTA LIMITED", creator: "OCCTA Care" });
-  drawCareLetter(doc, content, opts);
+  drawCareLetter(doc, content, { ...opts, compact: fitsOnePageCompact(content, opts) });
   return new Uint8Array(doc.output("arraybuffer"));
 }
 
@@ -185,7 +213,8 @@ export function renderCareLetterBatch(items: { content: CareLetterContent; large
   doc.setProperties({ title: "OCCTA Care print batch", author: "OCCTA LIMITED", creator: "OCCTA Care" });
   items.forEach((it, i) => {
     if (i > 0) doc.addPage();
-    drawCareLetter(doc, it.content, { largePrint: it.largePrint, copyFor: it.copyFor });
+    const o = { largePrint: it.largePrint, copyFor: it.copyFor };
+    drawCareLetter(doc, it.content, { ...o, compact: fitsOnePageCompact(it.content, o) });
   });
   return new Uint8Array(doc.output("arraybuffer"));
 }

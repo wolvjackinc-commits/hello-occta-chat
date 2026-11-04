@@ -251,6 +251,8 @@ Deno.serve(async (req) => {
     await svc.from("care_sales").update({ status: "joined", invite_id: inv.id, subscription_id: r.subscription_id, plan_code: plan, frequency, collection_day: day }).eq("id", sale.id);
     await svc.from("care_events").insert({ subscription_id: r.subscription_id, customer_id: sale.customer_id, actor_type: "staff", actor_id: uid,
       event: "telesales_completed", details: { sale_id: sale.id, provider } });
+    // Make the letters now rather than on the next 5-minute run, so the agent can print them straight away.
+    await svc.rpc("care_dispatch_messages");
     return jsonResponse({ ...r, provider: prov.portal });
   }
 

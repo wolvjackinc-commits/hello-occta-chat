@@ -135,6 +135,8 @@ export const AdminCustomers = () => {
             .order("created_at", { ascending: false })
         : query.order("latest_activity_at", { ascending: false });
       query = query.range(from, to);
+      // Care-only customers live on the Care page.
+      if (sortByOrder) query = query.eq("is_care_only", false);
 
       if (filter === "signed_not_submitted" && sortByOrder) {
         query = query.eq("cs_status", "accepted").eq("has_submitted_order", false).eq("has_service", false);
@@ -215,7 +217,7 @@ export const AdminCustomers = () => {
       };
 
       let res = await run(true);
-      if (res.error && /latest_order_at|has_submitted_order|cs_status|has_service|column/i.test(res.error.message ?? "")) {
+      if (res.error && /latest_order_at|has_submitted_order|cs_status|has_service|is_care_only|column/i.test(res.error.message ?? "")) {
         res = await run(false);
       }
       const { data: customers, error, count } = res;

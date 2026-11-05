@@ -42,6 +42,11 @@ export default function PlanStep({
       ? "price_lock_24"
       : availableTerms[0];
   const priced = plan && activeTerm ? plan.terms[activeTerm] : null;
+  // Setup differs by contract type; never show one term's setup for the other.
+  const setupFor = (info: { setup_one_off?: number; setup_label?: string } | null | undefined) =>
+    info?.setup_one_off != null
+      ? { label: info.setup_label ?? "Setup", one_off: info.setup_one_off }
+      : catalogue.setup;
 
   const flex = plan?.terms.flex_30?.monthly_incl_vat;
   const lock = plan?.terms.price_lock_24?.monthly_incl_vat;
@@ -154,6 +159,11 @@ export default function PlanStep({
                 <span className="whitespace-nowrap pl-7 text-left sm:pl-0 sm:text-right">
                   <span className="block font-bold">{money(info.monthly_incl_vat)}<span className="text-xs font-normal">/mo</span></span>
                   <span className="block text-[11px] text-muted-foreground">{money(info.monthly_ex_vat)} + {money(info.vat_amount)} VAT</span>
+                  {info.setup_one_off != null && (
+                    <span className="block text-[11px] font-medium">
+                      {info.setup_one_off > 0 ? `+ ${money(info.setup_one_off)} one-off setup` : "No setup charge"}
+                    </span>
+                  )}
                 </span>
               </label>
             );
@@ -169,8 +179,11 @@ export default function PlanStep({
       {priced && (
         <div className="border-2 border-foreground p-4 text-sm" aria-live="polite">
           <p className="font-semibold">Selected broadband: {money(priced.monthly_incl_vat)}/month including VAT</p>
-          <p className="mt-1">{catalogue.setup ? `${catalogue.setup.label}: ${money(catalogue.setup.one_off)} one-off.` : "Setup charge confirmed in your order summary."}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Router not included. Choose your own compatible router or a paid option next. Optional extras are shown separately before you confirm.</p>
+          {(() => {
+            const setup = setupFor(priced);
+            return <p className="mt-1">{setup ? (setup.one_off > 0 ? `${setup.label}: ${money(setup.one_off)} one-off.` : `${setup.label}: no setup charge.`) : "Setup charge confirmed in your order summary."}</p>;
+          })()}
+          <p className="mt-1 text-xs text-muted-foreground">Next: use your own compatible router at no extra cost, or add an OCCTA WiFi 6 router. Optional extras are shown separately before you confirm.</p>
         </div>
       )}
 

@@ -44,8 +44,8 @@ export default function RouterStep({
       <div>
         <h1 className="font-display uppercase text-2xl">Router</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          No plan includes a router. Bring your own, or choose an OCCTA Standard WiFi 6 router.
-          Monthly router charges are added to your monthly total; one-off charges appear on your first bill.
+          Already have a compatible router? Use it at no extra cost. Or add an OCCTA Standard WiFi 6 router —
+          monthly router charges are added to your monthly total; one-off charges appear on your first bill.
         </p>
         {session.plan_term === "flex_30" && (
           <p className="text-xs border-2 border-foreground p-3 mt-3">

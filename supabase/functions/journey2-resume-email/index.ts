@@ -12,7 +12,9 @@ import {
   corsHeaders, jsonResponse, getServiceClient, generateTokenPair,
   sendTrackedCommunication, brutalistEmailShell, escapeHtml,
 } from "../_shared/quoteHelpers.ts";
-import { loadJourneySettings } from "../_shared/journey2.ts";
+import { loadJourneySettings, publicSpeedBucketLabel } from "../_shared/journey2.ts";
+import type { SpeedBucket } from "../_shared/buildPlanResolver.ts";
+import { REMINDER_PHONE_LINE as PHONE_LINE, isPermanentSendFailure, reminderOrderSummary } from "../_shared/checkoutReminderCopy.ts";
 
 const SITE = "https://www.occta.co.uk";
 const MAX_REMINDERS = 4;
@@ -23,6 +25,9 @@ type SessionRow = {
   customer_details: { full_name?: string; email?: string; marketing_consent?: boolean } | null;
   current_step: string | null;
   plan_term: string | null;
+  speed_bucket: string | null;
+  service_address: { postcode?: string | null } | null;
+  price_snapshot: { monthly_total_incl_vat?: number | null } | null;
   selected_addons: unknown;
   public_token_hash: string | null;
   reminder_count: number | null;
@@ -32,10 +37,10 @@ type SessionRow = {
 function usefulFact(s: SessionRow): string {
   const addons = Array.isArray(s.selected_addons) ? (s.selected_addons as string[]) : [];
   if (s.plan_term === "price_lock_24") {
-    return "Useful to know: Price Lock 24 is OCCTA's fixed-term option, for customers who prefer price certainty over a shorter minimum term.";
+    return "Useful to know: Price Lock 24 fixes your monthly broadband price for the 24-month minimum term.";
   }
   if (s.plan_term === "flex_30") {
-    return "Useful to know: Flex 30 is OCCTA's rolling monthly option where available, for customers who prefer a shorter commitment.";
+    return "Useful to know: Flex 30 is a rolling monthly contract with no minimum term — 30 days' notice to leave.";
   }
   if (addons.includes("digital_voice")) {
     return "Useful to know: Digital Home Phone is a broadband add-on — it depends on your broadband connection and mains power.";
@@ -43,15 +48,15 @@ function usefulFact(s: SessionRow): string {
   return "Useful to know: OCCTA confirms final availability, estimated speed, setup and order details with you before the order is placed.";
 }
 
-function copyFor(n: number, fact: string, firstName: string, switch50?: Record<string, any> | null) {
+function copyFor(n: number, fact: string, firstName: string, switch50?: Record<string, any> | null, summary = "") {
   const hi = `<p>Hi ${escapeHtml(firstName)},</p>`;
   if (n === 1) return {
     subject: "Your OCCTA order is saved — pick up where you left off", title: "Your order is saved",
-    html: `${hi}<p>You were part-way through your OCCTA order, so we've kept the progress you'd already made.</p><p><strong>Nothing has been charged and no Direct Debit has been set up.</strong> You'll see everything again before the order is placed.</p><p>${fact}</p><p>The secure link below returns you to the exact stage you reached. It's personal to you — please don't forward it.</p>`,
+    html: `${hi}<p>You were part-way through your OCCTA order, so we've kept the progress you'd already made.</p>${summary}<p><strong>Nothing has been charged and no Direct Debit has been set up.</strong> You'll see the full price again before the order is placed.</p><p>${fact}</p>${PHONE_LINE}<p>The secure link below returns you to the exact stage you reached. It's personal to you — please don't forward it.</p>`,
   };
   if (n === 2) return {
     subject: "A quick note before you finish your OCCTA order", title: "Carry on when you're ready",
-    html: `${hi}<p>Your saved OCCTA order is still incomplete. If you were comparing options or simply got interrupted, there's no need to start again.</p><p>${fact}</p><p>You can review your saved choices, the contract information and your billing details before submitting anything.</p>`,
+    html: `${hi}<p>Your saved OCCTA order is still incomplete. If you were comparing options or simply got interrupted, there's no need to start again.</p>${summary}<p>${fact}</p><p>You can change your plan, router or extras and review everything before submitting anything.</p>${PHONE_LINE}`,
   };
   if (n === 4 && switch50) {
     const endDate = new Date(String(switch50.ends_at)).toLocaleDateString("en-GB", { timeZone: "Europe/London", day: "numeric", month: "long", year: "numeric" });
@@ -62,7 +67,7 @@ function copyFor(n: number, fact: string, firstName: string, switch50?: Record<s
   }
   return {
     subject: "Still want to continue your OCCTA order?", title: "Final automatic reminder",
-    html: `${hi}<p>This is our final automatic reminder about this saved order.</p><p>If you'd still like to continue, use the secure link below. If you'd rather not, no action is needed — nothing has been charged.</p><p>${fact}</p><p>If something stopped you finishing, call <strong>0800 260 6626</strong> or email <strong>hello@occta.co.uk</strong> and we'll help.</p>`,
+    html: `${hi}<p>This is our final automatic reminder about this saved order.</p>${summary}<p>If you'd still like to continue, use the secure link below. If you'd rather not, no action is needed — nothing has been charged.</p><p>${fact}</p><p>If something stopped you finishing — a question about price, setup or your router — call us free on <strong>0800 260 6626</strong> or email <strong>hello@occta.co.uk</strong> and we'll help.</p>`,
   };
 }
 
@@ -127,7 +132,7 @@ Deno.serve(async (req) => {
 
   const { data: sessions, error: loadErr } = await supabase
     .from("customer_journey_sessions")
-    .select("id, customer_details, current_step, plan_term, selected_addons, public_token_hash, reminder_count, reminder_last_queued_at")
+    .select("id, customer_details, current_step, plan_term, speed_bucket, service_address, price_snapshot, selected_addons, public_token_hash, reminder_count, reminder_last_queued_at")
     .eq("journey_version", "v2")
     .not("checkout_tracking_started_at", "is", null)
     .not("abandoned_at", "is", null)
@@ -209,7 +214,12 @@ Deno.serve(async (req) => {
     if (existing && existing.status === "sent") { skip("already_sent"); continue; }
 
     const firstName = (s.customer_details?.full_name ?? "there").trim().split(" ")[0] || "there";
-    const { subject, title, html } = copyFor(next, usefulFact(s), firstName, switch50 as Record<string, any> | null);
+    const { subject, title, html } = copyFor(next, usefulFact(s), firstName, switch50 as Record<string, any> | null, reminderOrderSummary({
+      planLabel: s.speed_bucket ? publicSpeedBucketLabel(s.speed_bucket as SpeedBucket) : null,
+      planTerm: s.plan_term,
+      monthlyInclVat: s.price_snapshot?.monthly_total_incl_vat ?? null,
+      postcode: s.service_address?.postcode ?? null,
+    }));
 
     const previousHash = s.public_token_hash;
     const { raw: token, hash } = await generateTokenPair();
@@ -260,6 +270,14 @@ Deno.serve(async (req) => {
     });
 
     if (result.ok) {
+      // Keep the link the customer already has working (their open tab and
+      // earlier emails); journey2-session hands them the current one.
+      if (previousHash) {
+        await supabase
+          .from("customer_journey_token_aliases")
+          .upsert({ token_hash: previousHash, journey_session_id: s.id }, { onConflict: "token_hash", ignoreDuplicates: true })
+          .then(() => {}, () => {});
+      }
       await supabase
         .from("customer_journey_sessions")
         .update({
@@ -275,9 +293,15 @@ Deno.serve(async (req) => {
         .eq("reminder_number", next);
       sent++;
     } else {
+      // A rejected address (provider 4xx other than rate limiting) will never
+      // succeed: close the sequence instead of retrying every day. The order
+      // stays on the Journey Control recovery desk for a phone call.
+      const permanent = isPermanentSendFailure(result.error);
       await supabase
         .from("customer_journey_sessions")
-        .update({ public_token_hash: previousHash })
+        .update(permanent
+          ? { public_token_hash: previousHash, reminder_count: MAX_REMINDERS }
+          : { public_token_hash: previousHash })
         .eq("id", s.id);
       await supabase
         .from("checkout_reminders")

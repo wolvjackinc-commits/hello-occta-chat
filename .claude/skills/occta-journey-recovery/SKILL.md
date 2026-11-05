@@ -77,3 +77,16 @@ and existing customers (`checkout_email_has_order()` / `hasPlacedOrder()`).
 - Reminder emails open ~63%; ~22% of reminder-1 recipients come back, but almost none finish — the leak is after the click.
 - Flex 30 converts ~6% vs Price Lock 24 ~27%; Flex loses most people at router/extras, where £84.99 setup + router cost appear.
 - Google CPC and ChatGPT referrals: ~0 completions; direct/organic carries almost all orders.
+
+## Deploying and speed (learned Nov 2026)
+
+- Merging to `main` updates the website only after a publish; **edge functions are NOT deployed by sync or publish**.
+  Deploy them with one `mcp__Lovable__send_message` ("Deploy only — do not edit files: <function list>"), ~0.6 credit.
+  Include every function that imports a changed `_shared/` file (pricing: `buildPlanResolver.ts`, `journey2.ts`).
+- If `deploy_project` seems stuck, check from a **fresh browser tab** (`x-deployment-id` header); an old tab can keep serving the previous build.
+- Cold starts were the main delay (one function ~9s cold vs ~2s warm). The pg_cron job `warm-order-journey-functions`
+  (every 4 min, `public.warm_order_journey_functions()`) GETs the order-journey functions; GET returns 405 before any work.
+  Add any new order-journey function to that list.
+- Best-effort work after a customer action goes through `_shared/background.ts` `afterResponse()`.
+- Owner pricing switches (Admin › Fair pricing): `setup.activationWaived` (free standard activation, shown crossed out
+  via `setup.wasOneOff`), `router.allowBelowCost` (one-off router below the cost floor).

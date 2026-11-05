@@ -18,6 +18,8 @@ export type CatalogueTerm = {
   monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number;
   /** One-off setup for this term. Older catalogues omit it — fall back to Catalogue.setup. */
   setup_one_off?: number; setup_label?: string;
+  /** Normal setup charge while a limited offer makes it free (display only). */
+  setup_was_one_off?: number;
 };
 
 export type ContractSpeedMatrix = {
@@ -106,7 +108,7 @@ export type PriceSnapshot = {
   speed_bucket: SpeedBucket;
   plan_label?: string;
   router?: { label: string; monthly: number; oneOff: number; option: RouterOption; payment_type: RouterPayType };
-  setup?: { label: string; oneOff: number; option: string };
+  setup?: { label: string; oneOff: number; option: string; wasOneOff?: number };
   addons?: { id: AddonId; label: string; monthly: number }[];
   minimum_term_months?: number;
 };
@@ -340,7 +342,8 @@ export const journey2 = {
 
   prepareContract: (token: string) =>
     call<{ ok: boolean; quote_token?: string; contract_ready?: boolean; contract_error?: string; error?: string; message?: string }>(
-      "switch50-prepare-contract", { token },
+      // Direct: the switch50-prepare-contract wrapper repeated this work over an extra hop.
+      "journey2-prepare-contract", { token },
     ),
 
   applyPostContract: (token: string, quote_token: string) =>

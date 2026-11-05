@@ -304,17 +304,18 @@ export default function OrderJourney() {
    * preferred start date and opens Direct Debit; after bank details are saved,
    * the same idempotent service creates the payment method and opens review.
    */
-  const applyPostContract = useCallback(async () => {
-    if (!token || !quoteToken || applyingRef.current) return;
+  const applyPostContract = useCallback(async (): Promise<boolean> => {
+    if (!token || !quoteToken || applyingRef.current) return false;
     applyingRef.current = true;
     setApplyError(null);
     try {
       const res = await journey2.applyPostContract(token, quoteToken).catch(() => null);
       if (!res?.ok) {
         setApplyError(res?.message ?? "We couldn't move to the next step just now. Please try again.");
-        return;
+        return false;
       }
       await Promise.all([loadSession(), refreshQuoteJourney()]);
+      return true;
     } finally {
       applyingRef.current = false;
     }
@@ -437,7 +438,9 @@ export default function OrderJourney() {
       void trackConversion(res.session, token, step, "saved");
       setBackStep(null);
       setSelection(null);
-      setSession(res.session);
+      // Billing: stay on the Direct Debit form ("Saving securely…") until the
+      // final review is ready, instead of flashing an interim screen.
+      if (step !== "billing") setSession(res.session);
       // Editing after the contract was prepared invalidates it — regenerate so
       // the customer only ever signs a contract that matches their choices.
       if (editingRef.current) {
@@ -449,7 +452,7 @@ export default function OrderJourney() {
       if (step === "billing") {
         // Bank details are collected only after signing. Apply them to the
         // shared journey, then move directly to final review.
-        await applyPostContract();
+        if (!(await applyPostContract())) setSession(res.session); // shows the retry message
       } else if (!(PRE_CONTRACT_STEPS as readonly string[]).includes(res.session.current_step)) {
         await enterContractPhase(res.session);
       }
@@ -610,7 +613,7 @@ export default function OrderJourney() {
                     quote={journeyState.quote}
                     journey={journeyState.journey}
                     paymentMethod={journeyState.payment_method}
-                    onSubmitted={refreshQuoteJourney}
+                    onSubmitted={() => { void submitOrder(); void refreshQuoteJourney(); }}
                     orderSummary={<OrderSummaryCard session={session} embedded />}
                   />
                 )}

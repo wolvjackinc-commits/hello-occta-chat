@@ -6,6 +6,7 @@ import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2S
 import { clearPreferredSpeedBucket, getPreferredSpeedBucket } from "@/lib/journey2/prefill";
 import type { OrderSelection } from "@/lib/journey2/selection";
 import JourneyTermsNote from "./JourneyTermsNote";
+import SetupCharge, { ADVANCED_INSTALL_NOTE } from "./SetupCharge";
 
 export default function PlanStep({
   catalogue, session, saving, onSave, onBack, onSelectionChange, addressConfirmedAutomatically = false,
@@ -159,7 +160,11 @@ export default function PlanStep({
                 <span className="whitespace-nowrap pl-7 text-left sm:pl-0 sm:text-right">
                   <span className="block font-bold">{money(info.monthly_incl_vat)}<span className="text-xs font-normal">/mo</span></span>
                   <span className="block text-[11px] text-muted-foreground">{money(info.monthly_ex_vat)} + {money(info.vat_amount)} VAT</span>
-                  {info.setup_one_off != null && (
+                  {info.setup_was_one_off ? (
+                    <span className="block text-[11px] font-medium">
+                      <SetupCharge oneOff={info.setup_one_off ?? 0} wasOneOff={info.setup_was_one_off} /> activation
+                    </span>
+                  ) : info.setup_one_off != null && (
                     <span className="block text-[11px] font-medium">
                       {info.setup_one_off > 0 ? `+ ${money(info.setup_one_off)} one-off setup` : "No setup charge"}
                     </span>
@@ -179,7 +184,15 @@ export default function PlanStep({
       {priced && (
         <div className="border-2 border-foreground p-4 text-sm" aria-live="polite">
           <p className="font-semibold">Selected broadband: {money(priced.monthly_incl_vat)}/month including VAT</p>
-          {(() => {
+          {priced.setup_was_one_off ? (
+            <>
+              <p className="mt-1">
+                {priced.setup_label ?? "Network activation"}: <SetupCharge oneOff={priced.setup_one_off ?? 0} wasOneOff={priced.setup_was_one_off} />
+                {" "}— limited-time offer, you save {money(priced.setup_was_one_off - (priced.setup_one_off ?? 0))}.
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{ADVANCED_INSTALL_NOTE}</p>
+            </>
+          ) : (() => {
             const setup = setupFor(priced);
             return <p className="mt-1">{setup ? (setup.one_off > 0 ? `${setup.label}: ${money(setup.one_off)} one-off.` : `${setup.label}: no setup charge.`) : "Setup charge confirmed in your order summary."}</p>;
           })()}

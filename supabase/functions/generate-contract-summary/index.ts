@@ -16,6 +16,7 @@ import {
   isManualConsumerBroadband, manualExitBasis, planEstimatePatch,
   NETWORK_CEASE_CAP_WITHIN_12M_INCL_VAT, NETWORK_CEASE_CAP_AFTER_12M_INCL_VAT,
 } from "../_shared/manualQuoteContract.ts";
+import { afterResponse } from "../_shared/background.ts";
 
 const CONTRACT_TERMS_VERSION = "2026.10.1";
 const money = (n: number) => `£${Number(n).toFixed(2)}`;
@@ -367,7 +368,7 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
   await supabase.from("quote_requests").update({ status: "contract_summary_generated", updated_at: new Date().toISOString() }).eq("id", q.quote_request_id);
 
   let pdfPending = false;
-  try {
+  const renderPdf = async () => {
     const projectUrl = Deno.env.get("SUPABASE_URL")!;
     const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const r = await fetch(`${projectUrl}/functions/v1/generate-contract-summary-pdf`, {
@@ -375,8 +376,17 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
       headers: { "Authorization": `Bearer ${svcKey}`, "Content-Type": "application/json", "x-internal-service": "1" },
       body: JSON.stringify({ contract_summary_id: cs.id, internal: true, actor_id: actorUserId }),
     });
-    if (!r.ok) pdfPending = true;
-  } catch { pdfPending = true; }
+    if (!r.ok) throw new Error(`pdf_http_${r.status}`);
+  };
+  if (journeyMode) {
+    // The customer reads the summary on screen while the PDF renders; signing
+    // stays blocked until the stored PDF exists (accept-contract-summary).
+    pdfPending = true;
+    const pending = afterResponse("generate-contract-summary pdf", renderPdf);
+    if (pending) { await pending; pdfPending = false; }
+  } else {
+    try { await renderPdf(); } catch { pdfPending = true; }
+  }
 
   await supabase.rpc("log_event", {
     _actor_type: "admin", _event_type: "contract_summary_generated",

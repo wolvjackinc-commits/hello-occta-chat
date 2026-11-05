@@ -145,6 +145,24 @@ Deno.serve(perfServe("journey-generate-cs", async (req) => {
       journey.contract_summary_id = null;
     }
   } else if (existing) {
+    if (!existing.pdf_storage_key) {
+      // A background render failed or is still running: render it now (idempotent).
+      try {
+        const r = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-contract-summary-pdf`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            "Content-Type": "application/json",
+            "x-internal-service": "1",
+          },
+          body: JSON.stringify({ contract_summary_id: existing.id, internal: true, actor_id: q.customer_id ?? null }),
+        });
+        if (r.ok) {
+          const { data: again } = await supabase.from("contract_summaries").select("pdf_storage_key").eq("id", existing.id).maybeSingle();
+          existing.pdf_storage_key = again?.pdf_storage_key ?? null;
+        }
+      } catch { /* reported as pdf_ready: false below */ }
+    }
     if (!journey.contract_summary_id) {
       await supabase.from("order_journeys")
         .update({ contract_summary_id: existing.id })

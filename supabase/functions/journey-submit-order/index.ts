@@ -3,6 +3,7 @@ import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts
 import { z } from "https://esm.sh/zod@3.23.8";
 import { perfServe } from "../_shared/perfLog.ts";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
+import { afterResponse } from "../_shared/background.ts";
 
 /**
  * Phase F — Final order submission.
@@ -360,8 +361,11 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
     _quote_id: quote.id,
   }).then(() => {}, () => {});
 
-  // Consolidated onboarding email (best-effort, idempotent on consolidated_email_sent_at).
+  // Consolidated onboarding email and staff alert (best-effort, idempotent on
+  // consolidated_email_sent_at). Sent after the response so the customer sees
+  // their confirmation as soon as the order is committed.
   if (!journey.consolidated_email_sent_at) {
+    const pendingEmails = afterResponse("journey-submit-order emails", async () => {
     try {
       const monthly = `£${Number(quote.monthly_gross).toFixed(2)}`;
       const startDateGB = new Date(journey.preferred_start_date as string)
@@ -535,6 +539,8 @@ Deno.serve(perfServe("journey-submit-order", async (req) => {
     } catch (e) {
       console.warn("[journey-submit-order] admin-notify failed", e);
     }
+      });
+    if (pendingEmails) await pendingEmails;
   }
 
   return jsonResponse({

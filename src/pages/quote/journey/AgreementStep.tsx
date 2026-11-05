@@ -127,82 +127,85 @@ export default function AgreementStep({
     return data as any;
   }, [token]);
 
-  const ensureCs = useCallback(async (likelyServiceDate?: string) => {
-    setGenerating(true); setGenError(null);
-    try {
-      // A Journey 2 prepare call may already have generated the documents.
-      // Check first so we never pay for the same generation round-trip twice.
-      let detail = await loadDetail();
-      const alreadyReady = !!detail?.pdf_ready &&
-        (!detail?.contract_information_required || !!detail?.contract_information_ready);
+  const applyDetail = useCallback((detail: any) => {
+    setCs(detail.contract_summary);
+    setSignedPdfUrl(detail.signed_pdf_url ?? null);
+    setPdfReady(!!detail.pdf_ready);
+    setContractInformationRequired(!!detail.contract_information_required);
+    setContractInformationReady(!!detail.contract_information_ready);
+    setContractInformation(detail.contract_information ?? null);
+    setAcceptedAt(detail.accepted_at ?? null);
+    setCertificate(detail.certificate ? { number: detail.certificate.number, signed_url: detail.certificate.signed_url } : null);
+    if (detail.contract_summary) {
+      setFullName((prev) => prev || detail.contract_summary.customer_name_snapshot || "");
+      setEmailConfirm((prev) => prev || detail.contract_summary.customer_email_snapshot || "");
+    }
+  }, []);
 
-      if (!alreadyReady) {
-        const { data: rawGen, error: genErr } = await supabase.functions.invoke("journey-generate-cs", {
-          body: likelyServiceDate ? { token, likely_service_date: likelyServiceDate } : { token },
-        });
-        const gen = (rawGen ?? (genErr ? await readFunctionErrorBody(genErr) : null)) as any;
-        if (gen?.needs_service_date) {
-          setNeedsServiceDate(true);
-          setServiceDateInvalid(!!gen.invalid);
-          return;
-        }
-        setNeedsServiceDate(false);
-        if (genErr || gen?.error) {
-          const code = String(gen?.error ?? "");
-          const inner = gen?.details && typeof gen.details === "object" ? gen.details : null;
-          setGenError(
-            GENERATION_ERROR_COPY[code] ||
-            inner?.message || gen?.message ||
-            "We couldn't prepare your contract documents. OCCTA has been notified — please retry shortly or contact support. Nothing has been accepted or charged.",
-          );
-          return;
-        }
+  const ensureCs = useCallback(async (likelyServiceDate?: string, force = false) => {
+    setGenerating(true); setGenError(null);
+    const docsReady = (d: any) => !!d?.pdf_ready && (!d?.contract_information_required || !!d?.contract_information_ready);
+    const generate = async () => {
+      const { data: rawGen, error: genErr } = await supabase.functions.invoke("journey-generate-cs", {
+        body: likelyServiceDate ? { token, likely_service_date: likelyServiceDate } : { token },
+      });
+      const gen = (rawGen ?? (genErr ? await readFunctionErrorBody(genErr) : null)) as any;
+      if (gen?.needs_service_date) {
+        setNeedsServiceDate(true);
+        setServiceDateInvalid(!!gen.invalid);
+        return false;
+      }
+      setNeedsServiceDate(false);
+      if (genErr || gen?.error) {
+        const code = String(gen?.error ?? "");
+        const inner = gen?.details && typeof gen.details === "object" ? gen.details : null;
+        setGenError(
+          GENERATION_ERROR_COPY[code] ||
+          inner?.message || gen?.message ||
+          "We couldn't prepare your contract documents. OCCTA has been notified — please retry shortly or contact support. Nothing has been accepted or charged.",
+        );
+        return false;
+      }
+      return true;
+    };
+    try {
+      // Journey 2's prepare call normally created the Contract Summary already;
+      // its PDFs may still be rendering. Only generate when nothing exists yet
+      // (or the customer asked to retry).
+      let detail = await loadDetail();
+      if (force || !detail?.contract_summary) {
+        if (!(await generate())) return;
         detail = await loadDetail();
       }
-      let waited = 0;
-      // Poll quickly first, then back off: the documents are usually ready in
-      // well under a second, so a flat 800ms wait added avoidable latency.
-      const backoff = [200, 300, 400, 600, 800, 800, 1000, 1200, 1400, 1500];
-      while (
-        detail &&
-        (!detail.pdf_ready || (detail.contract_information_required && !detail.contract_information_ready)) &&
-        waited < 10
-      ) {
-        await new Promise((r) => setTimeout(r, backoff[Math.min(waited, backoff.length - 1)]));
-        detail = await loadDetail();
-        waited += 1;
-      }
-      if (!detail) {
+      if (!detail?.contract_summary) {
         setGenError("Couldn't load your contract documents.");
-        return;
-      }
-      if (!detail.pdf_ready || (detail.contract_information_required && !detail.contract_information_ready)) {
-        setGenError("Your complete contract document pack could not be prepared. Please retry before signing.");
         return;
       }
       // Production release gate: never let a NEW/unaccepted journey sign a
       // superseded legal version. Historic accepted contracts remain viewable.
-      if (
-        !detail.accepted_at &&
-        detail.contract_summary?.terms_version !== REQUIRED_NEW_CONTRACT_TERMS_VERSION
-      ) {
+      if (!detail.accepted_at && detail.contract_summary?.terms_version !== REQUIRED_NEW_CONTRACT_TERMS_VERSION) {
         setGenError("We’re updating your contract documents to the current production version. No old contract can be accepted. Please retry shortly.");
         return;
       }
-      setCs(detail.contract_summary);
-      setSignedPdfUrl(detail.signed_pdf_url ?? null);
-      setPdfReady(!!detail.pdf_ready);
-      setContractInformationRequired(!!detail.contract_information_required);
-      setContractInformationReady(!!detail.contract_information_ready);
-      setContractInformation(detail.contract_information ?? null);
-      setAcceptedAt(detail.accepted_at ?? null);
-      setCertificate(detail.certificate ? { number: detail.certificate.number, signed_url: detail.certificate.signed_url } : null);
-      if (detail.contract_summary) {
-        setFullName((prev) => prev || detail.contract_summary.customer_name_snapshot || "");
-        setEmailConfirm((prev) => prev || detail.contract_summary.customer_email_snapshot || "");
+      // Show the contract now; signing stays disabled until both PDFs are stored.
+      applyDetail(detail);
+      setGenerating(false);
+      const backoff = [300, 500, 800, 1000, 1200, 1500, 1500, 2000, 2000, 2000, 2500, 2500, 3000, 3000];
+      for (let i = 0; !docsReady(detail) && i < backoff.length; i += 1) {
+        await new Promise((r) => setTimeout(r, backoff[i]));
+        const next = await loadDetail();
+        if (next?.contract_summary) { detail = next; applyDetail(next); }
+      }
+      if (!docsReady(detail)) {
+        // Background rendering didn't finish: ask the server to complete it once.
+        if (await generate()) {
+          const next = await loadDetail();
+          if (next?.contract_summary) { detail = next; applyDetail(next); }
+        }
+        if (!docsReady(detail)) setGenError("Your complete contract document pack could not be prepared. Please retry before signing.");
       }
     } finally { setGenerating(false); }
-  }, [token, loadDetail]);
+  }, [token, loadDetail, applyDetail]);
 
   useEffect(() => { ensureCs(); }, [ensureCs]);
 
@@ -324,7 +327,7 @@ export default function AgreementStep({
           <div className="flex-1">
             <p className="font-display uppercase text-sm mb-1">We couldn't prepare your complete contract document pack</p>
             <p className="text-xs text-muted-foreground mb-3">{genError ?? "Please try again or contact OCCTA support."}</p>
-            <Button variant="outline" size="sm" onClick={() => ensureCs()}><RefreshCw className="w-3 h-3 mr-1" /> Retry</Button>
+            <Button variant="outline" size="sm" onClick={() => ensureCs(undefined, true)}><RefreshCw className="w-3 h-3 mr-1" /> Retry</Button>
           </div>
         </div>
       </div>
@@ -484,14 +487,7 @@ export default function AgreementStep({
               )}
             </div>
             <div className="sm:col-span-2">
-              {dateOfBirth ? (
-                <div className="border border-dashed border-foreground/40 p-3 text-xs">
-                  <strong>Age eligibility confirmed from Your details.</strong> Your date of birth was already provided and validated earlier in this order, so we do not ask for it again here.
-                  {onEditStep && (
-                    <> <button type="button" className="underline font-medium" onClick={() => onEditStep("details")}>Edit your details</button>.</>
-                  )}
-                </div>
-              ) : (
+              {dateOfBirth ? null : (
                 <>
                   <Label htmlFor="ag-dob">Date of birth (you must be 18 or older)</Label>
                   <Input
@@ -540,8 +536,8 @@ export default function AgreementStep({
           </div>
 
           {!documentsReady && (
-            <p className="text-xs text-destructive flex items-center gap-2">
-              <AlertTriangle className="w-3 h-3" /> The complete contract document pack is not ready. Please retry before signing.
+            <p className="text-xs text-muted-foreground flex items-center gap-2" aria-live="polite">
+              <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" /> Saving the PDF copies of your documents — a few seconds. You can carry on reading.
             </p>
           )}
 
@@ -557,10 +553,10 @@ export default function AgreementStep({
             disabled={!formValid || submitting}
             onClick={submit}
           >
-            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Recording…</> : "Accept contract & continue"}
+            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : !documentsReady && cs ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Finishing your documents…</> : "Continue"}
           </Button>
           <p className="text-xs text-muted-foreground">
-            This accepts the agreement and the charges shown above. You'll set up Direct Debit securely on the next step before the order is finally submitted.
+            Pressing Continue accepts the agreement and the charges shown above. You'll set up Direct Debit securely on the next step before the order is finally submitted.
           </p>
           <p className="text-[11px] text-muted-foreground mt-3">
             For your protection we record the date and time, IP address, approximate location and device details of this

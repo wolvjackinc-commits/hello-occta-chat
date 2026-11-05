@@ -5,6 +5,7 @@ import { ensureCustomerFromAcceptedContract } from "../_shared/ensureCustomer.ts
 import { requireVerifiedOtp, resolveJourneyContext, consumeOtpChallenge } from "../_shared/contractOtp.ts";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { perfServe } from "../_shared/perfLog.ts";
+import { afterResponse } from "../_shared/background.ts";
 
 // Phase C canonical four-checkbox wording. Stored verbatim + hashed into the
 // acceptance evidence row.
@@ -564,18 +565,18 @@ Deno.serve(perfServe("accept-contract-summary", async (req) => {
     // visible in Customer 360 immediately. No email is sent here; the
     // consolidated onboarding email at final submission carries the secure
     // set-password link. Failures are logged but do not block acceptance.
-    try {
+    // Runs after the response: it was already non-blocking on failure, and
+    // journey-submit-order ensures the customer again before the order commits.
+    const journeyId = journey.id;
+    const pendingCustomer = afterResponse("accept-contract-summary ensureCustomer", async () => {
       const ec = await ensureCustomerFromAcceptedContract(supabase, {
-        journey_id: journey.id,
+        journey_id: journeyId,
         contract_summary_id: cs.id,
         contract_acceptance_id: acceptanceId,
       });
-      if (!ec.ok && !ec.conflict) {
-        console.warn("[accept-contract-summary] ensureCustomer failed", ec.reason);
-      }
-    } catch (e) {
-      console.warn("[accept-contract-summary] ensureCustomer exception", (e as Error).message);
-    }
+      if (!ec.ok && !ec.conflict) console.warn("[accept-contract-summary] ensureCustomer failed", ec.reason);
+    });
+    if (pendingCustomer) await pendingCustomer;
   }
 
   await supabase.rpc("log_event", {

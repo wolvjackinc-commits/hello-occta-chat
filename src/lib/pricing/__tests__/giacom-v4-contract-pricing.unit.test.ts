@@ -113,3 +113,26 @@ describe("Giacom V4 contract pricing guard", () => {
     expect(JSON.stringify(safe)).not.toContain("disconnect_fee");
   });
 });
+
+describe("owner-set limited offers", () => {
+  it("waives standard network activation and keeps the normal charge for display", () => {
+    const r = priced(resolveBuildPlanPrice(baseInput, { ...fp, setup: { ...fp.setup, activationWaived: true } }, [candidate()]));
+    expect(r.setup.oneOff).toBe(0);
+    expect(r.setup.wasOneOff).toBeGreaterThanOrEqual(84.99);
+    expect(r.one_off_incl_vat).toBe(0);
+    expect(r.setup.label).toBe("Network activation / remote setup");
+  });
+
+  it("never waives engineer or standard installation charges", () => {
+    const r = priced(resolveBuildPlanPrice({ ...baseInput, setup_option: "engineer" }, { ...fp, setup: { ...fp.setup, activationWaived: true } }, [candidate()]));
+    expect(r.setup.oneOff).toBeGreaterThan(0);
+    expect(r.setup.wasOneOff).toBeUndefined();
+  });
+
+  it("lets the owner price the one-off router below cost only when allowed", () => {
+    const one = { ...baseInput, router_option: "standard" as const, router_payment_type: "one_off" as const };
+    const cheap = { ...fp, router: { ...fp.router, standardOneOff: 59.99 } };
+    expect(priced(resolveBuildPlanPrice(one, cheap, [candidate()])).router.oneOff).toBeGreaterThan(59.99);
+    expect(priced(resolveBuildPlanPrice(one, { ...cheap, router: { ...cheap.router, allowBelowCost: true } }, [candidate()])).router.oneOff).toBe(59.99);
+  });
+});

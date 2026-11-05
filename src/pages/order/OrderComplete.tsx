@@ -17,6 +17,7 @@ import { journey2, money, type Journey2Completion } from "@/lib/journey2/client"
 import { Switch50RewardStatus } from "@/components/campaigns/Switch50RewardStatus";
 import { trackSwitch50Purchase } from "@/lib/switch50Analytics";
 import { companyConfig } from "@/lib/companyConfig";
+import OllieCelebration from "@/components/order/OllieCelebration";
 
 const TERM_LABEL: Record<string, string> = {
   flex_30: "Flex 30 — rolling monthly",
@@ -141,6 +142,12 @@ export default function OrderComplete() {
             Test order — no customer, billing, email or supplier action was created.
           </p>
         )}
+
+        <OllieCelebration
+          firstName={state.customer_name ? state.customer_name.split(" ")[0] : null}
+          planTerm={state.contract_term ?? null}
+          coolingOffEndsAt={state.cooling_off_ends_at}
+        />
 
         {/* Celebration header */}
         <div className="relative overflow-hidden border-4 border-foreground bg-primary text-primary-foreground p-7 md:p-10 mb-6 animate-scale-in">

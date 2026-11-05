@@ -112,16 +112,27 @@ export default function ContractSmsVerification({
     inFlight.current = true;
     setSending(true); setError(null); setNotice(null);
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke("send-contract-otp", {
-        body: { token, action: "send" },
-      });
-      const d = data as Record<string, unknown> | null;
-      if (fnErr || !d || d.error) {
-        const body = await readError(fnErr, d);
-        setError(friendly((body?.error as string) ?? null));
-        if (Number(body?.retry_after ?? 0) > 0) setResendIn(Number(body?.retry_after));
+      // A failed send creates no code server-side, so a cold start or a provider
+      // blip is retried quietly before the customer sees an error.
+      let d: Record<string, unknown> | null = null;
+      let body: Record<string, unknown> | null = null;
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 1200 * attempt));
+        const { data, error: fnErr } = await supabase.functions.invoke("send-contract-otp", {
+          body: { token, action: "send" },
+        });
+        d = data as Record<string, unknown> | null;
+        body = fnErr || !d || d.error ? ((await readError(fnErr, d)) ?? { error: null }) : null;
+        if (!body) break;
+        const code = (body.error as string | undefined) ?? null;
+        if (code && code !== "provider_unavailable" && code !== "send_failed") break; // limits, invalid number: don't retry
+      }
+      if (body) {
+        setError(friendly((body.error as string) ?? null));
+        if (Number(body.retry_after ?? 0) > 0) setResendIn(Number(body.retry_after));
         return;
       }
+      if (!d) return; // unreachable: a missing body is treated as an error above
       if (d.already_verified === true) { setVerifiedState(true); return; }
       setChallengeId((d.challenge_id as string) ?? null);
       setPhoneMasked((d.phone_masked as string) ?? phoneMasked);

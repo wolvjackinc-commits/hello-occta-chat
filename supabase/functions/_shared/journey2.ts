@@ -160,6 +160,8 @@ export type CatalogueTerm = {
   monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number;
   /** One-off setup charge for this term (differs between Price Lock 24 and Flex 30). */
   setup_one_off?: number; setup_label?: string;
+  /** Normal setup charge while a limited offer makes it free (display only). */
+  setup_was_one_off?: number;
 };
 export type CataloguePlan = {
   speed_bucket: SpeedBucket;
@@ -260,14 +262,13 @@ export async function buildCatalogue(
   const plans: CataloguePlan[] = [];
   let anchor: ResolvedPriced | null = null;
 
+  // One round of parallel loads instead of one sequential round per band.
+  const candidatesByBucket = new Map(await Promise.all(
+    SPEED_BUCKETS.map(async (b) => [b, await loadGiacomCandidates(supabase, b).catch(() => null)] as const),
+  ));
   for (const bucket of SPEED_BUCKETS) {
     const terms: Partial<Record<PlanTerm, CatalogueTerm>> = {};
-    let candidates;
-    try {
-      candidates = await loadGiacomCandidates(supabase, bucket);
-    } catch {
-      candidates = null;
-    }
+    const candidates = candidatesByBucket.get(bucket);
     if (!candidates) continue;
 
     for (const term of PLAN_TERMS) {
@@ -284,6 +285,7 @@ export async function buildCatalogue(
         vat_amount: r.vat_amount,
         setup_one_off: round2(r.setup.oneOff),
         setup_label: r.setup.label,
+        ...(r.setup.wasOneOff ? { setup_was_one_off: r.setup.wasOneOff } : {}),
       };
       if (!anchor) anchor = r;
     }
@@ -309,12 +311,7 @@ export async function buildCatalogue(
     setup = { option: anchor.setup.option, label: anchor.setup.label, one_off: anchor.setup.oneOff };
     const refBucket = anchor.speed_bucket;
     const refTerm = anchor.plan_term;
-    let candidates;
-    try {
-      candidates = await loadGiacomCandidates(supabase, refBucket);
-    } catch {
-      candidates = null;
-    }
+    const candidates = candidatesByBucket.get(refBucket);
     if (candidates) {
       for (const rc of ROUTER_CHOICES) {
         const r = resolveBuildPlanPrice(

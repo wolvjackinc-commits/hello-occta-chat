@@ -65,7 +65,8 @@ export interface ResolvedPriced {
   vat_amount: number;
   vat_rate: number;
   router: { option: RouterChoice; label: string; monthly: number; oneOff: number; payment_type: RouterPayType };
-  setup: { option: SetupChoice; label: string; oneOff: number };
+  /** wasOneOff: the normal charge while an owner-set offer waives it (display only). */
+  setup: { option: SetupChoice; label: string; oneOff: number; wasOneOff?: number };
   addons: { id: AddonId; label: string; monthly: number }[];
   one_off_incl_vat: number;
   first_bill_incl_vat: number;
@@ -248,7 +249,10 @@ export function resolveBuildPlanPrice(
       routerMonthly = Math.max(Number(fp.router.standardMonthly), recoveryFloor);
     } else {
       const routerFloor = nextSafe99(supplierRouterEx * (1 + VAT_RATE) + 2);
-      routerOneOff = Math.max(Number(fp.router.standardOneOff), routerFloor);
+      // Owner can deliberately price the one-off router below cost (Fair pricing admin).
+      routerOneOff = fp.raw?.router?.allowBelowCost === true
+        ? Number(fp.router.standardOneOff)
+        : Math.max(Number(fp.router.standardOneOff), routerFloor);
     }
   }
 
@@ -262,6 +266,12 @@ export function resolveBuildPlanPrice(
   } else if (i.setup_option === "engineer") {
     setupOneOff = Math.max(Number(fp.setup.engineer), connectionFloor);
     setupLabel = "Engineer installation";
+  }
+  // Owner-set limited offer: standard (remote) network activation is free.
+  let setupWasOneOff: number | undefined;
+  if (i.setup_option === "remote" && setupOneOff > 0 && fp.raw?.setup?.activationWaived === true) {
+    setupWasOneOff = round2(setupOneOff);
+    setupOneOff = 0;
   }
 
   let addonsMonthly = 0;
@@ -314,7 +324,7 @@ export function resolveBuildPlanPrice(
     vat_amount: vatAmount,
     vat_rate: VAT_RATE,
     router: { option: i.router_option, label: routerLabel, monthly: round2(routerMonthly), oneOff: round2(routerOneOff), payment_type: i.router_payment_type },
-    setup: { option: i.setup_option, label: setupLabel, oneOff: round2(setupOneOff) },
+    setup: { option: i.setup_option, label: setupLabel, oneOff: round2(setupOneOff), ...(setupWasOneOff ? { wasOneOff: setupWasOneOff } : {}) },
     addons: addonLines,
     one_off_incl_vat: oneOffInclVat,
     first_bill_incl_vat: firstBillInclVat,

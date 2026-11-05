@@ -4,6 +4,8 @@
  * Returns only exactly-priced, orderable plans, routers and extras resolved
  * server-side from the authoritative pricing configuration. Never returns
  * supplier names, supplier costs, margins or internal product references.
+ * Shared code: _shared/journey2.ts (buildCatalogue) and buildPlanResolver.ts —
+ * redeploy this function whenever either changes.
  */
 import { corsHeaders, jsonResponse, getServiceClient, checkRateLimit, getRequestIp } from "../_shared/quoteHelpers.ts";
 import { buildCatalogue, loadJourneySettings } from "../_shared/journey2.ts";

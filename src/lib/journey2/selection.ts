@@ -58,7 +58,7 @@ export function selectionTotals(
   return {
     planLabel: plan.label,
     monthly: round2(priced.monthly_incl_vat + (router?.monthly ?? 0) + addonsMonthly),
-    oneOff: round2((router?.one_off ?? 0) + (catalogue.setup?.one_off ?? 0)),
+    oneOff: round2((router?.one_off ?? 0) + (priced.setup_one_off ?? catalogue.setup?.one_off ?? 0)),
   };
 }
 

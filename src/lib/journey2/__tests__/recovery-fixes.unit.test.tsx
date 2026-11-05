@@ -84,3 +84,27 @@ describe("reminder email helpers", () => {
     expect(session).toMatch(/reissuedToken \? \{ token: reissuedToken \}/);
   });
 });
+
+describe("order complete celebration", () => {
+  it("shows Ollie with term-accurate reassurance", async () => {
+    const { default: OllieCelebration } = await import("@/components/order/OllieCelebration");
+    render(<OllieCelebration firstName="Pihu" planTerm="price_lock_24" coolingOffEndsAt="2026-11-19T00:00:00Z" />);
+    expect(screen.getByLabelText("Ollie celebrating")).toBeTruthy();
+    expect(screen.getByText("Brilliant choice, Pihu.")).toBeTruthy();
+    expect(screen.getByText(/fixed for the full 24 months/)).toBeTruthy();
+    expect(screen.getByText(/cancel free of charge until 19 November/)).toBeTruthy();
+    expect(screen.queryByText(/30 days' notice/)).toBeNull();
+  });
+});
+
+describe("free activation offer display", () => {
+  it("crosses out the normal activation charge on the plan step", () => {
+    const offer = structuredClone(catalogue);
+    offer.plans[0].terms.flex_30 = { ...offer.plans[0].terms.flex_30!, setup_one_off: 0, setup_was_one_off: 84.99 };
+    const { container } = render(<PlanStep catalogue={offer} session={{ ...session, plan_term: "flex_30" } as Journey2Session} saving={false} onSave={vi.fn()} onBack={vi.fn()} />);
+    expect(container.querySelectorAll("s")[0]?.textContent).toBe("£84.99");
+    expect(screen.getAllByText("FREE").length).toBeGreaterThan(0);
+    expect(screen.getByText(/you save £84\.99/)).toBeTruthy();
+    expect(screen.getByText(/advanced installation, that may be chargeable/)).toBeTruthy();
+  });
+});

@@ -64,7 +64,9 @@ export default function DetailsStep({
   const [numberToPort, setNumberToPort] = useState(d?.number_to_port ?? "");
   const [access, setAccess] = useState(d?.accessibility_needs ?? "");
   const [vulnerability, setVulnerability] = useState(d?.vulnerability_support_needs ?? "");
-  const [marketing, setMarketing] = useState(!!d?.marketing_consent);
+  // Ticked by default for new orders (soft opt-in with an opt-out at collection);
+  // a saved untick is always respected.
+  const [marketing, setMarketing] = useState(d?.marketing_consent ?? true);
   const [offerCode, setOfferCode] = useState(d?.offer_code ?? getStoredCampaignCode() ?? "");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -290,7 +292,7 @@ export default function DetailsStep({
       <div className="flex items-start gap-3 border-2 border-border p-4">
         <Checkbox id="j2-marketing" checked={marketing} onCheckedChange={(v) => setMarketing(v === true)} className="mt-0.5" />
         <Label htmlFor="j2-marketing" className="text-sm font-normal leading-relaxed">
-          Email me occasional OCCTA offers and service news. Optional — your order works either way.
+          Keep me updated by email with OCCTA offers and service news. Untick if you'd rather not — your order works either way, and you can unsubscribe any time.
         </Label>
       </div>
 

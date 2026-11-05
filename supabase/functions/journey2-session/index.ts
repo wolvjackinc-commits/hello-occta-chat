@@ -217,12 +217,13 @@ Deno.serve(async (req) => {
 
   const ip = getRequestIp(req) ?? "noip";
   const ua = (req.headers.get("user-agent") ?? "").slice(0, 400);
-  if (!(await checkRateLimit(ip, `journey2_${body.action}`, 60, 60))) {
-    return jsonResponse({ error: "rate_limited" }, 429);
-  }
-
   const supabase = getServiceClient();
-  const settings = await loadJourneySettings(supabase);
+  // Independent reads: run together rather than one after the other.
+  const [allowed, settings] = await Promise.all([
+    checkRateLimit(ip, `journey2_${body.action}`, 60, 60),
+    loadJourneySettings(supabase),
+  ]);
+  if (!allowed) return jsonResponse({ error: "rate_limited" }, 429);
 
   // ── start ────────────────────────────────────────────────────────────────
   if (body.action === "start") {

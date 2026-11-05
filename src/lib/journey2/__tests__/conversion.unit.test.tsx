@@ -54,12 +54,17 @@ describe("conversion-critical checkout", () => {
     expect(save).toHaveBeenCalledWith({ speed_bucket: "essential", plan_term: "flex_30" });
   });
 
-  it("preserves Flex router eligibility and replaces previous router charges in the preview", () => {
-    render(<RouterStep catalogue={catalogue} session={{ ...session, plan_term: "flex_30" }} saving={false} onSave={vi.fn()} onBack={vi.fn()} />);
-    expect(screen.queryByText("Standard WiFi 6 router — monthly")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("Standard WiFi 6 router — one-off"));
-    expect(screen.getByText("With this router: £30.00/month")).toBeVisible();
-    expect(screen.getByText(/£80.00 one-off in total/)).toBeVisible();
+  it("preserves Flex router eligibility with own router free by default", () => {
+    const save = vi.fn();
+    render(<RouterStep catalogue={catalogue} session={{ ...session, plan_term: "flex_30", router_option: null }} saving={false} onSave={save} onBack={vi.fn()} />);
+    expect(screen.queryByText(/\/month$/)).not.toBeInTheDocument(); // no monthly router on Flex 30
+    expect(screen.getByText("Use my own router")).toBeVisible();
+    expect(screen.getByText("Free")).toBeVisible();
+    fireEvent.click(screen.getByText("Continue"));
+    expect(save).toHaveBeenCalledWith({ router_option: "own", router_payment_type: "none" });
+    fireEvent.click(screen.getByText("Buy the OCCTA WiFi 6 router"));
+    fireEvent.click(screen.getByText("Continue"));
+    expect(save).toHaveBeenLastCalledWith({ router_option: "standard", router_payment_type: "one_off" });
   });
 
   it("never skips the Digital Voice acknowledgement", () => {

@@ -2,6 +2,7 @@ import { oneOffTotal } from "@/lib/journey2/conversion";
 import { Gift, Info } from "lucide-react";
 import { money, PLAN_TERM_LABEL, SPEED_ESTIMATES, type Catalogue, type Journey2Session } from "@/lib/journey2/client";
 import { planLabel, selectionDiffers, selectionTotals, type OrderSelection } from "@/lib/journey2/selection";
+import SetupCharge, { ADVANCED_INSTALL_NOTE } from "./SetupCharge";
 
 /**
  * Live order summary. Every charge comes from the server-resolved price
@@ -123,11 +124,14 @@ export default function OrderSummaryCard({
 
       <div className="mt-4 border-t-2 border-foreground pt-3 space-y-1 text-sm">
         {p.setup && (
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">{p.setup.label}</span>
-            <span>{money(p.setup.oneOff)}</span>
+            <SetupCharge oneOff={p.setup.oneOff} wasOneOff={p.setup.wasOneOff} />
           </div>
         )}
+        {p.setup?.wasOneOff ? (
+          <p className="text-[11px] text-muted-foreground">Limited-time offer. {ADVANCED_INSTALL_NOTE}</p>
+        ) : null}
         {p.router && p.router.oneOff > 0 && (
           <div className="flex justify-between">
             <span className="text-muted-foreground">{p.router.label} (one-off)</span>

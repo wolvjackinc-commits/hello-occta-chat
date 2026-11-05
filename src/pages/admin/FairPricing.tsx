@@ -100,12 +100,16 @@ export function AdminFairPricing() {
         <Field label="Standard monthly £" value={fp.router?.standardMonthly} onChange={(v) => num(["router","standardMonthly"], v)} />
         <Field label="Premium one-off £" value={fp.router?.premiumOneOff} onChange={(v) => num(["router","premiumOneOff"], v)} />
         <Field label="Premium monthly £" value={fp.router?.premiumMonthly} onChange={(v) => num(["router","premiumMonthly"], v)} />
+        <Toggle label="Allow standard one-off below router cost" checked={fp.router?.allowBelowCost === true}
+          onChange={(v) => setFp({ ...fp, router: { ...fp.router, allowBelowCost: v } })} />
       </Section>
 
       <Section title="Setup">
         <Field label="Remote £" value={fp.setup?.remote} onChange={(v) => num(["setup","remote"], v)} />
         <Field label="Standard £" value={fp.setup?.standard} onChange={(v) => num(["setup","standard"], v)} />
         <Field label="Engineer £" value={fp.setup?.engineer} onChange={(v) => num(["setup","engineer"], v)} />
+        <Toggle label="Limited offer: free standard network activation (shown crossed out)" checked={fp.setup?.activationWaived === true}
+          onChange={(v) => setFp({ ...fp, setup: { ...fp.setup, activationWaived: v } })} />
       </Section>
 
       <Section title="Add-ons (monthly)">

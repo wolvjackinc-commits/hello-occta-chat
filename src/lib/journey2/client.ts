@@ -14,7 +14,11 @@ export type RouterOption = "own" | "standard" | "premium" | "business";
 export type RouterPayType = "none" | "one_off" | "monthly";
 export type AddonId = "priority_support" | "static_ip" | "digital_voice" | "paper_billing";
 
-export type CatalogueTerm = { monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number };
+export type CatalogueTerm = {
+  monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number;
+  /** One-off setup for this term. Older catalogues omit it — fall back to Catalogue.setup. */
+  setup_one_off?: number; setup_label?: string;
+};
 
 export type ContractSpeedMatrix = {
   source: string;
@@ -298,10 +302,10 @@ export const journey2 = {
   },
 
   get: async (token: string) => {
-    const result = await call<{ ok: boolean; session: Journey2Session; quote_token_available: boolean; v2_test_mode: boolean; error?: string }>(
+    const result = await call<{ ok: boolean; session: Journey2Session; quote_token_available: boolean; v2_test_mode: boolean; error?: string; /** Set when an older link was used: the order's current link. */ token?: string }>(
       "journey2-session", { action: "get", token, attribution: readAttribution() },
     );
-    if (result?.ok && result.session) {
+    if (result?.ok && result.session && !result.token) {
       const refreshed = await refreshCampaign(token, readOfferCode());
       if (refreshed?.campaign_code) result.session.campaign_code = refreshed.campaign_code;
       if (refreshed?.promotion) result.session.campaign_snapshot = refreshed.promotion;

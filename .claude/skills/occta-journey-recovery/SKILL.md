@@ -20,6 +20,8 @@ monitor** (`CheckoutJourneyMonitor.tsx`).
 | Staff recovery calls | `checkout_recovery_contacts` (append-only) |
 | Do-not-contact | `customer_journey_sessions.recovery_opt_out_at` |
 | Timeline | `admin_checkout_timeline` — any `activity_log` event named `checkout_%` shows up |
+| Emails actually sent / opened | `communications_log` `template_name='journey2_checkout_reminder_N'`, `metadata->>'session_id'` |
+| Old order links | `customer_journey_token_aliases` (replaced link hashes → session) |
 
 `abandoned_at` is cleared when the customer comes back, so never use it alone
 for history — use the `checkout_abandoned` events.
@@ -27,8 +29,14 @@ for history — use the `checkout_abandoned` events.
 ## Two reminder senders — keep them in sync
 
 Both run every 15 minutes:
-- `process_checkout_tracking()` (SQL, cron `checkout-journey-monitor`) — the one that actually sends most emails.
-- `supabase/functions/journey2-resume-email` (cron `checkout-abandoned-recovery-worker`).
+- `supabase/functions/journey2-resume-email` (cron `checkout-abandoned-recovery-worker`) — **the only one that sends today**.
+- `process_checkout_tracking()` (SQL, cron `checkout-journey-monitor`) — marks abandonment and reconciles; its email
+  branch is dormant because vault `CRON_JOB_SECRET` is empty. If that secret is ever added, both would send — fix first.
+
+Every new order link (reminder email, same-browser restart) must keep the old one working:
+upsert the replaced hash into `customer_journey_token_aliases`. `journey2-session` `get`
+resolves an alias, issues the current link and returns it as `token`; the page switches to it.
+Provider 4xx (not 429) = permanent failure: close the sequence, don't retry daily.
 
 Any rule about who must NOT be emailed goes in **both**: test sessions,
 signed contracts (`contract_acceptance_id`, `post_contract_applied_at`,
@@ -54,7 +62,18 @@ and existing customers (`checkout_email_has_order()` / `hasPlacedOrder()`).
    `supabase/tests/checkout-recovery-fixture.sql`) and wire it into `ci.yml`.
 4. Run: `node --test scripts/checkout-recovery-db.test.mjs`, `npx vitest run src/lib/journey`,
    `npm run typecheck`, `npm run lint`, then let CI pass on a PR before merging.
-5. Don't use Lovable credits: code, merge and push yourself. Lovable syncs `main`,
-   applies migrations and deploys edge functions. Verify in the live DB afterwards
-   (`supabase_migrations.schema_migrations`, function bodies, a staff RPC call).
-6. Payment is Direct Debit or bank transfer only — recovery copy must never offer card or phone payment.
+5. Don't use Lovable credits: code, merge and push yourself. Lovable syncs `main` and
+   deploys edge functions, but does **not** apply migrations: apply the SQL with
+   `query_database` in one transaction, then
+   `insert into supabase_migrations.schema_migrations(version,name)`. Verify function bodies with md5.
+   Dry-run on live first inside a block that ends in `RAISE EXCEPTION` carrying the results.
+6. Publish with `mcp__Lovable__deploy_project`, then confirm the live `JourneyControl-*.js` /
+   order chunks on occta.co.uk contain the new code (fetch from the browser pane). If production
+   doesn't change after ~2 publishes, Saurabh must click **Publish → Update** in the Lovable editor.
+7. Payment is Direct Debit or bank transfer only — recovery copy must never offer card or phone payment.
+
+## What the data has shown (Nov 2026)
+
+- Reminder emails open ~63%; ~22% of reminder-1 recipients come back, but almost none finish — the leak is after the click.
+- Flex 30 converts ~6% vs Price Lock 24 ~27%; Flex loses most people at router/extras, where £84.99 setup + router cost appear.
+- Google CPC and ChatGPT referrals: ~0 completions; direct/organic carries almost all orders.

@@ -185,6 +185,18 @@ function addDays(ymd: string, days: number): string {
  * counting them wrecks abandonment and conversion reporting.
  */
 const BOT_UA = /(bot|crawl|spider|slurp|bingpreview|adsbot|mediapartners|headlesschrome|phantomjs|python-requests|curl\/|wget|scrapy|facebookexternalhit|whatsapp|telegrambot|semrush|ahrefs|mj12|dotbot|petalbot|yandex|baidu|duckduckbot|applebot|gptbot|claudebot|ccbot|perplexity|lighthouse|pagespeed|monitoring|uptime)/i;
+/**
+ * Keeps a replaced order-link hash resolvable (customer_journey_token_aliases)
+ * so links already in the customer's browser or inbox keep working.
+ */
+async function rememberTokenAlias(supabase: any, sessionId: string, tokenHash: string | null | undefined) {
+  if (!tokenHash) return;
+  await supabase
+    .from("customer_journey_token_aliases")
+    .upsert({ token_hash: tokenHash, journey_session_id: sessionId }, { onConflict: "token_hash", ignoreDuplicates: true })
+    .then(() => {}, () => {});
+}
+
 function isCrawler(ua: string): boolean {
   return !ua || ua.length < 15 || BOT_UA.test(ua);
 }
@@ -239,7 +251,7 @@ Deno.serve(async (req) => {
     // a customer already in flight never changes journey version.
     const { data: existing } = await supabase
       .from("customer_journey_sessions")
-      .select("id, journey_version, status, utm_snapshot")
+      .select("id, journey_version, status, utm_snapshot, public_token_hash")
       .eq("anonymous_session_id_hash", anonHash)
       .in("status", ["active", "contract_prepared", "contract_accepted", "order_submitted"])
       .order("created_at", { ascending: false })
@@ -250,6 +262,7 @@ Deno.serve(async (req) => {
       // The raw token is only ever known to the browser that created it, so a
       // resumed session is handed back by issuing a fresh token for the same row.
       const { raw, hash } = await generateTokenPair();
+      await rememberTokenAlias(supabase, existing.id, (existing as any).public_token_hash);
       await supabase
         .from("customer_journey_sessions")
         .update({
@@ -311,11 +324,56 @@ Deno.serve(async (req) => {
 
   // ── token-bound actions ──────────────────────────────────────────────────
   const tokenHash = await sha256Hex(body.token);
-  const { data: session } = await supabase
+  let { data: session } = await supabase
     .from("customer_journey_sessions")
     .select(SESSION_COLS)
     .eq("public_token_hash", tokenHash)
     .maybeSingle();
+
+  // An older link for this order (earlier reminder email, or the tab the
+  // customer started in): issue the current link and hand it back so the
+  // browser switches to it. Only on "get" — the page always loads first.
+  let reissuedToken: string | null = null;
+  if (!session && body.action === "get") {
+    const { data: alias } = await supabase
+      .from("customer_journey_token_aliases")
+      .select("journey_session_id")
+      .eq("token_hash", tokenHash)
+      .maybeSingle();
+    if (alias) {
+      const { data: current } = await supabase
+        .from("customer_journey_sessions")
+        .select("id, public_token_hash, expires_at, status")
+        .eq("id", alias.journey_session_id)
+        .maybeSingle();
+      if (current && new Date(current.expires_at).getTime() < Date.now()
+          && !["completed", "order_submitted"].includes(current.status)) {
+        return jsonResponse({ error: "session_expired" }, 410);
+      }
+      if (current?.public_token_hash) {
+        const { raw, hash } = await generateTokenPair();
+        await rememberTokenAlias(supabase, current.id, current.public_token_hash);
+        const { data: updated } = await supabase
+          .from("customer_journey_sessions")
+          .update({ public_token_hash: hash })
+          .eq("id", current.id)
+          .eq("public_token_hash", current.public_token_hash)
+          .select(SESSION_COLS)
+          .maybeSingle();
+        if (updated) {
+          session = updated;
+          reissuedToken = raw;
+          await supabase.rpc("log_event", {
+            _actor_type: "public",
+            _event_type: "journey2_link_reissued",
+            _title: "Older order link reopened",
+            _details: { journey_session_id: current.id, stage: (updated as any).current_step },
+            _source_module: "journey2",
+          }).then(() => {}, () => {});
+        }
+      }
+    }
+  }
   if (!session) return jsonResponse({ error: "session_not_found" }, 404);
 
   const expired = new Date(session.expires_at).getTime() < Date.now();
@@ -333,6 +391,7 @@ Deno.serve(async (req) => {
     return jsonResponse({
       ok: true,
       session,
+      ...(reissuedToken ? { token: reissuedToken } : {}),
       quote_token_available: !!session.quote_id,
       v2_test_mode: !!settings.customer_journey_v2_test_mode,
       preflight_ok: preflightPassed(settings),

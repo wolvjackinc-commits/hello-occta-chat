@@ -156,7 +156,11 @@ export function assignJourneyVersion(
 
 // ── Catalogue ────────────────────────────────────────────────────────────────
 
-export type CatalogueTerm = { monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number };
+export type CatalogueTerm = {
+  monthly_incl_vat: number; monthly_ex_vat: number; vat_amount: number;
+  /** One-off setup charge for this term (differs between Price Lock 24 and Flex 30). */
+  setup_one_off?: number; setup_label?: string;
+};
 export type CataloguePlan = {
   speed_bucket: SpeedBucket;
   label: string;
@@ -278,6 +282,8 @@ export async function buildCatalogue(
         monthly_incl_vat: r.monthly_total_incl_vat,
         monthly_ex_vat: r.monthly_total_ex_vat,
         vat_amount: r.vat_amount,
+        setup_one_off: round2(r.setup.oneOff),
+        setup_label: r.setup.label,
       };
       if (!anchor) anchor = r;
     }

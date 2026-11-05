@@ -169,6 +169,12 @@ export default function OrderJourney() {
           setError(res?.error ?? "session_not_found");
           return null;
         }
+        if (res.token && res.token !== token) {
+          // An older link (earlier reminder email or original tab): continue on
+          // the order's current link. The token change reloads the session.
+          navigate(`/order/${encodeURIComponent(res.token)}${window.location.search}`, { replace: true });
+          return null;
+        }
         setError(null);
         setSession(res.session);
         return res.session;
@@ -182,7 +188,7 @@ export default function OrderJourney() {
       }
     }
     return null;
-  }, [token]);
+  }, [token, navigate]);
 
   const loadQuoteJourney = useCallback(async (qt: string) => {
     for (let attempt = 0; attempt < 2; attempt += 1) {

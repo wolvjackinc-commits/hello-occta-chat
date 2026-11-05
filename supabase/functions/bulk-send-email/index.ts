@@ -229,7 +229,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch recipients
     let recipientQuery = supabaseClient
       .from("profiles")
-      .select("id, full_name, email, phone, account_number");
+      .select("id, full_name, email, phone, account_number")
+      .is("deleted_at", null);
 
     if (body.recipient_user_ids && body.recipient_user_ids.length > 0) {
       recipientQuery = recipientQuery.in("id", body.recipient_user_ids);

@@ -1,3 +1,4 @@
+import { isDeletedCustomerEmail } from "../_shared/deletedCustomer.ts";
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -247,6 +248,11 @@ Deno.serve(async (req) => {
           }
           continue
         }
+      }
+
+      if (await isDeletedCustomerEmail(supabase, typeof payload.to === 'string' ? payload.to : null)) {
+        await supabase.rpc('delete_email', { queue_name: queue, message_id: msg.msg_id })
+        continue
       }
 
       try {

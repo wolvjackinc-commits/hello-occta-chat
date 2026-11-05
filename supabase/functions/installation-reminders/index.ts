@@ -1,3 +1,4 @@
+import { isDeletedCustomerEmail } from "../_shared/deletedCustomer.ts";
 import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -277,6 +278,8 @@ const handler = async (req: Request): Promise<Response> => {
             .single();
           orderDetails = order;
         }
+
+        if (await isDeletedCustomerEmail(supabase, booking.customer_email)) continue;
 
         // Send email reminder
         const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "hello@occta.co.uk";

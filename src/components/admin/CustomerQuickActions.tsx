@@ -7,8 +7,14 @@ import {
   Plus, 
   Ticket,
   MoreHorizontal,
-  Check
+  Check,
+  Trash2,
+  Loader2
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -56,6 +62,8 @@ export const CustomerQuickActions = ({
           View
         </Link>
       </Button>
+
+      <DeleteCustomerButton customerId={customerId} accountNumber={accountNumber} customerName={customerName} />
 
       {/* Secondary actions dropdown */}
       <DropdownMenu>
@@ -108,6 +116,82 @@ export const CustomerQuickActions = ({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  );
+};
+
+// Owner-only delete. The passcode is checked server-side in admin_delete_customer, never here.
+const DeleteCustomerButton = ({ customerId, accountNumber, customerName }: CustomerQuickActionsProps) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [passcode, setPasscode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const label = customerName || accountNumber || "this customer";
+
+  const close = () => { setOpen(false); setPasscode(""); };
+  const submit = async () => {
+    setBusy(true);
+    try {
+      const { data, error } = await (supabase as any).rpc("admin_delete_customer", {
+        p_customer_id: customerId,
+        p_passcode: passcode,
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.ok) throw new Error(data?.error || "Delete failed");
+      toast({ title: "Customer deleted", description: `${label}: all emails, invoices, Direct Debits and automatic jobs stopped.` });
+      close();
+      queryClient.invalidateQueries({ queryKey: ["admin-customers"] });
+    } catch (e) {
+      toast({ title: "Not deleted", description: e instanceof Error ? e.message : String(e), variant: "destructive" });
+      setPasscode("");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="border-2 border-destructive px-2 text-destructive"
+        onClick={() => setOpen(true)}
+        aria-label={`Delete ${label}`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+        <DialogContent className="border-2 border-foreground">
+          <DialogHeader>
+            <DialogTitle>Delete {label}?</DialogTitle>
+            <DialogDescription>
+              Removes them from the customer list and stops every email, invoice, Direct Debit, letter and automatic job.
+              Paid invoices and history are kept for records. This can't be undone from the dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); if (passcode) submit(); }}>
+            <label htmlFor={`del-pass-${customerId}`} className="text-sm font-medium">Owner passcode</label>
+            <Input
+              id={`del-pass-${customerId}`}
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              autoFocus
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              className="mt-1 border-2 border-foreground"
+            />
+            <DialogFooter className="mt-4">
+              <Button type="button" variant="outline" onClick={close} disabled={busy}>Cancel</Button>
+              <Button type="submit" variant="destructive" disabled={!passcode || busy}>
+                {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                Delete customer
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

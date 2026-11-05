@@ -1,3 +1,4 @@
+import { isDeletedCustomerEmail } from "../_shared/deletedCustomer.ts";
 // Direct Debit notification outbox worker.
 //
 // The ONLY place a Direct Debit status email is sent. Notifications are created
@@ -89,6 +90,12 @@ serve(async (req) => {
         .update({ status: "failed", last_error: "no_recipient_email", last_attempt_at: new Date().toISOString() })
         .eq("id", item.id);
       results.push({ id: item.id, status: "failed", error: "no_recipient_email" });
+      continue;
+    }
+
+    if (await isDeletedCustomerEmail(supabase, item.recipient_email)) {
+      await supabase.from("dd_email_outbox").update({ status: "cancelled", last_error: "customer_deleted" }).eq("id", item.id);
+      results.push({ id: item.id, status: "cancelled", error: "customer_deleted" });
       continue;
     }
 

@@ -38,6 +38,7 @@ export const CustomerQuickActions = ({
 }: CustomerQuickActionsProps) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const handleCopyAccount = async () => {
     if (!accountNumber) return;
@@ -62,8 +63,6 @@ export const CustomerQuickActions = ({
           View
         </Link>
       </Button>
-
-      <DeleteCustomerButton customerId={customerId} accountNumber={accountNumber} customerName={customerName} />
 
       {/* Secondary actions dropdown */}
       <DropdownMenu>
@@ -113,22 +112,40 @@ export const CustomerQuickActions = ({
               Create Ticket
             </Link>
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {/* Owner-only delete (passcode) */}
+          <DropdownMenuItem
+            onSelect={() => setDeleteOpen(true)}
+            className="cursor-pointer text-destructive focus:text-destructive"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Customer
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <DeleteCustomerDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        customerId={customerId}
+        accountNumber={accountNumber}
+        customerName={customerName}
+      />
     </div>
   );
 };
 
 // Owner-only delete. The passcode is checked server-side in admin_delete_customer, never here.
-const DeleteCustomerButton = ({ customerId, accountNumber, customerName }: CustomerQuickActionsProps) => {
+const DeleteCustomerDialog = ({ open, onClose, customerId, accountNumber, customerName }: CustomerQuickActionsProps & { open: boolean; onClose: () => void }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [passcode, setPasscode] = useState("");
   const [busy, setBusy] = useState(false);
   const label = customerName || accountNumber || "this customer";
 
-  const close = () => { setOpen(false); setPasscode(""); };
+  const close = () => { onClose(); setPasscode(""); };
   const submit = async () => {
     setBusy(true);
     try {
@@ -151,16 +168,7 @@ const DeleteCustomerButton = ({ customerId, accountNumber, customerName }: Custo
 
   return (
     <>
-      <Button
-        variant="outline"
-        size="sm"
-        className="border-2 border-destructive px-2 text-destructive"
-        onClick={() => setOpen(true)}
-        aria-label={`Delete ${label}`}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+      <Dialog open={open} onOpenChange={(o) => { if (!o) close(); }}>
         <DialogContent className="border-2 border-foreground">
           <DialogHeader>
             <DialogTitle>Delete {label}?</DialogTitle>

@@ -1,3 +1,4 @@
+import { isDeletedCustomerEmail } from "../_shared/deletedCustomer.ts";
 import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -288,6 +289,10 @@ serve(async (req) => {
           .eq('id', invoice.user_id)
           .single();
 
+        if (profile?.email && await isDeletedCustomerEmail(supabase, profile.email)) {
+          skipped.push(`${invoice.invoice_number}: customer deleted`);
+          continue;
+        }
         if (!profile?.email) {
           console.log(`Skipping invoice ${invoice.invoice_number} - no email found`);
           skipped.push(`${invoice.invoice_number}: no email`);

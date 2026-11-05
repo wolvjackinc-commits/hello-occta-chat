@@ -1,3 +1,4 @@
+import { isDeletedCustomerEmail } from "../_shared/deletedCustomer.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
@@ -1198,6 +1199,7 @@ serve(async (req) => {
           : 'Set up your OCCTA Direct Debit';
 
         const helpKey = request.type === 'card_payment' ? 'payment_reminder' : 'dd_setup';
+        if (await isDeletedCustomerEmail(supabase, request.customer_email)) throw new Error('customer_deleted');
         const htmlWithHelp = await withHelpfulLinks(supabase, emailContent.html, helpKey);
 
         const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -1483,7 +1485,7 @@ serve(async (req) => {
         const siteUrl = Deno.env.get('SITE_URL') || 'https://www.occta.co.uk';
         const setupLink = `${siteUrl}/dd/setup?token=${encodeURIComponent(rawToken)}`;
         const resendApiKey = Deno.env.get('RESEND_API_KEY');
-        if (resendApiKey) {
+        if (resendApiKey && !(await isDeletedCustomerEmail(supabase, customer_email))) {
           const email = getDDSetupEmail({
             customerName: customer_name || 'Customer',
             accountNumber: account_number ?? null,
@@ -1589,7 +1591,7 @@ serve(async (req) => {
           const subject = pr.type === 'card_payment' ? 'Your OCCTA payment link (resent)' : 'Set up your OCCTA Direct Debit (resent)';
           const helpKey = pr.type === 'card_payment' ? 'payment_reminder' : 'dd_setup';
           const htmlWithHelp = await withHelpfulLinks(supabase, email.html, helpKey);
-          await fetch('https://api.resend.com/emails', {
+          if (!(await isDeletedCustomerEmail(supabase, pr.customer_email))) await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({

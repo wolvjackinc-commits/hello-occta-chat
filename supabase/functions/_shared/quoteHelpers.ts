@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { anyDeletedCustomerEmail } from "./deletedCustomer.ts";
 
 export const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,6 +118,9 @@ export async function sendResendEmail(opts: {
   const recipients = (Array.isArray(opts.to) ? opts.to : [opts.to])
     .map((v) => String(v).trim().toLowerCase())
     .filter(Boolean);
+  if (await anyDeletedCustomerEmail(getServiceClient(), recipients)) {
+    return { ok: false, error: "customer_deleted", trackingLogId: opts.trackingLogId ?? null };
+  }
   let effectiveTrackingLogId = opts.trackingLogId ?? null;
 
   // A shared pixel cannot identify which recipient opened a multi-recipient

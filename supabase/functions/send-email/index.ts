@@ -6,6 +6,7 @@ import { fetchHelpfulLinksHtml } from "../_shared/helpfulLinks.ts";
 import { buildInvoiceSentEmailHtml, invoiceEmailSubject } from "../_shared/invoiceEmail.ts";
 import { getStandardFooter, HELPFUL_LINKS_SLOT } from "../_shared/emailFooter.ts";
 import { bankTransferBoxHtml, bankTransferReference } from "../_shared/paymentOptions.ts";
+import { isDeletedCustomerEmail } from "../_shared/deletedCustomer.ts";
 import { parseAttachmentRefs, resolveAttachments, type ResolvedAttachment } from "../_shared/emailAttachments.ts";
 
 // Maps send-email `type` values to the template_key used in
@@ -1359,6 +1360,10 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
     } catch (_e) { /* non-fatal */ }
+
+    if (await isDeletedCustomerEmail(supabaseAdmin, to)) {
+      return new Response(JSON.stringify({ success: false, skipped: "customer_deleted" }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
 
     // If we're logging, pre-insert a row so we can embed a read-receipt
     // tracking pixel that points back at this log id. This means every

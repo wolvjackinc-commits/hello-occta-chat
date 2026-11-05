@@ -1,3 +1,4 @@
+import { isDeletedCustomerEmail } from "../_shared/deletedCustomer.ts";
 import { getCronSecret, isCronSecret } from "../_shared/cronSecret.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -362,6 +363,12 @@ serve(async (req) => {
       console.error("Failed to fetch profile or no email:", profileError);
       return new Response(JSON.stringify({ error: "Customer email not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (await isDeletedCustomerEmail(supabase, profile.email)) {
+      return new Response(JSON.stringify({ skipped: true, reason: "customer_deleted" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

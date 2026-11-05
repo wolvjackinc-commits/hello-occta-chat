@@ -3584,6 +3584,51 @@ export type Database = {
           },
         ]
       }
+      checkout_recovery_contacts: {
+        Row: {
+          callback_at: string | null
+          created_at: string
+          id: string
+          journey_session_id: string
+          note: string | null
+          outcome: string
+          staff_user_id: string
+        }
+        Insert: {
+          callback_at?: string | null
+          created_at?: string
+          id?: string
+          journey_session_id: string
+          note?: string | null
+          outcome: string
+          staff_user_id: string
+        }
+        Update: {
+          callback_at?: string | null
+          created_at?: string
+          id?: string
+          journey_session_id?: string
+          note?: string | null
+          outcome?: string
+          staff_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkout_recovery_contacts_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkout_recovery_contacts_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkout_reminders: {
         Row: {
           created_at: string
@@ -5287,6 +5332,7 @@ export type Database = {
           quote_id: string | null
           quote_public_token_hash: string | null
           quote_request_id: string | null
+          recovery_opt_out_at: string | null
           reminder_count: number
           reminder_last_queued_at: string | null
           reminder_last_sent_at: string | null
@@ -5361,6 +5407,7 @@ export type Database = {
           quote_id?: string | null
           quote_public_token_hash?: string | null
           quote_request_id?: string | null
+          recovery_opt_out_at?: string | null
           reminder_count?: number
           reminder_last_queued_at?: string | null
           reminder_last_sent_at?: string | null
@@ -5435,6 +5482,7 @@ export type Database = {
           quote_id?: string | null
           quote_public_token_hash?: string | null
           quote_request_id?: string | null
+          recovery_opt_out_at?: string | null
           reminder_count?: number
           reminder_last_queued_at?: string | null
           reminder_last_sent_at?: string | null
@@ -5461,6 +5509,39 @@ export type Database = {
           utm_snapshot?: Json | null
         }
         Relationships: []
+      }
+      customer_journey_token_aliases: {
+        Row: {
+          created_at: string
+          journey_session_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          journey_session_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          journey_session_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_journey_token_aliases_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "customer_journey_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_journey_token_aliases_journey_session_id_fkey"
+            columns: ["journey_session_id"]
+            isOneToOne: false
+            referencedRelation: "journey2_live_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_standing_events: {
         Row: {
@@ -17504,6 +17585,46 @@ export type Database = {
         Args: { _session_id: string; _source: string }
         Returns: Json
       }
+      admin_checkout_recovery_history: {
+        Args: { _session_id: string }
+        Returns: {
+          callback_at: string
+          created_at: string
+          id: string
+          note: string
+          outcome: string
+          staff_email: string
+        }[]
+      }
+      admin_checkout_recovery_queue: {
+        Args: { _limit?: number }
+        Returns: {
+          callback_at: string
+          contact_attempts: number
+          contract_signed: boolean
+          current_stage: string
+          customer_name: string
+          email: string
+          existing_customer: boolean
+          expired: boolean
+          first_abandoned_at: string
+          last_activity_at: string
+          last_contact_at: string
+          last_outcome: string
+          last_reminder_at: string
+          opted_out_at: string
+          phone: string
+          plan_label: string
+          postcode: string
+          progress_percent: number
+          reminders_sent: number
+          session_id: string
+          started_at: string
+          status: string
+          utm_source: string
+        }[]
+      }
+      admin_checkout_recovery_stats: { Args: { _days?: number }; Returns: Json }
       admin_checkout_session_list: {
         Args: { _limit?: number }
         Returns: {
@@ -17552,6 +17673,15 @@ export type Database = {
       admin_list_partner_referrals: {
         Args: { p_partner_id?: string }
         Returns: Json
+      }
+      admin_log_checkout_recovery: {
+        Args: {
+          _callback_at?: string
+          _note?: string
+          _outcome: string
+          _session_id: string
+        }
+        Returns: string
       }
       admin_override_quote_floor: {
         Args: { _quote_id: string; _reason: string }
@@ -18046,6 +18176,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      checkout_email_has_order: { Args: { _email: string }; Returns: boolean }
       checkout_stage_progress: { Args: { _stage: string }; Returns: number }
       compute_cancellation_preview: {
         Args: { p_requested_date: string; p_service_id: string }

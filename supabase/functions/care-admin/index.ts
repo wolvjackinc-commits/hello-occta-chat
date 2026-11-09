@@ -183,8 +183,6 @@ Deno.serve(async (req) => {
       const doc = await PDFDocument.load(new Uint8Array(await blob.arrayBuffer()));
       const pages = await merged.copyPages(doc, doc.getPageIndices());
       for (const pg of pages) merged.addPage(pg);
-      // Duplex printing: start every letter on a fresh sheet.
-      if (pages.length % 2 === 1) merged.addPage([pages[0].getWidth(), pages[0].getHeight()]);
     }
     const pdf = new Uint8Array(await merged.save()) as Uint8Array<ArrayBuffer>;
     const sha = await sha256Bytes(pdf);

@@ -285,7 +285,7 @@ export function careKeyFacts(opts: { planCode: string; frequency: string; priceM
   const freq = careFrequency(opts.frequency);
   return [
     `Plan: ${plan?.name ?? opts.planCode}. Price: ${pounds(opts.priceMinor)} ${freq?.code === "monthly" ? "a month" : freq?.code === "quarterly" ? "every 3 months" : "a year"}, VAT included.`,
-    `Paid by its own Direct Debit to ${opts.ddName ?? CARE_DD.collectionName}, ${carePayWhen(opts.frequency, opts.collectionDay)}.`,
+    `Paid by its own Direct Debit to OCCTA Limited (shown as ${opts.ddName ?? CARE_DD.collectionName} on your bank statement), ${carePayWhen(opts.frequency, opts.collectionDay)}.`,
     opts.firstCollectionDate
       ? `Nothing is taken until your 14-day cooling-off period ends. Your first payment is expected on ${opts.firstCollectionDate}, and we'll confirm it in writing at least 10 working days before.`
       : "Nothing is taken until your 14-day cooling-off period ends. We'll confirm your first payment in writing at least 10 working days before.",

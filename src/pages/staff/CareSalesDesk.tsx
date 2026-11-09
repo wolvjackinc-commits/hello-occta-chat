@@ -247,8 +247,8 @@ function SaleDialog({ id, cfg, onClose }: { id: string; cfg: { role: string; tra
             {!sup && <div className="min-w-[260px] flex-1"><Label>Reason for bypassing (required)</Label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Why this sale should go ahead" /></div>}
             <Button variant="secondary" disabled={!!busy || note.trim().length < 20} title="Continue even though the call didn't pass or couldn't be checked. The reason is saved and can't be changed." onClick={() => void act("Call check bypassed: complete the sign-up below", () => careSales.decide(id, "bypass", note))}>Bypass call check</Button>
           </>)}
-          {!["joined", "withdrawn"].includes(s.status) && <Button variant="outline" disabled={!!busy} onClick={() => void act("Withdrawn", () => careSales.withdraw(id, note || "withdrawn by staff"))}>Withdraw sale</Button>}
         </section>
+        {s.status !== "withdrawn" && <CancelSale saleId={id} joined={s.status === "joined"} onDone={() => void load()} />}
       </DialogContent>
     </Dialog>
   );
@@ -440,6 +440,36 @@ function FollowUp({ saleId }: { saleId: string }) {
         </>)}
         {calls.length > 0 && <ul className="mt-2 space-y-1 text-xs">{calls.map((c, i) => <li key={i}>{dt(c.at)} · {String(c.outcome).replace(/_/g, " ")} · {c.by ?? "staff"}: {c.note}</li>)}</ul>}
       </div>
+    </section>
+  );
+}
+
+// Cancel a sale. Nothing posted yet: cancelled quietly and its letters deleted. Something already posted:
+// the customer gets the cancellation letter and only the unsent letters are deleted. Posted letters are kept.
+function CancelSale({ saleId, joined, onDone }: { saleId: string; joined: boolean; onDone: () => void }) {
+  const [open, setOpen] = useState(false); const [reason, setReason] = useState(""); const [busy, setBusy] = useState(false);
+  async function go() {
+    setBusy(true);
+    try {
+      const r = await careSales.cancel(saleId, reason);
+      toast({ title: "Sale cancelled", description: `${r.letters_deleted} unsent letter(s) deleted.${r.cancellation_letter ? " A cancellation letter is ready to post, because the customer already received a letter." : ""}` });
+      setOpen(false); onDone();
+    } catch (e) { toast({ title: "Couldn't cancel the sale", description: salesError(e), variant: "destructive" }); } finally { setBusy(false); }
+  }
+  return (
+    <section className="border-[3px] border-destructive/60 p-3">
+      {!open ? <Button variant="destructive" onClick={() => setOpen(true)}>Cancel this sale</Button> : (
+        <div className="space-y-2 text-sm">
+          <p className="font-semibold">Cancel this sale?</p>
+          <p className="text-muted-foreground">{joined ? "The Care plan and its Direct Debit are cancelled and nothing will be collected. " : ""}Letters that haven't been posted or emailed are deleted permanently. Letters already sent are kept as the record of what the customer received.</p>
+          <Label htmlFor="cancel-reason">Reason (required)</Label>
+          <Textarea id="cancel-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Customer changed their mind on the call" />
+          <div className="flex gap-2">
+            <Button variant="destructive" disabled={busy || reason.trim().length < 10} onClick={() => void go()}>{busy ? "Cancelling…" : "Yes, cancel the sale"}</Button>
+            <Button variant="outline" disabled={busy} onClick={() => setOpen(false)}>Keep the sale</Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

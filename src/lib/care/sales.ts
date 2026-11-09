@@ -21,7 +21,7 @@ export const careSales = {
   list: (scope: "mine" | "all", status: string | null) => careCall<J[]>("care_sales_list", { p_scope: scope, p_status: status }),
   get: (id: string) => careCall<J>("care_sales_get", { p_sale: id }),
   decide: (id: string, decision: "approve" | "decline" | "bypass", note: string) => careCall<J>("care_sales_decide", { p_sale: id, p_decision: decision, p_note: note }),
-  withdraw: (id: string, note: string) => careCall<J>("care_sales_withdraw", { p_sale: id, p_note: note }),
+  cancel: (id: string, note: string) => careCall<{ ok: boolean; letters_deleted: number; cancellation_letter: boolean }>("care_sales_cancel", { p_sale: id, p_note: note }),
   report: () => careCall<J[]>("care_sales_report"),
   async uploadRecording(saleId: string, file: File): Promise<string> {
     const ext = (file.name.split(".").pop() ?? "mp3").toLowerCase();
@@ -52,7 +52,7 @@ export const staffUsers = {
 
 export const SALE_STATUS: Record<string, string> = {
   awaiting_recording: "Needs recording", scoring: "Checking call", passed: "Passed: complete sign-up", held: "Held: supervisor or bypass",
-  declined: "Declined", approved: "Approved: complete sign-up", link_sent: "Link sent", joined: "Signed up", withdrawn: "Withdrawn",
+  declined: "Declined", approved: "Approved: complete sign-up", link_sent: "Link sent", joined: "Signed up", withdrawn: "Cancelled",
 };
 
 export const SALES_ERRORS: Record<string, string> = {
@@ -66,6 +66,9 @@ export const SALES_ERRORS: Record<string, string> = {
   confirmations_required: "Tick all four confirmations once you've read the Direct Debit Instruction and the customer has agreed.",
   date_of_birth_required: "Enter the customer's date of birth.",
   email_or_phone_required: "Enter an email or a mobile number so we can contact them.",
+  cancel_reason_required_min_10_chars: "Write why the sale is being cancelled (at least 10 characters).",
+  already_cancelled: "This sale is already cancelled.",
+  payment_already_in_progress: "A payment for this plan is already with the bank. Cancel it from Admin → OCCTA Care so the payment is handled.",
   not_eligible: "This customer can't join Care right now.",
   first_payment_date_required: "Choose the first payment date.",
   first_payment_date_too_soon: "That first payment date is too soon: we must post 10 working days' notice first.",

@@ -9875,6 +9875,24 @@ export type Database = {
         }
         Relationships: []
       }
+      owner_passcodes: {
+        Row: {
+          hash: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          hash: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          hash?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       partner_commission_payouts: {
         Row: {
           amount: number
@@ -11397,6 +11415,7 @@ export type Database = {
           consent_updated_at: string | null
           created_at: string
           date_of_birth: string | null
+          deleted_at: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -11425,6 +11444,7 @@ export type Database = {
           consent_updated_at?: string | null
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -11453,6 +11473,7 @@ export type Database = {
           consent_updated_at?: string | null
           created_at?: string
           date_of_birth?: string | null
+          deleted_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -15225,6 +15246,7 @@ export type Database = {
           has_service: boolean | null
           has_submitted_order: boolean | null
           id: string | null
+          is_care_only: boolean | null
           latest_activity_at: string | null
           latest_order_at: string | null
           latest_postcode: string | null
@@ -17666,6 +17688,10 @@ export type Database = {
           title: string
         }[]
       }
+      admin_delete_customer: {
+        Args: { p_customer_id: string; p_passcode: string; p_reason?: string }
+        Returns: Json
+      }
       admin_link_quote_request: {
         Args: { _new_user_id: string; _qr_id: string; _reason: string }
         Returns: undefined
@@ -18041,6 +18067,10 @@ export type Database = {
         Args: { p_reason: string; p_sub: string }
         Returns: number
       }
+      care_purge_unsent_letters: {
+        Args: { p_customer: string; p_keep_types?: string[]; p_sub: string }
+        Returns: number
+      }
       care_queue: {
         Args: {
           p_dedupe: string
@@ -18073,6 +18103,10 @@ export type Database = {
       }
       care_request_header: { Args: { p_name: string }; Returns: string }
       care_require: { Args: { _finance?: boolean }; Returns: string }
+      care_sales_cancel: {
+        Args: { p_note: string; p_sale: string }
+        Returns: Json
+      }
       care_sales_create: {
         Args: {
           p_call_at: string
@@ -18737,6 +18771,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_care_record: { Args: { p_customer_id: string }; Returns: boolean }
       has_compliance_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_marketing_access: { Args: { _user_id: string }; Returns: boolean }
@@ -18752,6 +18787,7 @@ export type Database = {
         Returns: number
       }
       is_admin: { Args: never; Returns: boolean }
+      is_deleted_customer_email: { Args: { p_email: string }; Returns: boolean }
       is_outreach_staff: { Args: { _uid: string }; Returns: boolean }
       is_partner_staff: { Args: { _uid: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
@@ -19280,6 +19316,7 @@ export type Database = {
         }
         Returns: string
       }
+      warm_order_journey_functions: { Args: never; Returns: number }
     }
     Enums: {
       app_role:

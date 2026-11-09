@@ -14,7 +14,12 @@
 
     /* Path aliases (shared with app config) */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      /* @vitejs/plugin-react-swc is symlinked into node_modules/.deno and would
+         otherwise type-resolve `vite` to a second copy (5.4.21) while this config
+         uses the top-level one (5.4.19), making the plugins array incompatible.
+         Typecheck-only alias: one Vite identity for the node config project. */
+      "vite": ["./node_modules/vite"]
     },
 
     /* Linting */

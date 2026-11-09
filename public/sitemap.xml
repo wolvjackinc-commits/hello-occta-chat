@@ -20,7 +20,7 @@
   </url>
 <url>
     <loc>https://www.occta.co.uk/broadband/contract-saver</loc>
-    <lastmod>2026-11-05</lastmod>
+    <lastmod>2026-11-09</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.90</priority>
   </url>
@@ -65,17 +65,17 @@
 <url><loc>https://www.occta.co.uk/legal/network-management</loc><lastmod>2026-11-05</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
 <url><loc>https://www.occta.co.uk/legal/refer-a-friend-terms</loc><lastmod>2026-11-05</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
 <url><loc>https://www.occta.co.uk/care</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
-<url><loc>https://www.occta.co.uk/care/how-it-works</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
+<url><loc>https://www.occta.co.uk/care/how-it-works</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
 <url><loc>https://www.occta.co.uk/care/faq</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.60</priority></url>
-<url><loc>https://www.occta.co.uk/care/key-facts</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.50</priority></url>
+<url><loc>https://www.occta.co.uk/care/key-facts</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.50</priority></url>
 <url><loc>https://www.occta.co.uk/legal/occta-care-terms</loc><lastmod>2026-11-09</lastmod><changefreq>yearly</changefreq><priority>0.40</priority></url>
 <url><loc>https://www.occta.co.uk/refer-a-friend</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
-<url><loc>https://www.occta.co.uk/business</loc><lastmod>2026-11-05</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
+<url><loc>https://www.occta.co.uk/business</loc><lastmod>2026-11-09</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
 <url><loc>https://www.occta.co.uk/business/broadband</loc><lastmod>2026-11-05</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
 <url><loc>https://www.occta.co.uk/business/voice</loc><lastmod>2026-11-05</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
 <url><loc>https://www.occta.co.uk/business/sim</loc><lastmod>2026-11-05</lastmod><changefreq>weekly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/business/bundles</loc><lastmod>2026-11-05</lastmod><changefreq>weekly</changefreq><priority>0.85</priority></url>
-<url><loc>https://www.occta.co.uk/business/contact-sales</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
+<url><loc>https://www.occta.co.uk/business/contact-sales</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/business/line-check</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/business/quote</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/business/industries/cafes</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
@@ -416,7 +416,7 @@
 <url><loc>https://www.occta.co.uk/help/how-to-complain</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/help/your-rights-ofcom</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/guides/what-broadband-speed-do-i-need</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
-<url><loc>https://www.occta.co.uk/guides/fibre-vs-full-fibre-explained</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
+<url><loc>https://www.occta.co.uk/guides/fibre-vs-full-fibre-explained</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
 <url><loc>https://www.occta.co.uk/guides/why-your-wifi-is-slow</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
 <url><loc>https://www.occta.co.uk/guides/digital-voice-vs-landline</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.70</priority></url>
 <url><loc>https://www.occta.co.uk/guides/working-from-home-broadband</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
@@ -424,7 +424,7 @@
 <url><loc>https://www.occta.co.uk/guides/broadband-for-renters</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/learn</loc><lastmod>2026-11-05</lastmod><changefreq>weekly</changefreq><priority>0.90</priority></url>
 <url><loc>https://www.occta.co.uk/learn/what-is-fttp</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
-<url><loc>https://www.occta.co.uk/learn/broadband-speed-guide</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
+<url><loc>https://www.occta.co.uk/learn/broadband-speed-guide</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/learn/slow-broadband-fixes</loc><lastmod>2026-11-05</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>
 <url><loc>https://www.occta.co.uk/learn/wifi-vs-broadband</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.75</priority></url>
 <url><loc>https://www.occta.co.uk/learn/router-buying-guide</loc><lastmod>2026-11-09</lastmod><changefreq>monthly</changefreq><priority>0.80</priority></url>

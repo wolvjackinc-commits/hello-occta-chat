@@ -53,7 +53,7 @@ export function CareHowItWorks() {
         <SectionTitle>Its own Direct Debit, so it never tangles with your broadband</SectionTitle>
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <ul className="space-y-3 text-sm">
-            <li>Collected by <strong>APS Re OCCTA</strong> (Service User Number 538166). Your statement shows a reference starting <strong>OCCTA CARE-</strong>.</li>
+            <li>Your account is with <strong>OCCTA Limited</strong>. On your bank statement the Direct Debit shows as <strong>APS Re OCCTA</strong> (SUN 538166) or <strong>FastPay Ltd</strong> (SUN 246668), with a reference starting <strong>OCCTA CARE-</strong>. Your letter tells you which.</li>
             <li>OCCTA takes Care payments by Direct Debit only. We will never ask for card details.</li>
             <li>If a payment is returned, we tell you and try once more after fresh notice. After 2 missed payments we pause Care. No fees, no debt collectors.</li>
             <li>If money is tight, tell us. We'll pause or cancel Care free, and help with your other OCCTA bills.</li>

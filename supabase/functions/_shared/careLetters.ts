@@ -158,7 +158,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: [
           ["Plan", p?.name ?? str(payload.plan_code)],
           ["Price", `${priceWithNoun(price, freq)}, VAT included`],
-          ["How you pay", `Its own Direct Debit to ${ddOf(payload).name}, ${carePayWhen(freq, num(payload.collection_day))}`],
+          ["How you pay", `Direct Debit to OCCTA Limited (shows as ${ddOf(payload).name} on your bank statement), ${carePayWhen(freq, num(payload.collection_day))}`],
           ["First payment", `${pounds(price)} on or just after ${longDate(str(payload.first_collection_date))}`],
           ["Cooling-off ends", longDate(str(payload.cooling_off_ends_on))],
           ["Minimum term", "None. Cancel any time, no exit fee."],
@@ -204,7 +204,8 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
               "If anything below is wrong, please contact us straight away.",
             ],
         facts: [
-          ["Collected by", `${ddOf(payload).name} (Service User Number ${ddOf(payload).sun})`],
+          ["Your account is with", "OCCTA Limited"],
+          ["Name on your bank statement", `${ddOf(payload).name} (SUN ${ddOf(payload).sun})`],
           ["Reference on your statement", recipient.reference],
           ["Account holder", str(payload.account_holder_name)],
           ["Bank account", `${str(payload.bank_name) ? `${str(payload.bank_name)}, ` : ""}sort code ending ${str(payload.masked_sort_last2)}, account ending ${str(payload.masked_account_last4)}`],
@@ -235,7 +236,8 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
           ["Date", longDate(str(payload.due_date))],
           ["How often", str(payload.kind) === "represent" ? "One-off re-try of a returned payment" : freq === "annual" ? "Once a year, on the same date" : `Every ${careFrequencyNoun(freq)}, on the same day of the month`],
           ["Reference", recipient.reference],
-          ["Collected by", `${ddOf(payload).name} (SUN ${ddOf(payload).sun})`],
+          ["Your account is with", "OCCTA Limited"],
+          ["Name on your bank statement", `${ddOf(payload).name} (SUN ${ddOf(payload).sun})`],
           ["Notice", `At least ${CARE_DD.noticeWorkingDays} working days before each payment`],
           ["Questions", `${OCCTA_CONTACT.phone}`],
         ],
@@ -477,7 +479,7 @@ function buildCareLetterInner(t: CareLetterType, payload: P, recipient: CareReci
         facts: [
           ["Plan", p?.name ?? str(payload.plan_code)],
           ["Price", `${priceWithNoun(num(payload.price_minor), freq)}, VAT included`],
-          ["Paid by", `Its own Direct Debit to ${ddOf(payload).name}, ${carePayWhen(freq, num(payload.collection_day))}`],
+          ["Paid by", `Direct Debit to OCCTA Limited (shows as ${ddOf(payload).name} on your bank statement), ${carePayWhen(freq, num(payload.collection_day))}`],
           ["Agreed on", c.agreed_at ? longDate(str(c.agreed_at).slice(0, 10)) : "-"],
           ["Confirmed by", c.verified === "call_recording" ? "Your agreement on a recorded phone call" : c.verified === "sms_otp" ? "A one-time code sent to your mobile" : c.verified === "email_code" ? "A one-time code sent to your email" : "-"],
           ["How you joined", c.channel === "phone_assisted" ? "By phone with our team" : "Online, in My OCCTA"],

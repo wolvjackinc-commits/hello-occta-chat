@@ -4,7 +4,6 @@ import {
   resolveBuildPlanPrice, planTermLabel, speedBucketLabel,
   loadGiacomCandidates,
 } from "../_shared/buildPlanResolver.ts";
-import { buildPlanEstimateEvidence, evidenceSha256, PLAN_CAPS } from "../_shared/networkEvidence.ts";
 
 const Schema = z.object({
   quote_request_id: z.string().uuid(),
@@ -19,10 +18,6 @@ const Schema = z.object({
   monthly_net: z.number().min(0).max(100000).optional(),
   setup_net: z.number().min(0).max(100000).default(0).optional(),
   router_net: z.number().min(0).max(100000).default(0).optional(),
-  // Monthly equipment rental is not the one-off purchase price.
-  router_monthly_net: z.number().min(0).max(100000).default(0).optional(),
-  manual_speed_bucket: z.enum(["essential","superfast","ultrafast","gigabit"]).optional(),
-  likely_service_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   delivery_net: z.number().min(0).max(100000).default(0).optional(),
   installation_net: z.number().min(0).max(100000).default(0).optional(),
   cease_fee_gross: z.number().min(0).max(100000).nullable().optional(),
@@ -89,7 +84,6 @@ Deno.serve(async (req) => {
   let resolvedEstimatedDownload: number | null = null;
   let resolvedEstimatedUpload: number | null = null;
   let bumped = false;
-  let manualSupplierName: string | null = null;
 
   if (i.build_plan) {
     let candidates;
@@ -133,34 +127,6 @@ Deno.serve(async (req) => {
     if (i.monthly_net == null || !i.plan_name || !i.service_type || !i.plan_type || !i.customer_type) {
       return jsonResponse({ error: "validation", message: "monthly_net, plan_name, service_type, plan_type, customer_type are required when build_plan is not provided" }, 400);
     }
-    if ((i.router_monthly_net ?? 0) > 0 && (i.router_net ?? 0) > 0) {
-      return jsonResponse({ error: "router_charge_ambiguous", message: "Use a monthly rental OR a one-off purchase." }, 400);
-    }
-    if (i.service_type === "broadband" && i.customer_type === "residential" && i.manual_speed_bucket) {
-      // Onecom and other staff-priced products are kept separate from the Giacom public resolver.
-      if (!i.supplier_product_id || i.cease_fee_gross == null || !i.likely_service_date) {
-        return jsonResponse({ error: "manual_quote_incomplete", message: "Supplier product, cease cap and likely service date required." }, 400);
-      }
-      const date = new Date(i.likely_service_date + "T12:00:00Z");
-      if (!Number.isFinite(date.getTime()) || date.getTime() < Date.now() - 86400_000 ||
-          date.getTime() > Date.now() + 120 * 86400_000) {
-        return jsonResponse({ error: "invalid_likely_service_date" }, 400);
-      }
-      const { data: product } = await supabase.from("supplier_products")
-        .select("id,supplier_id,product_name,service_type,download_speed_mbps,upload_speed_mbps,min_term_months,active,supplier_monthly_net")
-        .eq("id", i.supplier_product_id).maybeSingle();
-      const cap = PLAN_CAPS[i.manual_speed_bucket];
-      if (!product || !product.active || product.service_type !== "broadband" ||
-          product.supplier_monthly_net == null || Number(product.download_speed_mbps) < cap.download ||
-          Number(product.upload_speed_mbps) < cap.upload ||
-          (i.plan_type === "flex" && Number(product.min_term_months) !== 1)) {
-        return jsonResponse({ error: "manual_supplier_product_not_eligible" }, 409);
-      }
-      const { data: supplier } = await supabase.from("supplier_profiles")
-        .select("supplier_name,status").eq("id",product.supplier_id).maybeSingle();
-      if (!supplier || supplier.status !== "active") return jsonResponse({ error: "manual_supplier_inactive" }, 409);
-      manualSupplierName = supplier.supplier_name;
-    }
     m = compute(i.monthly_net);
     s = compute(i.setup_net ?? 0);
     r = compute(i.router_net ?? 0);
@@ -172,20 +138,12 @@ Deno.serve(async (req) => {
     resolvedCustomerType = i.customer_type;
     resolvedContractMonths = i.contract_length_months ?? null;
     resolvedSupplierProductId = i.supplier_product_id ?? null;
-    resolvedEstimatedDownload = i.manual_speed_bucket
-      ? PLAN_CAPS[i.manual_speed_bucket].download : (i.estimated_download_speed ?? null);
-    resolvedEstimatedUpload = i.manual_speed_bucket
-      ? PLAN_CAPS[i.manual_speed_bucket].upload : (i.estimated_upload_speed ?? null);
+    resolvedEstimatedDownload = i.estimated_download_speed ?? null;
+    resolvedEstimatedUpload = i.estimated_upload_speed ?? null;
   }
   const totalDueToday = round2(s.gross + r.gross + d.gross + ins.gross);
 
-  const manualRouterMonthly = !i.build_plan ? compute(i.router_monthly_net ?? 0) : compute(0);
-  const manualRouterLabel = "OCCTA supplied compatible router — monthly rental";
-  const rawExtras = [...(i.extra_line_items ?? [])];
-  if (manualRouterMonthly.net > 0) {
-    rawExtras.push({ description: manualRouterLabel, net_amount: manualRouterMonthly.net, kind: "monthly" as const });
-  }
-  const extras = rawExtras.map((x) => ({
+  const extras = (i.extra_line_items ?? []).map((x) => ({
     description: x.description,
     kind: x.kind ?? "one_off",
     net_amount: round2(x.net_amount),
@@ -202,34 +160,12 @@ Deno.serve(async (req) => {
 
   const { raw, hash } = await generateTokenPair();
   const expiresAt = new Date(Date.now() + i.expires_in_days * 86400_000).toISOString();
-  const { data: qr } = await supabase.from("quote_requests").select("customer_id,postcode").eq("id", i.quote_request_id).maybeSingle();
-  if (!qr) return jsonResponse({ error: "quote_request_not_found" }, 404);
-  const planEstimate = !i.build_plan && i.manual_speed_bucket
-    ? buildPlanEstimateEvidence(i.manual_speed_bucket, qr.postcode)
-    : null;
-  if (!i.build_plan && i.manual_speed_bucket && !planEstimate) return jsonResponse({ error: "plan_estimate_unavailable" }, 409);
-  const planEstimateHash = planEstimate ? await evidenceSha256(planEstimate) : null;
-  if (!i.build_plan && manualRouterMonthly.gross > 0) {
-    bpFields.router_option = {
-      option: "standard", label: manualRouterLabel, monthly: manualRouterMonthly.gross,
-      oneOff: 0, payment_type: "monthly", equipment_ownership: "OCCTA",
-      return_required: true, return_days: 14,
-    };
-  }
-  if (!i.build_plan && i.manual_speed_bucket) {
-    bpFields.speed_bucket = i.manual_speed_bucket;
-    // Do not re-resolve a staff-priced Onecom quote against the Giacom resolver.
-    bpFields.supplier_availability_snapshot = planEstimate;
-    bpFields.supplier_availability_sha256 = planEstimateHash;
-    bpFields.supplier_availability_source = "OCCTA_PLAN_ESTIMATE";
-    bpFields.supplier_availability_retrieved_at = planEstimate?.retrieved_at ?? null;
-    bpFields.likely_service_date = i.likely_service_date ?? null;
-  }
+  const { data: qr } = await supabase.from("quote_requests").select("customer_id").eq("id", i.quote_request_id).maybeSingle();
 
   const { data: quote, error } = await supabase.from("quotes").insert({
     quote_request_id: i.quote_request_id,
     customer_id: qr?.customer_id ?? null,
-    supplier_name: i.build_plan ? null : (manualSupplierName ?? i.supplier_name ?? null),
+    supplier_name: i.build_plan ? null : (i.supplier_name ?? null),
     supplier_product_id: resolvedSupplierProductId,
     supplier_reference: i.supplier_reference ?? null,
     plan_name: resolvedPlanName,

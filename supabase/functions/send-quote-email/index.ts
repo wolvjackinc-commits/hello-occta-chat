@@ -30,9 +30,6 @@ Deno.serve(async (req) => {
   const { data: quote } = await supabase.from("quotes").select("*").eq("id", quote_id).maybeSingle();
   if (!quote) return jsonResponse({ error: "not_found" }, 404);
   if (!quote.monthly_gross || !quote.expires_at) return jsonResponse({ error: "missing_required_fields" }, 400);
-  if (!previewOnly && !["approved", "sent", "viewed", "contract_summary_generated", "contract_summary_sent", "contract_summary_accepted"].includes(String(quote.status))) {
-    return jsonResponse({ error: "quote_not_approved", message: "Complete supplier and margin approval before emailing a customer link." }, 409);
-  }
   const unifiedJourney = body?.unified_journey !== false;
   if (quote.plan_type === "contract_saver" && !quote.contract_length_months) {
     return jsonResponse({ error: "contract_length_required" }, 400);

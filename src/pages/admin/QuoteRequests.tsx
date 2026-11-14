@@ -76,6 +76,10 @@ export const AdminQuoteRequests = () => {
     monthly_net: "",
     setup_net: "0",
     router_net: "0",
+    router_monthly_net: "0",
+    cease_fee_gross: "",
+    manual_speed_bucket: "",
+    likely_service_date: "",
     plan_type: "flex" as "flex" | "contract_saver",
     contract_length_months: "",
     expires_in_days: "14",
@@ -321,6 +325,10 @@ export const AdminQuoteRequests = () => {
       monthly_net: "",
       setup_net: "0",
       router_net: "0",
+      router_monthly_net: "0",
+      cease_fee_gross: "",
+      manual_speed_bucket: "",
+      likely_service_date: "",
       plan_type: qr.plan_preference === "contract_saver" ? "contract_saver" : "flex",
       contract_length_months: qr.plan_preference === "contract_saver" ? "12" : "",
       expires_in_days: "14",
@@ -359,6 +367,11 @@ export const AdminQuoteRequests = () => {
       toast({ title: "Plan name and monthly net required", variant: "destructive" });
       return;
     }
+    if (selected.service_interest === "broadband" && selected.customer_type === "residential" &&
+        (!draft.supplier_product_id || !draft.manual_speed_bucket || !draft.likely_service_date || !draft.cease_fee_gross)) {
+      toast({ title: "Complete supplier, speed, likely date and cease cap", description: "Binding broadband documents require an evidenced speed basis and complete charges.", variant: "destructive" });
+      return;
+    }
     setCreating(true);
     try {
       const VAT = 0.2;
@@ -382,6 +395,10 @@ export const AdminQuoteRequests = () => {
         monthly_net: toNet(draft.monthly_net),
         setup_net: toNet(draft.setup_net || "0"),
         router_net: toNet(draft.router_net || "0"),
+        router_monthly_net: toNet(draft.router_monthly_net || "0"),
+        cease_fee_gross: draft.cease_fee_gross ? Number(draft.cease_fee_gross) : null,
+        manual_speed_bucket: draft.manual_speed_bucket || undefined,
+        likely_service_date: draft.likely_service_date || undefined,
         delivery_net: 0,
         installation_net: 0,
         contract_length_months: draft.plan_type === "contract_saver"
@@ -407,13 +424,7 @@ export const AdminQuoteRequests = () => {
       }
       const created = data as any;
       toast({ title: `Quote ${created.quote_number} created` });
-      if (created.public_token) {
-        setShareDialog({
-          open: true,
-          url: `https://www.occta.co.uk/quote/${created.public_token}`,
-          quoteNumber: created.quote_number,
-        });
-      }
+      // Never expose a draft quote token for sharing before formal approval.
       await (supabase as any).from("quote_requests").update({ status: "draft_quote_created" }).eq("id", selected.id);
       setQuoteDialogOpen(false);
       await loadLatestQuote(selected.id);
@@ -477,20 +488,20 @@ export const AdminQuoteRequests = () => {
   };
 
   const _approveFinal = async () => {
-    if (!latestQuote) return;
+    if (!latestQuote) return false;
     // Guard: require linked supplier product + wholesale cost before approval.
     if (!latestQuote.supplier_product_id) {
-      toast({ title: "Cannot approve — supplier product not linked", description: "Pick a Giacom supplier product on the draft so margin can be verified.", variant: "destructive" });
-      return;
+      toast({ title: "Cannot approve — supplier product not linked", description: "Pick the exact active wholesale supplier product so margin and terms can be verified.", variant: "destructive" });
+      return false;
     }
     const sp = await fetchSupplierProduct(latestQuote.supplier_product_id);
     if (!sp || sp.supplier_monthly_net == null) {
-      toast({ title: "Cannot approve — supplier cost missing", description: `Giacom wholesale monthly cost is missing for ${sp?.product_name ?? "this product"}. Add it in /admin/suppliers/giacom-import before approving.`, variant: "destructive" });
-      return;
+      toast({ title: "Cannot approve — supplier cost missing", description: `Wholesale monthly cost is missing for ${sp?.product_name ?? "this product"}. Update the supplier catalogue before approval.`, variant: "destructive" });
+      return false;
     }
     if (sp.active === false) {
-      toast({ title: "Cannot approve — supplier product inactive", description: "Activate the product in /admin/suppliers/giacom-import first.", variant: "destructive" });
-      return;
+      toast({ title: "Cannot approve — supplier product inactive", description: "Activate the verified supplier product before approval.", variant: "destructive" });
+      return false;
     }
     setBusy("approve");
     try {
@@ -499,8 +510,10 @@ export const AdminQuoteRequests = () => {
       toast({ title: "Final quote approved" });
       qc.invalidateQueries({ queryKey: ["admin-quote-requests"] });
       if (selected) await loadLatestQuote(selected.id);
+      return true;
     } catch (e: any) {
       toast({ title: "Approve failed", description: e?.message, variant: "destructive" });
+      return false;
     } finally { setBusy(null); }
   };
 
@@ -535,7 +548,8 @@ export const AdminQuoteRequests = () => {
     setBusy("send_quote");
     try {
       if (latestQuote.status !== "approved") {
-        await _approveFinal();
+        const approved = await _approveFinal();
+        if (!approved) return;
         if (selected?.id) await loadLatestQuote(selected.id);
       }
       setComposeOpen(true);
@@ -955,7 +969,7 @@ export const AdminQuoteRequests = () => {
                     productsLoading ? "Loading supplier products…"
                     : productsError ? "Could not load supplier products"
                     : products.length ? "Pick supplier product…"
-                    : "No supplier products found. Import Giacom catalogue first."
+                    : "No supplier products found. Add a verified wholesale product first."
                   } />
                 </SelectTrigger>
                 <SelectContent>
@@ -968,7 +982,7 @@ export const AdminQuoteRequests = () => {
                     })
                     .map((p: any) => (
                       <SelectItem key={p.id} value={p.id}>
-                        Giacom — {p.network ?? "?"} · {p.product_name} · {p.download_speed_mbps ?? "?"}/{p.upload_speed_mbps ?? "?"}Mbps · {p.min_term_months ?? "?"}m · {p.supplier_monthly_net != null ? `£${Number(p.supplier_monthly_net).toFixed(2)} ex VAT` : "cost missing"}{p.quote_only ? " · quote-only" : ""}
+                        {p.product_name} — {p.network ?? "?"} · {p.product_name} · {p.download_speed_mbps ?? "?"}/{p.upload_speed_mbps ?? "?"}Mbps · {p.min_term_months ?? "?"}m · {p.supplier_monthly_net != null ? `£${Number(p.supplier_monthly_net).toFixed(2)} ex VAT` : "cost missing"}{p.quote_only ? " · quote-only" : ""}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -980,7 +994,7 @@ export const AdminQuoteRequests = () => {
               )}
               {!productsLoading && !productsError && products.length === 0 && (
                 <div className="mt-2 border-2 border-warning bg-warning/10 p-2 text-xs">
-                  No active supplier products. Visit <a className="underline" href="/admin/suppliers/giacom-import">/admin/suppliers/giacom-import</a> to activate Giacom products.
+                  No active products found. Check the supplier catalogue before issuing a quote.
                 </div>
               )}
               {selected && draft.supplier_product_id && (() => {
@@ -1036,8 +1050,20 @@ export const AdminQuoteRequests = () => {
               <div className="grid grid-cols-3 gap-3">
                 <div><Label className="text-xs">Monthly £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.monthly_net} onChange={(e) => setDraft((p) => ({ ...p, monthly_net: e.target.value }))} inputMode="decimal" /></div>
                 <div><Label className="text-xs">Setup £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.setup_net} onChange={(e) => setDraft((p) => ({ ...p, setup_net: e.target.value }))} inputMode="decimal" /></div>
-                <div><Label className="text-xs">Router £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.router_net} onChange={(e) => setDraft((p) => ({ ...p, router_net: e.target.value }))} inputMode="decimal" /></div>
+                <div><Label className="text-xs">Router one-off purchase £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.router_net} onChange={(e) => setDraft((p) => ({ ...p, router_net: e.target.value }))} inputMode="decimal" /></div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs">Router rental, per month £ ({draft.vat_inclusive_entry ? "inc" : "ex"} VAT)</Label><Input value={draft.router_monthly_net} onChange={(e) => setDraft((p) => ({ ...p, router_monthly_net: e.target.value }))} inputMode="decimal" /></div>
+                <div><Label className="text-xs">Network cease charge maximum, including VAT £</Label><Input value={draft.cease_fee_gross} onChange={(e) => setDraft((p) => ({ ...p, cease_fee_gross: e.target.value }))} inputMode="decimal" placeholder="114.00" /></div>
+                <div><Label className="text-xs">Speed band / plan-estimate basis</Label>
+                  <Select value={draft.manual_speed_bucket} onValueChange={(v) => setDraft((p) => ({ ...p, manual_speed_bucket: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select speed band" /></SelectTrigger>
+                    <SelectContent><SelectItem value="essential">Essential (up to 80/20)</SelectItem><SelectItem value="superfast">Superfast</SelectItem><SelectItem value="ultrafast">Ultrafast</SelectItem><SelectItem value="gigabit">Gigabit</SelectItem></SelectContent>
+                  </Select>
+                </div>
+                <div><Label className="text-xs">Likely service date (not booked)</Label><Input type="date" value={draft.likely_service_date} onChange={(e) => setDraft((p) => ({ ...p, likely_service_date: e.target.value }))} /></div>
+              </div>
+              <p className="text-xs text-muted-foreground">The supplier product is verified server-side. Plan speeds are estimates, not address-specific measurements. Network cease charges apply only when lawfully incurred, up to the stated cap. Do not enter monthly router rental as a one-off router charge.</p>
               {(() => {
                 const VAT = 0.2;
                 const toNet = (v: string) => {
@@ -1048,7 +1074,7 @@ export const AdminQuoteRequests = () => {
                 const s = toNet(draft.setup_net || "0");
                 const r = toNet(draft.router_net || "0");
                 const extrasOneOff = draft.extras.filter((x) => x.kind === "one_off").reduce((a, x) => a + toNet(x.amount), 0);
-                const extrasMonthly = draft.extras.filter((x) => x.kind === "monthly").reduce((a, x) => a + toNet(x.amount), 0);
+                const extrasMonthly = draft.extras.filter((x) => x.kind === "monthly").reduce((a, x) => a + toNet(x.amount), 0) + toNet(draft.router_monthly_net || "0");
                 const monthlyInc = (m + extrasMonthly) * (1 + VAT);
                 const oneOffInc = (s + r + extrasOneOff) * (1 + VAT);
                 const sp = products.find((x: any) => x.id === draft.supplier_product_id);

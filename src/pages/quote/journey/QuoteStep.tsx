@@ -16,13 +16,6 @@ export default function QuoteStep({
   const isBusiness = quote.customer_type === "business";
   const monthly = Number(quote.monthly_gross).toFixed(2);
   const monthlyNet = Number(quote.monthly_net).toFixed(2);
-  const recurringItems: any[] = Array.isArray(quote.extra_line_items)
-    ? quote.extra_line_items.filter((x: any) => x.kind === "monthly" && Number(x.gross_amount) > 0)
-    : [];
-  const recurringExtrasGross = recurringItems.reduce((sum, x) => sum + Number(x.gross_amount), 0);
-  const broadbandMonthly = Math.max(0, Number(quote.monthly_gross) - recurringExtrasGross);
-  const isRollingBroadband = quote.service_type === "broadband" && quote.plan_type === "flex";
-  const ceaseCap = Number(quote.cease_fee_gross ?? 0);
   const expired = quote.expires_at && new Date(quote.expires_at) < new Date();
   const declined = journey?.status === "declined";
   const advanced = journey && journey.current_step !== "quote" && !declined;
@@ -67,27 +60,6 @@ export default function QuoteStep({
           {quote.plan_type === "flex" ? "30-day rolling" : `${quote.contract_length_months}-month term`} · {quote.notice_period} notice
         </p>
       </div>
-
-      {quote.service_type === "broadband" && (
-        <div className="border-2 border-foreground p-5 mb-6 space-y-2">
-          <h2 className="font-display uppercase text-sm">Your price and key conditions</h2>
-          <div className="flex justify-between text-sm"><span>Broadband per month (inc VAT)</span><strong>£{broadbandMonthly.toFixed(2)}</strong></div>
-          {recurringItems.map((item: any, index: number) => (
-            <div className="flex justify-between text-sm" key={index}>
-              <span>{String(item.description)}</span><strong>£{Number(item.gross_amount).toFixed(2)}/mo</strong>
-            </div>
-          ))}
-          <div className="flex justify-between text-sm border-t border-foreground/20 pt-2"><strong>Monthly total (inc VAT)</strong><strong>£{monthly}</strong></div>
-          <p className="text-sm">Standard installation: £{Number(quote.installation_gross ?? 0).toFixed(2)}. Quoted upfront charges: £{Number(quote.total_due_today_gross ?? 0).toFixed(2)}. Billing begins only when the service goes live.</p>
-          {isRollingBroadband && <p className="text-sm">Flex 30 has no fixed broadband minimum term or remaining-month early termination fee. Normal notice: 30 days, subject to switching rights.</p>}
-          {Number.isFinite(ceaseCap) && quote.cease_fee_gross != null && (
-            <p className="text-sm">Separate network disconnection/migration charges apply only where lawful and actually incurred: up to £{Math.min(ceaseCap, 114).toFixed(2)} including VAT in the first 12 months, and up to £{Math.min(ceaseCap, 60).toFixed(2)} thereafter. A move to another property can require a separate installation and agreed charges.</p>
-          )}
-          {quote.likely_service_date && <p className="text-sm">Likely service date: {quote.likely_service_date} (subject to engineer availability; not a confirmed appointment).</p>}
-          {quote.customer_notes && <p className="text-sm whitespace-pre-wrap">{quote.customer_notes}</p>}
-          <p className="text-xs text-muted-foreground">Review the complete Contract Summary and Contract Information &amp; Customer Agreement Pack before accepting. Nothing is charged today.</p>
-        </div>
-      )}
 
       {Number(quote.total_due_today_gross) > 0 && (
         <div className="border-4 border-foreground p-6 mb-6">

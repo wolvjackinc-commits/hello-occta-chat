@@ -213,12 +213,24 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
         message: "This broadband quote does not yet contain an approved cease/migration-away charge. Add the applicable charge before issuing the Contract Summary.",
       }, 409);
     }
-    const cease = Number(q.cease_fee_gross);
+    const cease = Math.min(Number(q.cease_fee_gross), 114);
+    const after12 = Math.min(cease, 60);
+    if (!Number.isFinite(cease) || cease < 0) return jsonResponse({ error: "invalid_cease_cap" }, 409);
+    const recurring = (Array.isArray(q.extra_line_items) ? q.extra_line_items : [])
+      .filter((item: any) => item.kind === "monthly" && Number(item.gross_amount) > 0);
+    const recurringGross = recurring.reduce((sum: number, item: any) => sum + Number(item.gross_amount), 0);
+    const broadbandGross = Math.max(0, Number(q.monthly_gross) - recurringGross);
+    bpAddendum =
+      "\n\nMonthly subscription breakdown (VAT included): broadband " + money(broadbandGross) +
+      (recurring.length ? "; " + recurring.map((item: any) => String(item.description) + " " + money(Number(item.gross_amount))).join("; ") : "") +
+      "; total " + money(Number(q.monthly_gross)) + "." +
+      "\nRouter rental, where selected, is separate from the broadband term; rental equipment remains OCCTA property and must be returned within 14 days when required, subject to fair, disclosed terms." +
+      (q.customer_notes ? "\nOrder-specific information: " + String(q.customer_notes) : "");
     const fixed = q.plan_type !== "flex" && Number(q.contract_length_months ?? 0) > 0;
     exitText = fixed
       ? `If you end the broadband service during the minimum term and no penalty-free exit right applies, an Early Termination Charge may apply. It is based on the recurring broadband charges remaining to the end of the minimum term, less VAT that no longer becomes due and less costs OCCTA reasonably saves because the service ends early, and will never exceed the remaining contracted broadband charges. A separate network cease/migration-away charge of ${money(cease)} incl. VAT may also apply.`
-      : `There is no remaining-month early termination charge on this rolling plan. A network cease/migration-away charge of ${money(cease)} incl. VAT may apply when the broadband service is ceased or transferred. Statutory and regulatory penalty-free exit rights are preserved.`;
-    etfPolicySnapshot = { kind: fixed ? "fixed_term_fair_loss" : "rolling", network_cease_migration_charge_incl_vat: cease, penalty_free_rights_preserved: true };
+      : `There is no remaining-month early termination charge on this rolling plan. A separate network cease/migration-away charge applies only where lawful and actually incurred by OCCTA, limited to the qualifying cost and capped at ${money(cease)} incl. VAT if the service ends within 12 months or ${money(after12)} incl. VAT after 12 months. Statutory and regulatory penalty-free exit rights are preserved. A home move to a different property may need a separate new provide and may incur new installation charges only after disclosure and agreement.`;
+    etfPolicySnapshot = { kind: fixed ? "fixed_term_fair_loss" : "rolling", network_cease_migration_charge: { within_12_months_incl_vat: cease, after_12_months_incl_vat: after12, actual_qualifying_cost_only: true }, penalty_free_rights_preserved: true };
   }
 
   const { data: qr } = await supabase.from("quote_requests").select("full_name, email, postcode, address_line_1, address_line_2, town, county").eq("id", q.quote_request_id).single();
@@ -237,7 +249,12 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
     { label: "Delivery", amount: Number(q.delivery_gross) },
     { label: "Installation", amount: Number(q.installation_gross) },
   ].filter((x) => x.amount > 0);
-  const finalOneOff = q.speed_bucket && q.plan_term && extraOneOff.length ? extraOneOff : oneOffJson;
+  const quotedOneOffExtras = (Array.isArray(q.extra_line_items) ? q.extra_line_items : [])
+    .filter((item: any) => item.kind === "one_off" && Number(item.gross_amount) > 0)
+    .map((item: any) => ({ label: String(item.description), amount: Number(item.gross_amount) }));
+  const finalOneOff = q.speed_bucket && q.plan_term && extraOneOff.length
+    ? [...extraOneOff, ...quotedOneOffExtras]
+    : [...oneOffJson, ...quotedOneOffExtras];
   const addr = [qr?.address_line_1, qr?.address_line_2, qr?.town, qr?.county, qr?.postcode].filter(Boolean).join(", ");
   const selectedAddonIds = Array.isArray(q.selected_addons) ? (q.selected_addons as any[]).map((a) => a.id) : [];
   const isVoice = q.service_type === "digital_voice" || selectedAddonIds.includes("digital_voice");
@@ -283,6 +300,9 @@ ${speedMatrixStatement(contractSpeedMatrix)}`
     contract_type: contractType,
     monthly_price_incl_vat: Number(q.monthly_gross ?? 0),
     one_off_charges: finalOneOff,
+    recurring_line_items: (Array.isArray(q.extra_line_items) ? q.extra_line_items : []).filter((x: any) => x.kind === "monthly"),
+    router_rental: q.router_option ?? null,
+    order_specific_customer_notes: q.customer_notes ?? null,
     notice_period_days: notice.days,
     minimum_term_months: q.plan_term === "price_lock_24" ? 24 : 0,
     etf_policy: etfPolicySnapshot,

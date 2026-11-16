@@ -47,7 +47,7 @@ Deno.serve(perfServe("journey-state", async (req) => {
       id, quote_number, plan_name, service_type, plan_type, customer_type, contract_length_months,
       monthly_net, monthly_vat_amount, monthly_gross,
       setup_gross, router_gross, delivery_gross, installation_gross,
-      total_due_today_gross, cease_fee_gross, router_option, extra_line_items, likely_service_date,
+      total_due_today_gross, cease_fee_gross,
       estimated_download_speed, estimated_upload_speed, speed_notes,
       price_rise_policy, notice_period, status, expires_at, customer_notes,
       quote_request_id, customer_intent_proceeded_at, selected_addons,
@@ -72,7 +72,7 @@ Deno.serve(perfServe("journey-state", async (req) => {
   const eligible = [
     "approved", "sent", "viewed",
     "contract_summary_generated", "contract_summary_sent", "contract_summary_accepted",
-
+    "pending", "draft",
   ].includes(q.status) && !expired;
 
   // Existing journey (if any).

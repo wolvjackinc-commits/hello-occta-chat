@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,33 @@ import { Loader2 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/address/AddressAutocomplete";
 
 export type PhoneOrderCreated = { quote_request_id: string; reference: string; replayed: boolean };
+export type AssistedOrderChannel = "phone" | "email";
+
+const COPY: Record<AssistedOrderChannel, {
+  title: string; intro: string; refLabel: string; notesLabel: string; notesHint: string;
+  consent: ReactNode; started: string; failed: string;
+}> = {
+  phone: {
+    title: "New phone order",
+    intro: "Take the caller's details, then build their quote. They'll get a secure link to review the Contract Summary, set up their own Direct Debit and confirm. Nothing is ordered or billed until they complete it.",
+    refLabel: "Call reference / recording ID",
+    notesLabel: "Call notes (internal)",
+    notesHint: "",
+    consent: <>Caller said <strong>yes</strong> to marketing emails. Leave unticked unless they clearly agreed.</>,
+    started: "Phone order",
+    failed: "Could not start phone order",
+  },
+  email: {
+    title: "New email order",
+    intro: "Enter the details from the customer's email, then build their quote. They'll get the same secure link as a website order: review the Contract Summary, verify with the OTP sent to their phone, set up their Direct Debit and confirm. Nothing is ordered or billed until they complete it.",
+    refLabel: "Email subject / ticket reference",
+    notesLabel: "Customer's requirements (internal)",
+    notesHint: "Paste the key parts of their email so the team can see what was asked for and agreed.",
+    consent: <>Customer said <strong>yes</strong> to marketing emails in writing. Leave unticked unless they clearly agreed.</>,
+    started: "Email order",
+    failed: "Could not start email order",
+  },
+};
 
 const EMPTY = {
   full_name: "",
@@ -42,13 +69,15 @@ const EMPTY = {
  * through the same journey as any website order.
  */
 export function NewPhoneOrderDialog({
-  open, onOpenChange, onCreated,
+  open, onOpenChange, onCreated, channel = "phone",
 }: {
+  channel?: AssistedOrderChannel;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (result: PhoneOrderCreated) => void;
 }) {
   const { toast } = useToast();
+  const c = COPY[channel];
   const [f, setF] = useState(EMPTY);
   const [manualAddress, setManualAddress] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -78,6 +107,7 @@ export function NewPhoneOrderDialog({
       const { data, error } = await supabase.functions.invoke("admin-create-phone-quote-request", {
         body: {
           ...f,
+          channel,
           address_line_2: f.address_line_2 || null,
           town: f.town || null,
           business_name: f.customer_type === "business" ? f.business_name : null,
@@ -97,7 +127,7 @@ export function NewPhoneOrderDialog({
       }
       const res = data as PhoneOrderCreated & { existing_account?: string | null };
       toast({
-        title: res.replayed ? `Already logged: ${res.reference}` : `Phone order ${res.reference} started`,
+        title: res.replayed ? `Already logged: ${res.reference}` : `${c.started} ${res.reference} started`,
         description: res.existing_account ? `Linked to existing account ${res.existing_account}.` : "Now build the quote and send the link.",
       });
       setF(EMPTY);
@@ -105,7 +135,7 @@ export function NewPhoneOrderDialog({
       onOpenChange(false);
       onCreated(res);
     } catch (e: any) {
-      toast({ title: "Could not start phone order", description: e?.message, variant: "destructive" });
+      toast({ title: c.failed, description: e?.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -115,11 +145,8 @@ export function NewPhoneOrderDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>New phone order</DialogTitle>
-          <DialogDescription>
-            Take the caller's details, then build their quote. They'll get a secure link to review the Contract Summary,
-            set up their own Direct Debit and confirm. Nothing is ordered or billed until they complete it.
-          </DialogDescription>
+          <DialogTitle>{c.title}</DialogTitle>
+          <DialogDescription>{c.intro}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -132,7 +159,7 @@ export function NewPhoneOrderDialog({
             <Input id="po-email" type="email" value={f.email} onChange={(e) => set("email", e.target.value)} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="po-phone">Mobile *</Label>
+            <Label htmlFor="po-phone">Mobile * (contract OTP goes here)</Label>
             <Input id="po-phone" type="tel" value={f.phone} onChange={(e) => set("phone", e.target.value)} />
           </div>
 
@@ -234,18 +261,19 @@ export function NewPhoneOrderDialog({
             <Input id="po-prov" value={f.current_provider} onChange={(e) => set("current_provider", e.target.value)} />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="po-ref">Call reference / recording ID</Label>
+            <Label htmlFor="po-ref">{c.refLabel}</Label>
             <Input id="po-ref" value={f.call_reference} onChange={(e) => set("call_reference", e.target.value)} />
           </div>
 
           <div className="space-y-1 sm:col-span-2">
-            <Label htmlFor="po-notes">Call notes (internal)</Label>
-            <Textarea id="po-notes" rows={3} value={f.call_notes} onChange={(e) => set("call_notes", e.target.value)} />
+            <Label htmlFor="po-notes">{c.notesLabel}</Label>
+            {c.notesHint && <p className="text-xs text-muted-foreground">{c.notesHint}</p>}
+            <Textarea id="po-notes" rows={channel === "email" ? 6 : 3} value={f.call_notes} onChange={(e) => set("call_notes", e.target.value)} />
           </div>
 
           <label className="flex items-start gap-2 sm:col-span-2 text-sm">
             <Checkbox checked={f.marketing_consent} onCheckedChange={(v) => set("marketing_consent", v === true)} />
-            <span>Caller said <strong>yes</strong> to marketing emails. Leave unticked unless they clearly agreed.</span>
+            <span>{c.consent}</span>
           </label>
         </div>
 

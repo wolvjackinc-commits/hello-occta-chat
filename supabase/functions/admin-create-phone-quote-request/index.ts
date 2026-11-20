@@ -1,4 +1,5 @@
-// Staff-only: record a customer who called in, so an agent can build a quote
+// Staff-only: record a customer who called in (channel "phone", the default)
+// or emailed their requirements (channel "email"), so an agent can build a quote
 // for them and send the normal secure quote link. From the moment the quote is
 // created everything (Contract Summary, OTP acceptance, Direct Debit, start
 // date, order, billing) runs through the exact same pipeline as a web request.
@@ -9,6 +10,8 @@ import { corsHeaders, jsonResponse, getServiceClient, requireStaff, maskEmail } 
 import { z } from "https://esm.sh/zod@3.23.8";
 
 const Schema = z.object({
+  // How the customer reached us. Defaults to "phone" so existing callers are unchanged.
+  channel: z.enum(["phone","email"]).default("phone"),
   full_name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email().max(180),
   phone: z.string().trim().min(7).max(30),
@@ -43,15 +46,17 @@ Deno.serve(async (req) => {
   }
 
   const supabase = getServiceClient();
+  const channel = i.channel;
+  const channelLabel = channel === "email" ? "Email order" : "Phone order";
   const postcode = i.postcode.toUpperCase().replace(/\s+/g, " ");
 
-  // Double-click / retry guard: same caller, same address, logged by phone in
+  // Double-click / retry guard: same customer, same address, same channel in
   // the last 15 minutes → hand back that request instead of a duplicate.
   const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
   const { data: recent } = await supabase
     .from("quote_requests")
     .select("id, reference")
-    .eq("source", "phone")
+    .eq("source", channel)
     .eq("email", i.email)
     .eq("postcode", postcode)
     .gte("created_at", since)
@@ -68,7 +73,8 @@ Deno.serve(async (req) => {
     .from("profiles").select("full_name, email").eq("id", auth.userId).maybeSingle();
   const agentName = agent?.full_name || agent?.email || "staff";
 
-  const callLine = `Phone order taken by ${agentName}${i.call_reference ? ` · call ref ${i.call_reference}` : ""}.`;
+  const refLabel = channel === "email" ? "email ref" : "call ref";
+  const callLine = `${channelLabel} taken by ${agentName}${i.call_reference ? ` · ${refLabel} ${i.call_reference}` : ""}.`;
   const message = i.call_notes ? `${callLine}\n${i.call_notes}` : callLine;
 
   const { data: row, error } = await supabase.from("quote_requests").insert({
@@ -86,20 +92,20 @@ Deno.serve(async (req) => {
     customer_type: i.customer_type,
     business_name: i.customer_type === "business" ? i.business_name ?? null : null,
     current_provider: i.current_provider ?? null,
-    preferred_contact_method: "phone",
+    preferred_contact_method: channel,
     message,
     marketing_consent: i.marketing_consent,
-    source: "phone",
+    source: channel,
     status: "assigned",
     assigned_admin_id: auth.userId,
-    user_agent: "occta-admin-phone-order",
+    user_agent: `occta-admin-${channel}-order`,
   }).select("id, reference").single();
 
   if (error || !row) return jsonResponse({ error: "create_failed", details: error?.message }, 500);
 
   const details = {
     reference: row.reference,
-    source: "phone",
+    source: channel,
     agent_id: auth.userId,
     agent_name: agentName,
     call_reference: i.call_reference ?? null,
@@ -112,16 +118,16 @@ Deno.serve(async (req) => {
 
   await supabase.from("quote_events").insert({
     quote_request_id: row.id,
-    event_type: "phone_order_started",
-    title: `Phone order started by ${agentName}: ${row.reference}`,
+    event_type: `${channel}_order_started`,
+    title: `${channelLabel} started by ${agentName}: ${row.reference}`,
     details,
     actor_type: "admin",
     actor_id: auth.userId,
   });
   await supabase.rpc("log_event", {
     _actor_type: "admin",
-    _event_type: "phone_order_started",
-    _title: `Phone order ${row.reference}`,
+    _event_type: `${channel}_order_started`,
+    _title: `${channelLabel} ${row.reference}`,
     _details: details,
     _source_module: "quote",
   });

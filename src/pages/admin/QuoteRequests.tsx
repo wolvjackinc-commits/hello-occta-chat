@@ -23,8 +23,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy, PhoneCall } from "lucide-react";
-import { NewPhoneOrderDialog, type PhoneOrderCreated } from "@/components/admin/NewPhoneOrderDialog";
+import { Search, RefreshCw, Loader2, Link2, UserCheck, UserX, Copy, PhoneCall, Mail } from "lucide-react";
+import { NewPhoneOrderDialog, type PhoneOrderCreated, type AssistedOrderChannel } from "@/components/admin/NewPhoneOrderDialog";
 import { LinkQuoteRequestDialog } from "@/components/admin/LinkQuoteRequestDialog";
 import { ComposeQuoteEmailDialog } from "@/components/admin/ComposeQuoteEmailDialog";
 import { QuoteFollowUps, NextFollowUpBadge } from "@/components/admin/QuoteFollowUps";
@@ -109,6 +109,7 @@ export const AdminQuoteRequests = () => {
   const [csBusy, setCsBusy] = useState<string | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [phoneOrderOpen, setPhoneOrderOpen] = useState(false);
+  const [assistedChannel, setAssistedChannel] = useState<AssistedOrderChannel>("phone");
 
   const isUuid = (value?: string | null) => !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   const fetchSupplierProduct = async (identifier?: string | null) => {
@@ -594,11 +595,14 @@ export const AdminQuoteRequests = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display">Quote Requests</h1>
-          <p className="text-muted-foreground">Quote requests from the website and phone orders taken by the team.</p>
+          <p className="text-muted-foreground">Quote requests from the website, plus phone and email orders taken by the team.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="hero" onClick={() => setPhoneOrderOpen(true)}>
+          <Button variant="hero" onClick={() => { setAssistedChannel("phone"); setPhoneOrderOpen(true); }}>
             <PhoneCall className="w-4 h-4 mr-2" /> New phone order
+          </Button>
+          <Button variant="hero" onClick={() => { setAssistedChannel("email"); setPhoneOrderOpen(true); }}>
+            <Mail className="w-4 h-4 mr-2" /> New email order
           </Button>
           <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="border-2 border-foreground">
             <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} /> Refresh
@@ -661,6 +665,11 @@ export const AdminQuoteRequests = () => {
                     {r.source === "phone" && (
                       <Badge variant="outline" className="ml-1 border-foreground text-[10px] px-1 py-0 align-middle">
                         <PhoneCall className="w-3 h-3 mr-1" />Phone
+                      </Badge>
+                    )}
+                    {r.source === "email" && (
+                      <Badge variant="outline" className="ml-1 border-foreground text-[10px] px-1 py-0 align-middle">
+                        <Mail className="w-3 h-3 mr-1" />Email
                       </Badge>
                     )}
                   </TableCell>
@@ -1192,6 +1201,8 @@ export const AdminQuoteRequests = () => {
       </Dialog>
 
       <NewPhoneOrderDialog
+        key={assistedChannel}
+        channel={assistedChannel}
         open={phoneOrderOpen}
         onOpenChange={setPhoneOrderOpen}
         onCreated={(res) => { void startQuoteForPhoneOrder(res); }}

@@ -13,7 +13,7 @@ import { NewPhoneOrderDialog } from "./NewPhoneOrderDialog";
 function fill() {
   fireEvent.click(screen.getByText("Enter address manually"));
   fireEvent.change(screen.getByLabelText(/Full name/), { target: { value: "Jane Smith" } });
-  fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: "jane@example.com" } });
+  fireEvent.change(screen.getByLabelText(/^Email \*/), { target: { value: "jane@example.com" } });
   fireEvent.change(screen.getByLabelText(/^Mobile/), { target: { value: "07700900123" } });
   fireEvent.change(screen.getByLabelText(/Address line 1/), { target: { value: "1 High Street" } });
   fireEvent.change(screen.getByLabelText(/Postcode/), { target: { value: "HD1 1AA" } });

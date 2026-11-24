@@ -78,20 +78,29 @@ export const ProtectedAdminRoute = ({ requiredRoles }: Props = {}) => {
           return;
         }
 
-        for (const role of acceptedRoles) {
-          const { data: allowed, error } = await supabase.rpc("has_role", {
-            _user_id: userData.user.id,
-            _role: role as any,
-          });
-          if (!active) return;
-          if (!error && allowed) {
-            authorised = true;
-            setStatus("admin");
-            return;
+        // Check every accepted role in parallel (was one round trip per role,
+        // in sequence — up to 5 waits before the console could open).
+        const userId = userData.user.id;
+        const allowed = await new Promise<boolean>((resolve) => {
+          let pending = acceptedRoles.length;
+          if (!pending) return resolve(false);
+          for (const role of acceptedRoles) {
+            supabase
+              .rpc("has_role", { _user_id: userId, _role: role as any })
+              .then(
+                ({ data, error }) => {
+                  if (!error && data) resolve(true);
+                  else if (--pending === 0) resolve(false);
+                },
+                () => {
+                  if (--pending === 0) resolve(false);
+                },
+              );
           }
-        }
-        authorised = false;
-        setStatus("denied");
+        });
+        if (!active) return;
+        authorised = allowed;
+        setStatus(allowed ? "admin" : "denied");
       } finally {
         running = false;
       }

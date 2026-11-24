@@ -85,7 +85,8 @@ const Auth = () => {
 
   useEffect(() => {
     const redirectTarget = getRedirectTarget();
-    
+    let handledSignIn = false;
+
     // Check if user is already logged in
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -109,21 +110,30 @@ const Auth = () => {
         // If we're in the middle of a recovery / welcome set-password flow,
         // do NOT auto-navigate — let the user choose a password first.
         if (recoveryMode || isWelcome) return;
-        // After successful sign-in/sign-up, attempt to link any guest quote
-        // requests submitted with this user's email. Function is RLS-safe.
-        // Canonical account linking: identity is derived server-side from the
-        // verified JWT, never sent from the browser.
-        (supabase as any)
-          .rpc("link_my_customer_account")
-          .then(({ data, error }: any) => {
-            if (error || !data || typeof data !== "object") return;
-            const linked = ["quote_requests", "guest_orders", "orders", "order_journeys", "contract_summaries", "payment_methods"]
-              .reduce((sum, k) => sum + (Number(data[k]) || 0), 0);
-            if (linked > 0) {
-              toast({ title: `Linked ${linked} record${linked === 1 ? "" : "s"} to your account` });
-            }
-          })
-          .finally(() => homeFor(session.user.id).then(navigate, () => navigate(redirectTarget)));
+        if (event === "TOKEN_REFRESHED" || event === "USER_UPDATED") return;
+        if (handledSignIn) return;
+        handledSignIn = true;
+        // Defer out of the auth callback: calling Supabase inside it holds the
+        // auth lock and can stall sign-in.
+        setTimeout(() => {
+          // Go to the dashboard straight away — account linking now runs in
+          // the background instead of blocking the redirect.
+          homeFor(session.user.id).then(navigate, () => navigate(redirectTarget));
+          // After successful sign-in/sign-up, attempt to link any guest quote
+          // requests submitted with this user's email. Function is RLS-safe.
+          // Canonical account linking: identity is derived server-side from the
+          // verified JWT, never sent from the browser.
+          (supabase as any)
+            .rpc("link_my_customer_account")
+            .then(({ data, error }: any) => {
+              if (error || !data || typeof data !== "object") return;
+              const linked = ["quote_requests", "guest_orders", "orders", "order_journeys", "contract_summaries", "payment_methods"]
+                .reduce((sum, k) => sum + (Number(data[k]) || 0), 0);
+              if (linked > 0) {
+                toast({ title: `Linked ${linked} record${linked === 1 ? "" : "s"} to your account` });
+              }
+            });
+        }, 0);
       }
     });
 
@@ -212,9 +222,10 @@ const Auth = () => {
         errorMessage = "Please confirm your email before signing in.";
       }
       setMessage({ type: "error", text: errorMessage });
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
+    // On success keep the button spinning until the redirect lands, so it
+    // doesn't look stuck or invite a second click.
   };
 
   const handleSignUp = async (e: React.FormEvent) => {

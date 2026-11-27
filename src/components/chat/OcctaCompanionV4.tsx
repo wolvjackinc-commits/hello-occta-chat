@@ -64,6 +64,7 @@ type Message = {
   agent?: "ollie" | "human";
   attachments?: Attachment[];
   streaming?: boolean;
+  analyticsId?: string;
 };
 
 type Props = {
@@ -85,6 +86,7 @@ type CompanionPayload = {
   source?: string;
   verificationToken?: string;
   handoff?: { reason?: string; summary?: string };
+  analyticsId?: string | null;
 };
 
 const COMPANION_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/occta-companion`;
@@ -303,19 +305,6 @@ function toCore(messages: Message[]): CoreMessage[] {
     }));
 }
 
-function canonicalAccountMessage(intent: ReturnType<typeof expandedAccountIntent>): string | null {
-  switch (intent) {
-    case "invoices": return "Check my latest invoice and amount due";
-    case "orders": return "Track my order";
-    case "installation": return "Check my installation and activation";
-    case "services": return "Check my services";
-    case "tickets": return "Show my support tickets";
-    case "documents": return "Show my documents";
-    case "overview": return "Check my account overview";
-    default: return null;
-  }
-}
-
 function captureVerification(raw: string, memory: VerificationMemory): void {
   const account = raw.match(ACCOUNT_RE)?.[0];
   if (account) memory.accountNumber = account.toUpperCase();
@@ -467,7 +456,7 @@ function AssistantMessage({ message, onAction, onAttachment, onFeedback, isLates
           <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1 hover:text-foreground" aria-label="Copy reply">
             {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? "Copied" : "Copy"}
           </button>
-          {rated === null ? (
+          {!message.analyticsId ? null : rated === null ? (
             <span className="ml-auto inline-flex items-center gap-1">
               <button type="button" onClick={() => rate(true)} className="p-0.5 hover:text-foreground" aria-label="This was helpful" title="Helpful"><ThumbsUp className="h-3 w-3" /></button>
               <button type="button" onClick={() => rate(false)} className="p-0.5 hover:text-foreground" aria-label="This wasn't helpful" title="Not helpful"><ThumbsDown className="h-3 w-3" /></button>
@@ -671,13 +660,17 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
     void pollAdvisor();
   }, [pollAdvisor]);
 
+  // Advisors can pick a chat up from the console at any time (the inbox also
+  // queues chats on its own rules), so any logged chat checks in now and then,
+  // and quickly once a handoff is under way.
   useEffect(() => {
-    if (!handoffStatus || !HANDOFF_STATUSES.has(handoffStatus)) return;
+    const active = Boolean(handoffStatus && HANDOFF_STATUSES.has(handoffStatus));
+    if (!active && !(open && conversationId)) return;
     const timer = window.setInterval(() => {
       if (!document.hidden) void pollAdvisor();
-    }, handoffStatus === "live" ? 4000 : 8000);
+    }, handoffStatus === "live" ? 4000 : active ? 8000 : 15000);
     return () => window.clearInterval(timer);
-  }, [handoffStatus, pollAdvisor]);
+  }, [conversationId, handoffStatus, open, pollAdvisor]);
 
   const logConversation = useCallback(async (turns: { role: string; content: string }[], reason?: string, summaryOverride?: string) => {
     try {
@@ -806,13 +799,14 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
   }, [embedded, onClose, open, ticketOpen]);
 
   const sendFeedback = useCallback(async (message: Message, helpful: boolean) => {
+    if (!message.analyticsId) return;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       await fetch(COMPANION_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json", apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ mode: "feedback", sessionId: sessionId.current, helpful, excerpt: redact(plainText(message.content)).slice(0, 500) }),
+        body: JSON.stringify({ mode: "feedback", sessionId: sessionId.current, helpful, analyticsId: message.analyticsId }),
       });
     } catch {
       // Feedback is best-effort.
@@ -896,16 +890,13 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       let answer: string | null = null;
       let handoff: { reason: string; summary: string } | null = null;
       let streamed = false;
+      let analyticsId: string | undefined;
 
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      // Send only what the customer actually said. Account details typed earlier
+      // are redacted from history, so they travel separately for verification.
       const endpointMessages: CoreMessage[] = [...core];
-      // The canonical phrasing only helps start the verification flow for unverified guests.
-      const isVerified = Boolean(session?.access_token) || Boolean(sessionStorage.getItem(VERIFICATION_KEY));
-      const canonical = isVerified ? null : canonicalAccountMessage(accountIntent);
-      if (canonical) endpointMessages.push({ role: "user", content: canonical });
-      if (verificationMemory.current.accountNumber) endpointMessages.push({ role: "user", content: verificationMemory.current.accountNumber });
-      if (verificationMemory.current.dob) endpointMessages.push({ role: "user", content: verificationMemory.current.dob });
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -918,6 +909,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
             messages: endpointMessages,
             sessionId: sessionId.current,
             verificationToken: sessionStorage.getItem(VERIFICATION_KEY),
+            verification: verificationMemory.current,
             attachments: attachments.map(({ path, name }) => ({ path, name })),
             stream: true,
           }),
@@ -951,6 +943,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
           setVerified(true);
         }
         answer = String(payload.content || "").trim() || null;
+        analyticsId = typeof payload.analyticsId === "string" ? payload.analyticsId : undefined;
         if (payload.handoff && typeof payload.handoff.reason === "string") {
           handoff = { reason: payload.handoff.reason, summary: String(payload.handoff.summary || "") };
         }
@@ -990,7 +983,7 @@ export default function OcctaCompanionV4({ embedded = false, className = "", ini
       }
       answer = occtaOnlyLinks(answer);
 
-      const finalMessage: Message = { id: replyId, role: "assistant", agent: "ollie", content: answer, createdAt: new Date().toISOString() };
+      const finalMessage: Message = { id: replyId, role: "assistant", agent: "ollie", content: answer, createdAt: new Date().toISOString(), analyticsId };
       setMessages((current) => {
         const cleared = current.map((message) => ({ ...message, rawContent: undefined }));
         return streamed || cleared.some((message) => message.id === replyId)

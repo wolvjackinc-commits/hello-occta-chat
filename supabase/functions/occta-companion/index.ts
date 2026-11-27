@@ -17,7 +17,8 @@ import {
   redactSensitiveText,
   withOptions,
 } from "../_shared/companionCore.ts";
-import { type BrainEvent, type BrainImage, type BrainReply, claudeEnabled, runOcctaBrain } from "./brain.ts";
+import { type BrainEvent, type BrainImage, type BrainReply, type EnquiryInput, claudeEnabled, runOcctaBrain } from "./brain.ts";
+import { escapeHtml } from "../_shared/quoteHelpers.ts";
 import { type CustomerScope, type OrdersResult, createAccountToolkit } from "./accountTools.ts";
 
 const OCCTA_PHONE = "0800 260 6626";
@@ -670,9 +671,9 @@ async function recordAnalytics(
   intent: string,
   responseTime: number,
   toolsUsed: string[] = [],
-) {
+): Promise<string | null> {
   try {
-    await serviceClient.from("chat_analytics").insert([
+    const { data } = await serviceClient.from("chat_analytics").insert([
       {
         session_id: sessionId,
         user_id: userId,
@@ -693,10 +694,88 @@ async function recordAnalytics(
         tool_used: toolsUsed.length ? [...new Set(toolsUsed)].join(",").slice(0, 200) : null,
         created_at: new Date().toISOString(),
       },
-    ]);
+    ]).select("id, message_type");
+    return (data ?? []).find((row: any) => row.message_type === "assistant")?.id ?? null;
   } catch {
     // Analytics must never interrupt support.
+    return null;
   }
+}
+
+const UK_POSTCODE_RE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
+const ENQUIRY_INTERESTS = new Set(["broadband", "sim", "router", "landline", "business", "other"]);
+
+// A visitor who isn't a customer yet can't have a support ticket (tickets belong
+// to an account). Ollie records their question as a sales/pre-sales enquiry:
+// saved in marketing_leads, emailed to the sales inbox, and tagged on the live
+// chat so advisors see who it is.
+async function logEnquiry(serviceClient: any, sessionId: string, input: EnquiryInput): Promise<string> {
+  const name = String(input.name ?? "").trim().slice(0, 120);
+  const email = input.email ? String(input.email).trim().toLowerCase().slice(0, 200) : null;
+  const phone = input.phone ? String(input.phone).replace(/[^\d+ ]/g, "").trim().slice(0, 40) : null;
+  const postcodeRaw = input.postcode ? String(input.postcode).trim().toUpperCase().slice(0, 12) : "";
+  const postcode = UK_POSTCODE_RE.test(postcodeRaw) ? postcodeRaw : "Not given";
+  const interest = ENQUIRY_INTERESTS.has(String(input.interest)) ? String(input.interest) : "other";
+  const summary = redactSensitiveText(String(input.summary ?? "")).trim().slice(0, 2000);
+
+  if (!name) return JSON.stringify({ error: "missing_name", message: "Ask for their name first." });
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) return JSON.stringify({ error: "invalid_email", message: "That email doesn't look right; ask them to check it." });
+  if (!email && !(phone && phone.replace(/\D/g, "").length >= 10)) {
+    return JSON.stringify({ error: "missing_contact", message: "Ask for an email address or a UK phone number so the team can reply." });
+  }
+  if (!summary) return JSON.stringify({ error: "missing_summary", message: "Summarise what they need before logging it." });
+
+  const allowed = await checkRateLimit(serviceClient, "occta_companion_enquiry", await digestIdentifier(sessionId), 3, 60, false);
+  if (!allowed) return JSON.stringify({ error: "rate_limited", message: "Their enquiry is already with the team; reassure them and don't log another." });
+
+  const { data, error } = await serviceClient.from("marketing_leads").insert({
+    name, email, phone, postcode, interest,
+    message: summary,
+    source: "ollie_chat",
+    page_path: "/chat",
+  }).select("id").single();
+  if (error || !data?.id) {
+    console.error("ollie enquiry insert failed", error?.message);
+    return JSON.stringify({ error: "save_failed", message: "It didn't save. Apologise, don't claim it was sent, and offer to try again." });
+  }
+  const reference = `ENQ-${String(data.id).replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+
+  await serviceClient.from("chat_conversations")
+    .update({ customer_name: name, customer_email: email ?? undefined, summary: `Enquiry ${reference}: ${summary}`.slice(0, 2000) })
+    .eq("session_id", sessionId);
+
+  try {
+    await serviceClient.functions.invoke("send-email", {
+      body: {
+        type: "custom_admin",
+        to: "sales@occta.co.uk",
+        logToCommunications: true,
+        data: {
+          subject: `Ollie enquiry ${reference}: ${interest} — ${name}`,
+          title: "New enquiry from Ollie chat",
+          greeting: "Sales team",
+          message_html: `
+            <p><strong>Reference:</strong> ${escapeHtml(reference)}<br/>
+            <strong>Name:</strong> ${escapeHtml(name)}<br/>
+            <strong>Email:</strong> ${escapeHtml(email ?? "—")}<br/>
+            <strong>Phone:</strong> ${escapeHtml(phone ?? "—")}<br/>
+            <strong>Postcode:</strong> ${escapeHtml(postcode)}<br/>
+            <strong>Interest:</strong> ${escapeHtml(interest)}</p>
+            <p><strong>What they need:</strong><br/>${escapeHtml(summary).replace(/\n/g, "<br/>")}</p>
+            <p style="color:#666;font-size:12px">Full chat is in the live chat console (session ${escapeHtml(sessionId)}).</p>
+          `,
+        },
+      },
+    });
+  } catch (notifyError) {
+    console.error("ollie enquiry notification failed", (notifyError as Error).message);
+  }
+
+  return JSON.stringify({
+    ok: true,
+    reference,
+    next: `Saved and sent to our sales team. Give the customer the reference ${reference} and say the team will reply ${email ? "by email" : "by phone"}, usually within one working day.`,
+  });
 }
 
 type HandlerResult = { status: number; payload: Record<string, unknown> };
@@ -743,22 +822,22 @@ async function loadCustomerImages(
 async function recordFeedback(request: Request, body: any): Promise<HandlerResult> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey || typeof body.helpful !== "boolean") return { status: 400, payload: { error: "invalid_feedback" } };
+  const analyticsId = typeof body.analyticsId === "string" && /^[0-9a-f-]{36}$/i.test(body.analyticsId) ? body.analyticsId : null;
+  if (!supabaseUrl || !serviceRoleKey || typeof body.helpful !== "boolean" || !analyticsId) {
+    return { status: 400, payload: { error: "invalid_feedback" } };
+  }
   const serviceClient = createClient(supabaseUrl, serviceRoleKey);
   const sessionId = safeSessionId(body.sessionId);
   const authUser = await getAuthenticatedUser(serviceClient, request.headers.get("Authorization"));
   const allowed = await checkRateLimit(serviceClient, "occta_companion_feedback", await digestIdentifier(authUser?.id ?? sessionId), 30, 10, false);
   if (!allowed) return { status: 429, payload: { error: "rate_limited" } };
-  await serviceClient.from("chat_analytics").insert({
-    session_id: sessionId,
-    user_id: authUser?.id ?? null,
-    message_type: "assistant",
-    message_content: redactSensitiveText(String(body.excerpt ?? "")).slice(0, 500) || "(feedback)",
-    detected_intent: "feedback",
-    detected_category: "feedback",
-    was_helpful: body.helpful,
-    created_at: new Date().toISOString(),
-  });
+  // Rate the reply's own analytics row. Inserting a new row here used to be
+  // mirrored into the live chat as a duplicate Ollie message.
+  await serviceClient.from("chat_analytics")
+    .update({ was_helpful: body.helpful })
+    .eq("id", analyticsId)
+    .eq("session_id", sessionId)
+    .eq("message_type", "assistant");
   return { status: 200, payload: { ok: true } };
 }
 
@@ -783,8 +862,12 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
     const allowed = await checkRateLimit(serviceClient, "occta_companion_message", generalRateKey, 40, 5, false);
     if (!allowed) return { status: 429, payload: { error: "Please wait a moment before sending another message." } };
 
-    const accountIntent = detectAccountIntent(messages);
     const latestUserText = lastUserText(messages);
+    // Only the customer's LATEST message decides whether this turn is an account
+    // request. Scanning the whole conversation trapped people in a loop: once
+    // "account" appeared anywhere, every later message got the same canned reply.
+    const latestOnly: CompanionMessage[] = [{ role: "user", content: latestUserText }];
+    const accountIntent = detectAccountIntent(latestOnly);
     const publicIntent = detectPublicIntent(latestUserText);
     let reply: CompanionReply | null = null;
     let toolsUsed: string[] = [];
@@ -793,6 +876,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
     let scope: CustomerScope | null = null;
     let issuedToken: string | undefined;
     let justVerified = false;
+    let verificationNote: string | undefined;
     if (authUser?.id) {
       scope = await scopeFromSignedInUser(serviceClient, authUser);
     } else {
@@ -800,29 +884,20 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
       if (claims) scope = await scopeFromClaims(serviceClient, claims);
     }
 
-    if (accountIntent && scope && !claudeEnabled()) {
-      reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
-    } else if (accountIntent && !scope) {
-      // Verification stays deterministic: the AI never decides who someone is.
-      const accountNumber = extractAccountNumber(messages);
-      const dob = extractDateOfBirth(messages);
-      if (!accountNumber) {
-        reply = {
-          content: withOptions(
-            `Happy to dig into that. First, the boring-but-important bit: what's your OCCTA account number? It starts with **OCC** and it's on your welcome email and invoices. Then I'll ask for the account holder's date of birth, and I can see everything, bills included. (Signing in works too, if you'd rather.) Please don't send bank details, passwords or one-time codes.`,
-            ["I can't find it", "Sign in instead"],
-          ),
-          source: "account",
-        };
-      } else if (!dob) {
-        reply = {
-          content: withOptions(
-            `Lovely, I've got account ${maskAccountNumber(accountNumber)}. Now the account holder's date of birth as **DD/MM/YYYY**, please. It's only used for this check and isn't shown back in the chat.`,
-            ["Sign in instead"],
-          ),
-          source: "account",
-        };
-      } else {
+    if (!scope) {
+      // Details typed earlier are redacted from the history the browser sends,
+      // so it passes them separately for this session.
+      const remembered = body.verification && typeof body.verification === "object" ? body.verification : {};
+      const rememberedMessages: CompanionMessage[] = [
+        typeof remembered.accountNumber === "string" ? { role: "user", content: remembered.accountNumber.slice(0, 20) } : null,
+        typeof remembered.dob === "string" ? { role: "user", content: remembered.dob.slice(0, 20) } : null,
+      ].filter(Boolean) as CompanionMessage[];
+      const accountNumber = extractAccountNumber(latestOnly) ?? extractAccountNumber(messages) ?? extractAccountNumber(rememberedMessages);
+      const dob = extractDateOfBirth(latestOnly) ?? extractDateOfBirth(messages) ?? extractDateOfBirth(rememberedMessages);
+      const detailsJustGiven = Boolean(extractAccountNumber(latestOnly) || extractDateOfBirth(latestOnly));
+
+      if (detailsJustGiven && accountNumber && dob) {
+        // Verification stays deterministic: the AI never decides who someone is.
         const verified = await verifyGuestAccount(serviceClient, accountNumber, dob);
         if (!verified) {
           reply = {
@@ -839,15 +914,30 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
             accountNumber: verified.accountNumber ?? accountNumber,
             exp: Math.floor(Date.now() / 1000) + VERIFICATION_TTL_SECONDS,
           }, serviceRoleKey);
-          // Verified: hand over to the AI with this customer's tools to answer the original question.
           scope = verified;
           justVerified = true;
           emit?.({ type: "status", label: "Verified. Opening your account" });
-          if (!claudeEnabled()) {
-            reply = { content: await accountReply(serviceClient, verified, accountIntent), source: "account" };
-          }
         }
+      } else if (accountNumber && !dob) {
+        verificationNote = `The customer has given their account number (${maskAccountNumber(accountNumber)}) but not the account holder's date of birth. If they want account help, ask for the date of birth as DD/MM/YYYY.`;
+      } else if (dob && !accountNumber) {
+        verificationNote = `The customer has given a date of birth but no OCCTA account number. If they want account help, ask for the account number (starts with OCC).`;
       }
+
+      // Without the AI, fall back to the scripted prompts, but only when the
+      // latest message is itself an account request.
+      if (!reply && !scope && accountIntent && !claudeEnabled()) {
+        reply = {
+          content: accountNumber
+            ? withOptions(`Lovely, I've got account ${maskAccountNumber(accountNumber)}. Now the account holder's date of birth as **DD/MM/YYYY**, please.`, ["Sign in instead"])
+            : withOptions(`Happy to look into that. What's your OCCTA account number? It starts with **OCC** and it's on your welcome email and invoices. Then I'll ask for the account holder's date of birth. (Signing in works too.)`, ["Sign in instead"]),
+          source: "account",
+        };
+      }
+    }
+
+    if (!reply && scope && accountIntent && !claudeEnabled()) {
+      reply = { content: await accountReply(serviceClient, scope, accountIntent), source: "account" };
     }
 
     if (!reply) {
@@ -868,6 +958,8 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
           serviceClient,
           account,
           justVerified,
+          verificationNote,
+          logEnquiry: scope ? undefined : (input) => logEnquiry(serviceClient, sessionId, input),
           images,
           emit,
         });
@@ -889,7 +981,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
     }
 
     const intentLabel = accountIntent ? `account_${accountIntent}` : publicIntent;
-    await recordAnalytics(
+    const analyticsId = await recordAnalytics(
       serviceClient,
       sessionId,
       authUser?.id ?? null,
@@ -910,6 +1002,7 @@ async function handle(request: Request, body: any, emit?: (event: BrainEvent) =>
         source: reply.source,
         engine: reply.engine,
         handoff: reply.handoff,
+        analyticsId,
       },
     };
   } catch (error) {

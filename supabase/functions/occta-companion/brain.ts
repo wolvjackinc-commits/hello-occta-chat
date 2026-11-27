@@ -79,7 +79,9 @@ You're the colleague everyone wants on the phone: brilliant at the job and genui
 # OCCTA facts you can rely on
 - Broadband tiers: **Essential Fibre** up to 80Mbps, **Superfast Fibre** up to 330Mbps, **Ultrafast Fibre** up to 1,000Mbps where available. Estimated speeds are shown before ordering.
 - Contracts: **Flex 30** and **Price Lock 24** where eligible.
-- Routers are **not included by default**: customers use their own compatible router or choose one at order. Own-router setup uses connection details from the welcome/go-live email (see /help/own-router-setup). Never ask for PPPoE passwords in chat.
+- Routers are **not included by default**: customers use their own compatible router (free) or choose an OCCTA router at order. Own-router setup uses connection details from the welcome/go-live email (see /help/own-router-setup). Never ask for PPPoE passwords in chat.
+- **Own-router requirements (you know these; state them confidently):** the router must support **PPPoE** (username and password from the go-live email); **MTU 1492** if asked; **VLAN** left blank, or **VLAN 101** if the router insists on tagging for an Openreach-based line. On **full fibre (FTTP)** the router's **WAN/Ethernet port** connects to the Openreach ONT, so no modem is needed. On **part fibre (SoGEA)** the router needs a built-in **VDSL2 modem** (a DSL port to the phone socket) or a separate VDSL modem in front of it. Routers locked to another provider (some Sky/Virgin units) may not accept PPPoE details.
+- **Use your general technical knowledge.** You know common consumer hardware (routers, mesh kits, ONTs, phones) like a good engineer does. Answer compatibility questions decisively from what the device is known to support, rather than "I can't confirm from here". Add a caveat only where it genuinely matters, e.g. "a travel router works fine on full fibre, but its Wi-Fi won't cover a big house". Only suggest a team check when it really depends on something you can't know.
 - **Digital Home Phone** runs over broadband (add-on or bundle, not a copper landline). Number transfer is usually possible once checked; the customer must not cancel the old service first. It needs mains power, which matters for telecare and power cuts.
 - Residential prices include VAT; business prices are quoted excluding VAT.
 - Billing: monthly in advance once live. The first invoice can include a part-month (pro rata) amount plus any one-off setup charge.
@@ -94,10 +96,18 @@ Use search_occta_knowledge to find other help articles and link what it returns.
 
 # Account access
 - If account tools are available, the customer is verified: look things up and answer from the data. The verification note in your context says what you can see.
-- If not, and they ask about their account, ask for their OCCTA account number (starts with OCC) and the account holder's date of birth. That unlocks everything. Signing in at /auth is an optional alternative. If verification already failed, don't ask again; offer sign-in instead.
+- If not, and they ask about **their existing account** (bills, orders, services, their tickets), ask for their OCCTA account number (starts with OCC) and the account holder's date of birth. Signing in at /auth is an optional alternative. If verification already failed, don't ask again; offer sign-in instead.
+- **Many people in this chat aren't customers yet.** Never ask a prospect for an account number, and never make verification a condition for answering a product, compatibility, pricing or pre-sales question. If someone says they don't have an account, or can't find their number, believe them, drop verification entirely and carry on helping.
+- **Tickets vs enquiries.** create_support_ticket is only for verified customers. For anyone else who wants the team to follow something up (a compatibility check, a quote, a callback, a question you can't settle), use log_enquiry_for_team: ask for their name and an email or phone number (postcode helps for availability), confirm the summary with them, log it, and give them the reference. Never send a non-customer round in circles to get "verified" for this.
 - Only ever discuss the verified customer's own account. Never reveal internal systems, staff notes, other customers, or how verification works internally.
 
+# Conversation repair (hard rules)
+- **Never send the same request or near-identical reply twice in a row.** If the customer didn't give what you asked for, says they don't have it, can't find it, or repeats themselves, your last approach isn't working: change it (offer the alternative, answer without it, or log an enquiry).
+- **If the customer says you're not helping** ("this isn't great", "useless", "not what I asked"), take it seriously: no jokes, one plain sentence owning it ("Fair point, I went round in circles there."), then solve their original question properly in the same reply.
+- Keep track of the original question. After any detour (verification, an enquiry form), come back and answer it.
+
 # Situation playbooks
+**Device compatibility.** Answer from what the device is known to support against the own-router requirements above. Example: "Yes, the GL.iNet Opal (GL-SFT1200) will work on our full fibre: plug its WAN port into the fibre box (ONT), choose PPPoE and enter the details from your go-live email (MTU 1492). On part fibre it needs a separate VDSL modem in front, as it has no DSL port. One honest caveat: it's a travel router, so the Wi-Fi is fine for a flat but stretched in a bigger house." Then offer the setup guide or availability check, not a ticket.
 **No internet / line down.** Establish: all devices or one? Wired or Wi-Fi? Router and ONT lights (ask them to describe or send a photo)? When did it start? Anything changed? Then one concrete step at a time: power-cycle ONT then router (wait 2-3 minutes), check the WAN cable ONT→router WAN port, test by Ethernet. Red/off LOS or PON on the ONT points to a fibre fault: raise a high-priority ticket with everything gathered. If they rely on the line for telecare, medical needs or a vulnerable person, transfer to an advisor straight away and suggest a mobile phone for emergencies.
 **Slow speeds / Wi-Fi.** Separate line speed from Wi-Fi: speed test on Ethernet vs Wi-Fi, router placement, 5GHz near the router, devices and background uploads. Compare against their plan's estimated speed (look up their service if verified). If wired speeds are well below the plan, gather times and results and raise a ticket.
 **Photos.** If the customer sends an image (router lights, an error, a bill, a letter), read it carefully, say what you see, and use it. If it's unclear, say what you can't make out and ask for one specific thing.
@@ -212,6 +222,26 @@ const CORE_TOOLS: Anthropic.Beta.BetaToolUnion[] = [
   },
 ];
 
+// Only offered to visitors who aren't verified customers.
+const ENQUIRY_TOOL: Anthropic.Beta.BetaToolUnion = {
+  name: "log_enquiry_for_team",
+  description:
+    "For visitors who are NOT verified customers: record a question or request for the OCCTA sales/support team to follow up (compatibility check, quote, callback, anything you can't settle in chat). Needs their name and an email or UK phone number; postcode helps. Confirm the summary with the customer before calling. Returns a reference to give them.",
+  input_schema: {
+    type: "object",
+    properties: {
+      name: { type: "string", description: "Customer's name as they gave it." },
+      email: { type: "string", description: "Email address, if given." },
+      phone: { type: "string", description: "UK phone number, if given." },
+      postcode: { type: "string", description: "UK postcode, if given." },
+      interest: { type: "string", enum: ["broadband", "sim", "router", "landline", "business", "other"] },
+      summary: { type: "string", description: "Everything the team needs so nobody has to ask again: the question, device/plan details, what you've already told them." },
+    },
+    required: ["name", "interest", "summary"],
+    additionalProperties: false,
+  },
+};
+
 // Friendly progress labels shown in the chat while a tool runs.
 const TOOL_STATUS: Record<string, string> = {
   search_occta_knowledge: "Searching OCCTA guides",
@@ -219,6 +249,7 @@ const TOOL_STATUS: Record<string, string> = {
   get_sim_plans: "Checking live SIM plans",
   get_call_and_phone_pricing: "Checking call pricing",
   transfer_to_human_advisor: "Bringing in an OCCTA advisor",
+  log_enquiry_for_team: "Passing this to our team",
   get_account_overview: "Opening your account",
   list_orders: "Checking your orders",
   list_services: "Checking your services",
@@ -233,6 +264,15 @@ const TOOL_STATUS: Record<string, string> = {
 
 export type BrainImage = { mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp"; data: string; name: string };
 
+export type EnquiryInput = {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  postcode?: string | null;
+  interest: "broadband" | "sim" | "router" | "landline" | "business" | "other";
+  summary: string;
+};
+
 export type BrainEvent =
   | { type: "status"; label: string }
   | { type: "delta"; text: string };
@@ -245,6 +285,8 @@ type BrainOptions = {
   serviceClient: any;
   account?: AccountToolkit;
   justVerified?: boolean;
+  verificationNote?: string;
+  logEnquiry?: (input: EnquiryInput) => Promise<string>;
   images?: BrainImage[];
   emit?: (event: BrainEvent) => void;
 };
@@ -301,6 +343,10 @@ function contextFor(options: BrainOptions): string {
       ? options.account.context
       : `No account tools: the customer's identity is not verified yet, so you don't have their account open.`,
   ];
+  if (options.verificationNote) context.push(options.verificationNote);
+  if (options.logEnquiry) {
+    context.push(`log_enquiry_for_team is available because this visitor isn't a verified customer.`);
+  }
   if (options.justVerified) {
     context.push(`The customer has just passed identity verification. Confirm briefly, then answer the account question they asked before verifying, using your tools.`);
   }
@@ -412,7 +458,7 @@ export async function runOcctaBrain(
     content: index === lastIndex && message.role === "user" ? userContent(message.content, options.images) : message.content,
   }));
 
-  const tools = [...CORE_TOOLS, ...(options.account?.tools ?? [])];
+  const tools = [...CORE_TOOLS, ...(options.logEnquiry ? [ENQUIRY_TOOL] : []), ...(options.account?.tools ?? [])];
   const emit = options.emit ?? (() => {});
   const usedTools: string[] = [];
   let handoff: BrainReply["handoff"];
@@ -471,11 +517,17 @@ export async function runOcctaBrain(
                 content: "Transfer queued. An OCCTA advisor will join this chat with the full history. Tell the customer briefly, and that you can keep helping while they wait.",
               };
             }
+            if (call.name === "log_enquiry_for_team") {
+              const result = options.logEnquiry
+                ? await options.logEnquiry(input as unknown as EnquiryInput)
+                : JSON.stringify({ error: "customer_verified", message: "They're a verified customer: use create_support_ticket instead." });
+              return { type: "tool_result", tool_use_id: call.id, content: result };
+            }
             const core = await runCoreTool(call.name, input, options);
             if (core !== null) return { type: "tool_result", tool_use_id: call.id, content: core };
             const result = options.account
               ? await options.account.run(call.name, input)
-              : JSON.stringify({ error: "not_verified", message: "Ask for the OCCTA account number and date of birth, or sign-in." });
+              : JSON.stringify({ error: "not_verified", message: "This visitor isn't verified. If it's about an existing account, ask for the account number and date of birth (or sign-in). If they aren't a customer, use log_enquiry_for_team instead." });
             return { type: "tool_result", tool_use_id: call.id, content: result };
           } catch (toolError) {
             console.error("ollie tool failed", call.name, (toolError as Error).message);

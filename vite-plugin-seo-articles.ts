@@ -8,10 +8,11 @@ import fs from "fs";
 import path from "path";
 import { seoArticles } from "./src/data/seoArticles";
 import { seoGrowthArticles } from "./src/data/seoGrowthArticles";
+import { seoBusinessSwitchArticles } from "./src/data/seoBusinessSwitchArticles";
 
 const BASE_URL = "https://www.occta.co.uk";
 const OG_IMAGE = `${BASE_URL}/og-image.jpg`;
-const authorityArticles = [...seoArticles, ...seoGrowthArticles];
+const authorityArticles = [...seoArticles, ...seoGrowthArticles, ...seoBusinessSwitchArticles];
 
 type AuthorityArticle = (typeof authorityArticles)[number];
 

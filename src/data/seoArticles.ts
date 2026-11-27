@@ -11,6 +11,10 @@ export interface SeoArticle extends LearnPage {
   datePublished: string;
   dateModified: string;
   sources: SeoArticleSource[];
+  /** Overrides the page's main call to action (default: address check). */
+  primaryCta?: { label: string; to: string };
+  /** Overrides the "Next step" paragraph above the call to action. */
+  nextStepText?: string;
 }
 
 const CHECK = {

@@ -51,6 +51,15 @@ Canonical website: https://www.occta.co.uk/
 - [Broadband for pensioners and older people](https://www.occta.co.uk/learn/broadband-for-pensioners-uk)
 - [Broadband social tariffs and Pension Credit](https://www.occta.co.uk/learn/broadband-social-tariffs-pension-credit)
 
+## Business landline switch-off guides
+- [PSTN switch-off checklist for UK businesses](https://www.occta.co.uk/learn/pstn-switch-off-business-checklist)
+- [Will my card machine work after the switch-off?](https://www.occta.co.uk/learn/card-machine-pstn-switch-off)
+- [Business alarms and the digital switchover](https://www.occta.co.uk/learn/business-alarm-digital-switchover)
+- [Lift emergency phones and the PSTN switch-off](https://www.occta.co.uk/learn/lift-emergency-phone-digital-switchover)
+- [Door entry systems, intercoms and the digital switchover](https://www.occta.co.uk/learn/door-entry-intercom-digital-switchover)
+- [Landline switch-off: a guide for Huddersfield businesses](https://www.occta.co.uk/learn/huddersfield-business-landline-switch-off)
+- [Free 15-minute business line check](https://www.occta.co.uk/business/line-check)
+
 ## Broadband buying and switching guides
 
 - [One Touch Switch broadband guide](https://www.occta.co.uk/learn/one-touch-switch-broadband-guide)

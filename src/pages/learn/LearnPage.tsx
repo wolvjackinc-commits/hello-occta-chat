@@ -9,13 +9,14 @@ import NotFound from "@/pages/NotFound";
 import { getLearnPageBySlug } from "@/data/learnPages";
 import { getSeoArticleBySlug } from "@/data/seoArticles";
 import { getSeoGrowthArticleBySlug } from "@/data/seoGrowthArticles";
+import { getSeoBusinessSwitchArticleBySlug } from "@/data/seoBusinessSwitchArticles";
 
 const SITE_URL = "https://www.occta.co.uk";
 
 export default function LearnPage() {
   const { slug } = useParams<{ slug: string }>();
   const article = slug
-    ? getSeoGrowthArticleBySlug(slug) ?? getSeoArticleBySlug(slug)
+    ? getSeoBusinessSwitchArticleBySlug(slug) ?? getSeoGrowthArticleBySlug(slug) ?? getSeoArticleBySlug(slug)
     : undefined;
   const page = article ?? (slug ? getLearnPageBySlug(slug) : undefined);
 
@@ -123,6 +124,8 @@ export default function LearnPage() {
         faqs={page.faqs}
         relatedLinks={page.related}
         compliance={disclosure}
+        primaryCta={article?.primaryCta}
+        nextStepText={article?.nextStepText}
       />
     </>
   );

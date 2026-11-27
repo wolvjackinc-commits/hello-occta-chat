@@ -53,6 +53,8 @@ export interface SeoContentPageProps {
   /** Override default CTA row. */
   primaryCta?: { label: string; to: string };
   secondaryCta?: { label: string; to: string };
+  /** Override the "Next step" paragraph. */
+  nextStepText?: string;
   /** Extra page content (e.g. a lead-capture widget) shown after the main sections, inside the page. */
   afterContent?: ReactNode;
 }
@@ -80,6 +82,7 @@ export default function SeoContentLayout({
   compliance,
   primaryCta = { label: "Check availability", to: "/order" },
   secondaryCta = { label: "Check Availability", to: "/broadband" },
+  nextStepText = "Find out what's available at your address, or talk to a human about your setup.",
   afterContent,
 }: SeoContentPageProps) {
   const faqSchema = faqs.length > 0 ? createFAQSchema(faqs.map(f => ({ question: f.question, answer: f.answer }))) : null;
@@ -215,7 +218,7 @@ export default function SeoContentLayout({
                 <SectionEyebrow index={pad(nextIndex)} label="Your move" tone="yellow" />
                 <h2 className="mt-5 font-display text-[2.75rem] uppercase leading-[0.9] sm:text-6xl">Next step</h2>
                 <p className="mt-4 max-w-xl text-lg text-black/75">
-                  Find out what's available at your address, or talk to a human about your setup.
+                  {nextStepText}
                 </p>
                 <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-black/80">
                   <a href={companyConfig.phone.href} className="inline-flex items-center gap-2 underline-offset-4 hover:underline">

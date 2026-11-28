@@ -4,14 +4,12 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/check-address/**'
-      - 'supabase/functions/check-availability/**'
       - 'supabase/functions/_shared/networkEvidence.ts'
       - '.github/workflows/deploy-address-lookup.yml'
   push:
     branches: [main]
     paths:
       - 'supabase/functions/check-address/**'
-      - 'supabase/functions/check-availability/**'
       - 'supabase/functions/_shared/networkEvidence.ts'
       - '.github/workflows/deploy-address-lookup.yml'
   workflow_dispatch:
@@ -28,7 +26,6 @@ jobs:
       - name: Type-check address edge functions
         run: |
           deno check supabase/functions/check-address/index.ts
-          deno check supabase/functions/check-availability/index.ts
 
   deploy:
     if: github.event_name != 'pull_request'
@@ -56,6 +53,3 @@ jobs:
 
       - name: Deploy exact-address lookup
         run: supabase functions deploy check-address --project-ref "$PROJECT_REF"
-
-      - name: Deploy exact-address availability
-        run: supabase functions deploy check-availability --project-ref "$PROJECT_REF"

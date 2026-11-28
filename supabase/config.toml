@@ -57,13 +57,9 @@ project_id = "oexgjmuvgdndizsufipe"
     verify_jwt = false
   [functions.places-autocomplete]
     verify_jwt = false
-  [functions.check-availability]
-    verify_jwt = false
   [functions.claim-dashboard-link]
     verify_jwt = false
   [functions.log-event]
-    verify_jwt = false
-  [functions.internal-create-test-pr]
     verify_jwt = false
   [functions.journey-state]
     verify_jwt = false

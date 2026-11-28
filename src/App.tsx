@@ -50,7 +50,6 @@ const AdminNotificationSettings = lazy(() => import("./pages/admin/NotificationS
 const AdminNotificationEvents = lazy(() => import("./pages/admin/NotificationEvents"));
 import Broadband from "./pages/Broadband";
 const Pay = lazy(() => import("./pages/Pay"));
-const PayInternalReturn = lazy(() => import("./pages/PayInternalReturn"));
 const DDSetup = lazy(() => import("./pages/DDSetup"));
 import Landline from "./pages/Landline";
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -69,13 +68,10 @@ import NotFound from "./pages/NotFound";
 const ServiceStatus = lazy(() => import("./pages/ServiceStatus"));
 import Complaints from "./pages/Complaints";
 const PayInvoice = lazy(() => import("./pages/PayInvoice"));
-const PaymentResult = lazy(() => import("./pages/PaymentResult"));
 const BillingSettings = lazy(() => import("./pages/BillingSettings"));
 import NoContractBroadband from "./pages/NoContractBroadband";
 import Guides from "./pages/guides/Guides";
-import GuidePage from "./pages/guides/GuidePage";
 import HelpCenter from "./pages/help/HelpCenter";
-import HelpArticlePage from "./pages/help/HelpArticle";
 import OwnRouterSetup from "./pages/help/OwnRouterSetup";
 // DB-backed knowledge-base pages (loaded lazily — public site)
 const DbHelpArticle = lazy(() => import("./pages/kb/DbHelpArticle"));
@@ -118,7 +114,6 @@ import FlexBroadband from "./pages/broadband/Flex";
 import ContractSaverBroadband from "./pages/broadband/ContractSaver";
 import SwitchingPage from "./pages/Switching";
 import RewardsPage from "./pages/Rewards";
-const BuildPlan = lazy(() => import("./pages/BuildPlan"));
 const OrderStart = lazy(() => import("./pages/order/OrderStart"));
 const OrderJourney = lazy(() => import("./pages/order/OrderJourney"));
 const OrderComplete = lazy(() => import("./pages/order/OrderComplete"));
@@ -405,11 +400,12 @@ const AnimatedRoutes = () => {
         <Route path="/business-sales" element={<Navigate to="/business/contact-sales" replace />} />
         <Route path="/complaints" element={<Complaints />} />
         <Route path="/pay-invoice" element={<PayInvoice />} />
-        <Route path="/payment-result" element={<PaymentResult />} />
+        {/* Retired Worldpay card-payment return pages. */}
+        <Route path="/payment-result" element={<Navigate to="/help/pay-by-bank-transfer" replace />} />
         <Route path="/billing-settings" element={<BillingSettings />} />
         <Route path="/no-contract-broadband-uk" element={<NoContractBroadband />} />
         <Route path="/pay" element={<Pay />} />
-        <Route path="/pay/_internal" element={<PayInternalReturn />} />
+        <Route path="/pay/_internal" element={<Navigate to="/help/pay-by-bank-transfer" replace />} />
         <Route path="/dd/setup" element={<DDSetup />} />
         <Route path="/guides" element={<Guides />} />
         <Route path="/guides/:slug" element={<Suspense fallback={null}><DbGuidePage /></Suspense>} />

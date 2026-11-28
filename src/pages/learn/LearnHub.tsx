@@ -7,6 +7,7 @@ import { SEO, JsonLd, createBreadcrumbSchema } from "@/components/seo";
 import { learnPages, learnCategoryLabels, LearnCategory } from "@/data/learnPages";
 import { seoArticles } from "@/data/seoArticles";
 import { seoGrowthArticles } from "@/data/seoGrowthArticles";
+import { seoBusinessSwitchArticles } from "@/data/seoBusinessSwitchArticles";
 import { MotionConfig, motion } from "framer-motion";
 import LeadCaptureWidget from "@/components/marketing/LeadCaptureWidget";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ const orderedCategories: LearnCategory[] = [
   "payments",
 ];
 
-const allPages = [...learnPages, ...seoArticles, ...seoGrowthArticles];
+const allPages = [...learnPages, ...seoArticles, ...seoGrowthArticles, ...seoBusinessSwitchArticles];
 
 const groups = orderedCategories
   .map((category) => ({ category, pages: allPages.filter((page) => page.category === category) }))

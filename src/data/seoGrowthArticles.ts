@@ -125,7 +125,7 @@ export const seoGrowthArticles: SeoArticle[] = [
           "Tell your telecom and telecare providers before migration. Government charters say known telecare customers should not be migrated until a compatible, functioning telecare solution has been confirmed.",
       },
     ],
-    related: [VOICE, CHECK, { label: "Digital landline and power cuts", to: "/learn/digital-landline-power-cut" }, { label: "Help a parent with the digital switch", to: "/learn/help-parents-landline-switch" }],
+    related: [VOICE, CHECK, { label: "Digital landline and power cuts", to: "/learn/digital-landline-power-cut" }, { label: "Help a parent with the digital switch", to: "/learn/help-parents-landline-switch" }, { label: "PSTN switch-off checklist for businesses", to: "/learn/pstn-switch-off-business-checklist" }],
     keywords:
       "landline switch off 2027, UK landline switch off, PSTN switch off 2027, digital landline 2027, old phone line switch off, BT landline switch off 2027",
     authorName: AUTHOR,
@@ -187,7 +187,7 @@ export const seoGrowthArticles: SeoArticle[] = [
       { question: "Will my wall phone socket still work?", answer: "The old socket may no longer carry an analogue voice service. The phone may instead connect through the broadband router or other provider equipment." },
       { question: "Should I cancel my old landline before switching?", answer: "Usually no. If you are moving provider or keeping a number, let the switching process coordinate the change so that you do not accidentally lose the number or service early." },
     ],
-    related: [VOICE, { label: "UK landline switch-off 2027", to: "/learn/landline-switch-off-2027-uk" }, { label: "Keeping your landline number", to: "/learn/keep-landline-number-digital-switch" }, HELP],
+    related: [VOICE, { label: "UK landline switch-off 2027", to: "/learn/landline-switch-off-2027-uk" }, { label: "Keeping your landline number", to: "/learn/keep-landline-number-digital-switch" }, HELP, { label: "PSTN switch-off checklist for businesses", to: "/learn/pstn-switch-off-business-checklist" }],
     keywords:
       "what happens to my landline in 2027, will my landline stop working, digital phone line UK, landline going digital, home phone after PSTN switch off",
     authorName: AUTHOR,

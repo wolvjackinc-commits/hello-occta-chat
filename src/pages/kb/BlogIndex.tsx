@@ -6,6 +6,7 @@ import { SEO } from "@/components/seo";
 import KbSearchBar from "@/components/kb/KbSearchBar";
 import { supabase } from "@/integrations/supabase/client";
 import { seoGrowthArticles } from "@/data/seoGrowthArticles";
+import { seoBusinessSwitchArticles } from "@/data/seoBusinessSwitchArticles";
 import { Clock, ArrowRight } from "lucide-react";
 import { ArticleCard, BrandSection, HeroKicker, HeroTitle, PosterBreadcrumb, PosterStage, Reveal, SectionEyebrow } from "@/components/brand/kit";
 import { revealItem } from "@/components/brand/motion";
@@ -56,7 +57,7 @@ export default function BlogIndex() {
             </Link>
           </Reveal>
           <Reveal stagger className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {seoGrowthArticles.map((article) => (
+            {[...seoBusinessSwitchArticles, ...seoGrowthArticles].map((article) => (
               <motion.div key={article.slug} variants={revealItem}>
                 <ArticleCard to={`/learn/${article.slug}`} label={article.category} title={article.h1} desc={article.shortAnswer} cta="Read guide" />
               </motion.div>
